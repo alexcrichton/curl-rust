@@ -20,7 +20,13 @@ impl Handle {
   #[inline]
   pub fn setopt<T: opt::OptVal>(&mut self, option: opt::Opt, val: T) -> Result<(), err::ErrCode> {
     // TODO: Prevent setting callback related options
-    let res = unsafe { easy::curl_easy_setopt(self.curl, option, val.to_c_repr()) };
+    let mut res = err::OK;
+    unsafe {
+        val.with_c_repr(|repr| {
+            res = easy::curl_easy_setopt(self.curl, option, repr);
+        })
+    }
+    println!("{} = {}", option, res);
     if res.is_success() { Ok(()) } else { Err(res) }
   }
 
@@ -50,6 +56,7 @@ impl Handle {
 
     // If the request failed, abort here
     if !err.is_success() {
+        println!("oh no {}", err);
       return Err(err);
     }
 

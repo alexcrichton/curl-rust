@@ -9,34 +9,30 @@ static OFF_T: c_int         = 30_000;
 pub type Opt = c_int;
 
 pub trait OptVal {
-  fn to_c_repr(self) -> *c_void;
+  fn with_c_repr(self, f: |*c_void|);
 }
 
 impl OptVal for int {
-  fn to_c_repr(self) -> *c_void {
-    unsafe { mem::transmute(self) }
+  fn with_c_repr(self, f: |*c_void|) {
+    f(self as *c_void)
   }
 }
 
 impl OptVal for uint {
-  fn to_c_repr(self) -> *c_void {
-    unsafe { mem::transmute(self) }
+  fn with_c_repr(self, f: |*c_void|) {
+    f(self as *c_void)
   }
 }
 
 impl OptVal for bool {
-  fn to_c_repr(self) -> *c_void {
-    if self {
-      1u.to_c_repr()
-    } else {
-      0u.to_c_repr()
-    }
+  fn with_c_repr(self, f: |*c_void|) {
+      f(self as uint as *c_void)
   }
 }
 
 impl<'a> OptVal for &'a str {
-  fn to_c_repr(self) -> *c_void {
-    self.to_c_str().as_bytes().as_ptr() as *c_void
+  fn with_c_repr(self, f: |*c_void|) {
+    self.with_c_str(|arg| f(arg as *c_void))
   }
 }
 

@@ -24,8 +24,7 @@ impl List {
   }
 
   pub fn push_str(&mut self, val: &str) {
-    let c_val = val.to_c_str();
-    self.push_bytes(c_val.as_bytes());
+    self.push_bytes(val.as_bytes());
   }
 
   pub fn push_bytes(&mut self, val: &[u8]) {
@@ -53,7 +52,7 @@ impl Drop for List {
 }
 
 impl<'a> OptVal for &'a List {
-  fn to_c_repr(self) -> *c_void {
-    unsafe { mem::transmute(self.head) }
+  fn with_c_repr(self, f: |*c_void|) {
+    f(self.head as *c_void)
   }
 }

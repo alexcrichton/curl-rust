@@ -13,7 +13,7 @@ pub fn test_simple_get() {
        Content-Length: 5\r\n\r\n\
        Hello\r\n")); // Sends
 
-  let res = get("http://localhost:8482").unwrap();
+  let res = get("http://localhost:8482").exec().unwrap();
 
   srv.assert();
 

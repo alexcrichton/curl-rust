@@ -24,14 +24,13 @@ pub fn request<'a>() -> Request<'a> {
   Request::new()
 }
 
-pub fn get(uri: &str) -> Result<Response, ErrCode> {
+pub fn get<'a>(uri: &str) -> Request<'a> {
   request()
     .method(Get)
     .uri(uri)
-    .execute()
 }
 
-pub fn post<R: Reader>(uri: &str, body: &mut R) -> Result<Response, ErrCode> {
+pub fn post<'a, R: Reader>(uri: &str, body: &mut R) -> Request<'a> {
   request()
     .method(Post)
     .uri(uri)
@@ -39,7 +38,6 @@ pub fn post<R: Reader>(uri: &str, body: &mut R) -> Result<Response, ErrCode> {
     // .header("Content-Type", "text/plain")
     .header("Expect", "")
     .body(body)
-    .execute()
 }
 
 pub enum Method {
@@ -127,7 +125,7 @@ impl<'a> Request<'a> {
     self
   }
 
-  pub fn execute(mut self) -> Result<Response, ErrCode> {
+  pub fn exec(mut self) -> Result<Response, ErrCode> {
     match self.err {
       Some(e) => return Err(e),
       None => {}

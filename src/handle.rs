@@ -1,7 +1,7 @@
-use std::c_vec::CVec;
-use std::{io,mem};
 use libc::{c_long,size_t,c_void};
-use collections::HashMap;
+use std::c_vec::CVec;
+use std::collections::HashMap;
+use std::{io,mem};
 use super::body::Body;
 use super::ffi::{consts,easy,err,info,opt};
 use {Response,Headers,header};

@@ -1,5 +1,5 @@
 use std::{fmt,str};
-use collections::HashMap;
+use std::collections::HashMap;
 
 pub type Headers = HashMap<String, Vec<String>>;
 
@@ -22,8 +22,8 @@ impl Response {
     self.code
   }
 
-  pub fn get_header<'a>(&'a self, name: &str) -> &'a [&'a str] {
-    unimplemented!()
+  pub fn get_header<'a>(&'a self, name: &str) -> &'a [String] {
+    self.hdrs.find_equiv(&name).map(|v| v.as_slice()).unwrap_or(&[])
   }
 
   pub fn get_body<'a>(&'a self) -> &'a [u8] {

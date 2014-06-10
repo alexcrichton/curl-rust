@@ -1,7 +1,6 @@
 #![crate_id = "curl"]
 #![feature(macro_rules)]
 
-extern crate collections;
 extern crate libc;
 
 use std::io;

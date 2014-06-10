@@ -34,7 +34,7 @@ impl List {
   }
 }
 
-impl Container for List {
+impl Collection for List {
   fn len(&self) -> uint {
     self.len
   }

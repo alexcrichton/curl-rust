@@ -161,7 +161,6 @@ fn is_lws(c: u8) -> bool {
 
 #[cfg(test)]
 mod test {
-  use std::str;
   use super::parse;
 
   fn parse_str<'a>(s: &'a str) -> (&'a str, &'a str) {

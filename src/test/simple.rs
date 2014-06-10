@@ -1,5 +1,4 @@
-use std::io::stdio::stdout;
-use {get,request};
+use {get};
 use super::server;
 
 #[test]
@@ -20,5 +19,6 @@ pub fn test_simple_get() {
 
   assert!(res.get_code() == 200, "code is {}", res.get_code());
   assert!(res.get_body() == "Hello".as_bytes());
+  assert!(res.get_headers().len() == 1);
   assert!(res.get_header("Content-Length") == ["5".to_string()]);
 }

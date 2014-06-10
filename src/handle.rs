@@ -1,10 +1,10 @@
-use libc::{c_long,size_t,c_void};
+use libc::{c_long,size_t};
 use std::c_vec::CVec;
 use std::collections::HashMap;
 use std::{io,mem};
 use super::body::Body;
 use super::ffi::{consts,easy,err,info,opt};
-use {Response,Headers,header};
+use {Response,header};
 
 pub struct Handle {
   curl: *easy::CURL
@@ -31,7 +31,7 @@ impl Handle {
     unsafe {
       let resp_p: uint = mem::transmute(&builder);
       let body_p: uint = match body {
-        Some(b) => unsafe { mem::transmute(b) },
+        Some(b) => mem::transmute(b),
         None => 0
       };
 
@@ -54,7 +54,7 @@ impl Handle {
     }
 
     // Try to get the response code
-    builder.code = try!(self.get_info_long(info::RESPONSE_CODE)) as uint;
+    builder.code = try!(self.get_response_code());
 
     Ok(builder.build())
   }

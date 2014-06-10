@@ -1,8 +1,5 @@
-use std::cell::RefCell;
-use std::io::IoResult;
-use std::io::net::tcp::{TcpAcceptor,TcpListener,TcpStream};
+use std::io::net::tcp::{TcpListener,TcpStream};
 use std::io::{Acceptor, Listener};
-use std::io::stdio::stdout;
 use std::io::timer;
 
 // Global handle to the running test HTTP server
@@ -75,7 +72,10 @@ impl OpSequence {
     for op in self.ops.iter() {
       match op {
         &SendBytes(b) => {
-          sock.write(b);
+          match sock.write(b) {
+            Ok(_) => {}
+            Err(e) => return Err(e.desc.to_string())
+          }
         }
         &ReceiveBytes(b) => {
           let mut rem = b.len();
@@ -112,7 +112,7 @@ fn to_debug_str(bytes: &[u8]) -> String {
   for b in bytes.iter() {
     let b = *b as char;
 
-    if (b >= ' ' && b <= '~') {
+    if b >= ' ' && b <= '~' {
       ret.push_char(b);
     }
     else if b == '\n' {
@@ -143,7 +143,7 @@ impl Drop for Handle {
   fn drop(&mut self) {
     let (tx, rx) = channel();
     self.send(OpSequence::new(Shutdown), tx);
-    rx.recv();
+    rx.recv().unwrap();
   }
 }
 

@@ -22,6 +22,10 @@ impl Response {
     self.code
   }
 
+  pub fn get_headers<'a>(&'a self) -> &'a Headers {
+    &self.hdrs
+  }
+
   pub fn get_header<'a>(&'a self, name: &str) -> &'a [String] {
     self.hdrs
       .find_equiv(&name)

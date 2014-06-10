@@ -5,10 +5,10 @@ extern crate libc;
 
 use std::io;
 use ffi::{easy,opt};
-use ffi::err::ErrCode;
 use handle::Handle;
 use body::Body;
 
+pub use ffi::err::ErrCode;
 pub use response::{Headers,Response};
 
 mod body;

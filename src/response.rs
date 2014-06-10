@@ -23,7 +23,10 @@ impl Response {
   }
 
   pub fn get_header<'a>(&'a self, name: &str) -> &'a [String] {
-    self.hdrs.find_equiv(&name).map(|v| v.as_slice()).unwrap_or(&[])
+    self.hdrs
+      .find_equiv(&name)
+      .map(|v| v.as_slice())
+      .unwrap_or(&[])
   }
 
   pub fn get_body<'a>(&'a self) -> &'a [u8] {

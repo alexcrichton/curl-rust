@@ -35,7 +35,7 @@ struct Handle {
  * - Wait for a certain amount of time
  * - Shutdown the server (allows a clean exit at the end of the tests)
  */
-#[deriving(Clone,Eq,Show)]
+#[deriving(Clone,PartialEq,Show)]
 pub enum Op {
   SendBytes(&'static [u8]),
   ReceiveBytes(&'static [u8]),
@@ -73,20 +73,15 @@ impl OpSequence {
 
   pub fn apply(&self, sock: &mut TcpStream) -> Result<(), String> {
     for op in self.ops.iter() {
-      println!("applying op={}", op);
       match op {
         &SendBytes(b) => {
-          stdout().write_str("sending bytes\n");
           sock.write(b);
         }
         &ReceiveBytes(b) => {
-          println!("b={}", sock.read_byte());
           let mut rem = b.len();
           let mut act = Vec::from_elem(rem, 0u8);
 
           while rem > 0 {
-            println!("reading; rem={}; {}", rem, act.mut_slice_from(b.len() - rem).len());
-
             match sock.read(act.mut_slice_from(b.len() - rem)) {
               Ok(i) => rem = rem - i,
               Err(e) => {
@@ -97,8 +92,9 @@ impl OpSequence {
           }
 
           if b != act.as_slice() {
-            return Err(to_str(act.as_slice()));
-            // return Err("did not receive expected bytes".to_string());
+            return Err(format!(
+                "received unexpected byte sequence.\n\nExpected:\n{}\n\nReceived:\n{}",
+                to_debug_str(b), to_debug_str(act.as_slice())));
           }
         }
         &Wait(ms) => { timer::sleep(ms as u64) }
@@ -110,8 +106,27 @@ impl OpSequence {
   }
 }
 
-fn to_str(b: &[u8]) -> String {
-  String::new()
+fn to_debug_str(bytes: &[u8]) -> String {
+  let mut ret = String::new();
+
+  for b in bytes.iter() {
+    let b = *b as char;
+
+    if (b >= ' ' && b <= '~') {
+      ret.push_char(b);
+    }
+    else if b == '\n' {
+      ret.push_str("\\n\n");
+    }
+    else if b == '\r' {
+      ret.push_str("\\r");
+    }
+    else {
+      ret.push_char('?');
+    }
+  }
+
+  ret
 }
 
 impl Handle {

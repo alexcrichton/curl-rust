@@ -85,7 +85,6 @@ impl OpSequence {
             match sock.read(act.mut_slice_from(b.len() - rem)) {
               Ok(i) => rem = rem - i,
               Err(e) => {
-                println!(" read err {}", e);
                 return Err(e.desc.to_string())
               }
             }
@@ -190,6 +189,8 @@ fn start_server() -> Handle {
           return;
         }
       };
+
+      sock.set_timeout(Some(100));
 
       resp_tx.send(ops.apply(&mut sock));
     }

@@ -27,9 +27,6 @@ $(LIBCURLRUST): $(SRC) | $(TARGET)
 $(LIBCURLRUST_TEST): $(SRC) | $(TARGET)
 	$(RUSTC) --test -o $@ src/lib.rs
 
-hax: $(SRC)
-	$(RUSTC) --cfg hax -o $@ --crate-type=bin src/lib.rs
-
 clean:
 	rm -f $(TARGET)/libcurl*
 

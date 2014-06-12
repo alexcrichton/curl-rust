@@ -2,177 +2,141 @@ use libc::{c_long,size_t};
 use std::c_vec::CVec;
 use std::collections::HashMap;
 use std::{io,mem};
+use super::ffi::easy::Easy;
 use super::body::Body;
+use super::ffi;
 use super::ffi::{consts,easy,err,info,opt};
-use {Response,header};
+use {ErrCode,Response,header};
 
 pub struct Handle {
-  curl: *easy::CURL
+  easy: Easy,
 }
 
 impl Handle {
   pub fn new() -> Handle {
     Handle {
-      curl: unsafe { easy::curl_easy_init() }
+      easy: Easy::new()
     }
   }
 
-  #[inline]
-  pub fn setopt<T: opt::OptVal>(&mut self, option: opt::Opt, val: T) -> Result<(), err::ErrCode> {
-    // TODO: Prevent setting callback related options
-    let mut res = err::OK;
-    unsafe {
-        val.with_c_repr(|repr| {
-            res = easy::curl_easy_setopt(self.curl, option, repr);
-        })
-    }
-    println!("{} = {}", option, res);
-    if res.is_success() { Ok(()) } else { Err(res) }
+  pub fn get<'a, 'b>(&'a mut self, uri: &str) -> Request<'a, 'b> {
+    Request::new(self, Get, None).uri(uri)
   }
 
-  #[inline]
-  pub fn perform(&mut self, body: Option<&Body>) -> Result<Response, err::ErrCode> {
-    let mut builder = ResponseBuilder::new();
-
-    unsafe {
-      let resp_p: uint = mem::transmute(&builder);
-      let body_p: uint = match body {
-        Some(b) => mem::transmute(b),
-        None => 0
-      };
-
-      // Set callback options
-      easy::curl_easy_setopt(self.curl, opt::READFUNCTION, curl_read_fn);
-      easy::curl_easy_setopt(self.curl, opt::READDATA, body_p);
-
-      easy::curl_easy_setopt(self.curl, opt::WRITEFUNCTION, curl_write_fn);
-      easy::curl_easy_setopt(self.curl, opt::WRITEDATA, resp_p);
-
-      easy::curl_easy_setopt(self.curl, opt::HEADERFUNCTION, curl_header_fn);
-      easy::curl_easy_setopt(self.curl, opt::HEADERDATA, resp_p);
-    }
-
-    let err = unsafe { easy::curl_easy_perform(self.curl) };
-
-    // If the request failed, abort here
-    if !err.is_success() {
-        println!("oh no {}", err);
-      return Err(err);
-    }
-
-    // Try to get the response code
-    builder.code = try!(self.get_response_code());
-
-    Ok(builder.build())
+  /*
+  pub fn post<'a, 'b, R: Reader>(&'a mut self, &'b mut R) -> Request<'a, 'b> {
+    unimplemented!();
   }
-
-  pub fn get_response_code(&self) -> Result<uint, err::ErrCode> {
-    Ok(try!(self.get_info_long(info::RESPONSE_CODE)) as uint)
-  }
-
-  fn get_info_long(&self, key: info::Key) -> Result<c_long, err::ErrCode> {
-    let v: c_long = 0;
-    let res = unsafe { easy::curl_easy_getinfo(self.curl, key, &v) };
-
-    if !res.is_success() {
-      return Err(res);
-    }
-
-    Ok(v)
-  }
+  */
 }
 
-impl Drop for Handle {
-  fn drop(&mut self) {
-    unsafe { easy::curl_easy_cleanup(self.curl) }
-  }
+pub enum Method {
+  Options,
+  Get,
+  Head,
+  Post,
+  Put,
+  Delete,
+  Trace,
+  Connect
 }
 
-struct ResponseBuilder {
-  code: uint,
-  hdrs: HashMap<String,Vec<String>>,
-  body: Vec<u8>
+pub struct Request<'a, 'b> {
+  err: Option<ErrCode>,
+  handle: &'a mut Handle,
+  headers: ffi::List,
+  body: Option<Body<'b>>
 }
 
-impl ResponseBuilder {
-  fn new() -> ResponseBuilder {
-    ResponseBuilder {
-      code: 0,
-      hdrs: HashMap::new(),
-      body: Vec::new()
-    }
-  }
+impl<'a, 'b> Request<'a, 'b> {
+  fn new<'a, 'b>(handle: &'a mut Handle, method: Method, body: Option<Body<'b>>) -> Request<'a, 'b> {
+    macro_rules! set_method(
+      ($val:expr) => ({
+        match handle.easy.setopt($val, 1) {
+          Ok(_) => { None }
+          Err(e) => Some(e)
+        }
+      });
+    )
 
-  fn add_header(&mut self, name: &str, val: &str) {
-    let name = name.to_string();
-
-    let inserted = match self.hdrs.find_mut(&name) {
-      Some(vals) => {
-        vals.push(val.to_string());
-        true
-      }
-      None => false
+    // TODO: track errors
+    let err = match method {
+      Get => set_method!(opt::HTTPGET),
+      Post => set_method!(opt::POST),
+      _ => { unimplemented!() }
     };
 
-    if !inserted {
-      self.hdrs.insert(name, vec!(val.to_string()));
+    Request {
+      err: err,
+      handle: handle,
+      headers: ffi::List::new(),
+      body: body
     }
   }
 
-  fn build(self) -> Response {
-    let ResponseBuilder { code, hdrs, body } = self;
-    Response::new(code, hdrs, body)
-  }
-}
+  pub fn method(mut self, method: Method) -> Request<'a, 'b> {
+    macro_rules! set_method(
+      ($val:expr) => ({
+        match self.handle.easy.setopt($val, 1) {
+          Ok(_) => {}
+          Err(e) => self.err = Some(e)
+        }
+        });
+    )
 
-/*
- *
- * ===== Callbacks =====
- */
-
-#[no_mangle]
-pub extern "C" fn curl_read_fn(p: *mut u8, size: size_t, nmemb: size_t, body: *mut Body) -> size_t {
-  if body.is_null() {
-    return 0;
-  }
-
-  let mut dst = unsafe { CVec::new(p, (size * nmemb) as uint) };
-  let body: &mut Body = unsafe { mem::transmute(body) };
-
-  match body.read(dst.as_mut_slice()) {
-    Ok(len) => len as size_t,
-    Err(e) => {
-      match e.kind {
-        io::EndOfFile => 0 as size_t,
-        _ => consts::CURL_READFUNC_ABORT as size_t
-      }
+    // TODO: track errors
+    match method {
+      Get => set_method!(opt::HTTPGET),
+      Post => set_method!(opt::POST),
+      _ => { unimplemented!() }
     }
-  }
-}
 
-#[no_mangle]
-pub extern "C" fn curl_write_fn(p: *mut u8, size: size_t, nmemb: size_t, resp: *mut ResponseBuilder) -> size_t {
-  if !resp.is_null() {
-    let builder: &mut ResponseBuilder = unsafe { mem::transmute(resp) };
-    let chunk = unsafe { CVec::new(p, (size * nmemb) as uint) };
-    builder.body.push_all(chunk.as_slice());
+    self
   }
 
-  size * nmemb
-}
-
-#[no_mangle]
-pub extern "C" fn curl_header_fn(p: *mut u8, size: size_t, nmemb: size_t, resp: &mut ResponseBuilder) -> size_t {
-  // TODO: Skip the first call (it seems to be the status line)
-
-  let vec = unsafe { CVec::new(p, (size * nmemb) as uint) };
-
-  match header::parse(vec.as_slice()) {
-    Some((name, val)) => {
-      resp.add_header(name, val);
+  pub fn uri(mut self, uri: &str) -> Request<'a, 'b> {
+    match self.handle.easy.setopt(opt::URL, uri) {
+      Ok(_) => {}
+      Err(e) => self.err = Some(e)
     }
-    None => {}
+
+    self
   }
 
-  vec.len() as size_t
+  pub fn header(mut self, name: &str, val: &str) -> Request<'a, 'b> {
+    self.append_header(name, val);
+    self
+  }
+
+  pub fn headers<'c, I: Iterator<(&'c str, &'c str)>>(mut self, mut hdrs: I) -> Request<'a, 'b> {
+    for (name, val) in hdrs {
+      self.append_header(name, val);
+    }
+
+    self
+  }
+
+  fn append_header(&mut self, name: &str, val: &str) {
+    let mut c_str = Vec::with_capacity(name.len() + val.len() + 3);
+    c_str.push_all(name.as_bytes());
+    c_str.push(':' as u8);
+    c_str.push(' ' as u8);
+    c_str.push_all(val.as_bytes());
+    c_str.push(0);
+
+    self.headers.push_bytes(c_str.as_slice());
+  }
+
+  pub fn exec(mut self) -> Result<Response, ErrCode> {
+    match self.err {
+      Some(e) => return Err(e),
+      None => {}
+    }
+
+    if !self.headers.is_empty() {
+      try!(self.handle.easy.setopt(opt::HTTPHEADER, &self.headers));
+    }
+
+    self.handle.easy.perform(self.body.as_ref())
+  }
 }

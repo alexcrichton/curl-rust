@@ -10,7 +10,7 @@ extern crate curl;
 pub fn main() {
   let resp = curl::handle()
     .get("http://www.example.com")
-    .exec();
+    .exec().unwrap();
 
   println!("code={}; body={}" resp.get_code(), resp.get_body());
 }

@@ -18,7 +18,7 @@ LIBCURLRUST_TEST = $(TARGET)/libcurl-test
 all: $(LIBCURLRUST)
 
 test: $(LIBCURLRUST_TEST)
-	$(LIBCURLRUST_TEST) $(only)
+	RUST_TEST_TASKS=1 $(LIBCURLRUST_TEST) $(only)
 
 $(LIBCURLRUST): $(SRC) | $(TARGET)
 	$(RUSTC) --out-dir $(TARGET) --crate-type=rlib src/lib.rs

@@ -1,16 +1,38 @@
-use std::io::{IoResult,Reader};
+use std::io::{BufReader,IoResult,Reader};
 
-pub struct Body<'a> {
-  reader: &'a mut Reader
+pub enum Body<'a> {
+  FixedBody(BufReader<'a>, uint),
+  ChunkedBody(&'a mut Reader)
 }
 
 impl<'a> Body<'a> {
-  pub fn new<'b>(reader: &'b mut Reader) -> Body<'b> {
-    Body { reader: reader }
+  pub fn get_size(&self) -> Option<uint> {
+    match self {
+      &FixedBody(b, len) => Some(len),
+      _ => None
+    }
   }
 
-  #[inline]
   pub fn read(&mut self, buf: &mut [u8]) -> IoResult<uint> {
-    self.reader.read(buf)
+    match self {
+      &FixedBody(ref mut r,_) => r.read(buf),
+      &ChunkedBody(ref mut r) => r.read(buf)
+    }
+  }
+}
+
+pub trait ToBody<'a> {
+  fn to_body(self) -> Body<'a>;
+}
+
+impl<'a> ToBody<'a> for &'a str {
+  fn to_body(self) -> Body<'a> {
+    self.as_bytes().to_body()
+  }
+}
+
+impl <'a> ToBody<'a> for &'a [u8] {
+  fn to_body(self) -> Body<'a> {
+    FixedBody(BufReader::new(self), self.len())
   }
 }

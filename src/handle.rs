@@ -1,12 +1,14 @@
 use libc::{c_long,size_t};
+use url::Url;
 use std::c_vec::CVec;
 use std::collections::HashMap;
 use std::{io,mem};
 use super::ffi::easy::Easy;
-use super::body::Body;
+use super::body::{Body,ToBody};
 use super::ffi;
 use super::ffi::{consts,easy,err,info,opt};
 use {ErrCode,Response,header};
+use std::io::stdio::stdout;
 
 pub struct Handle {
   easy: Easy,
@@ -23,11 +25,9 @@ impl Handle {
     Request::new(self, Get, None).uri(uri)
   }
 
-  /*
-  pub fn post<'a, 'b, R: Reader>(&'a mut self, &'b mut R) -> Request<'a, 'b> {
-    unimplemented!();
+  pub fn post<'a, 'b, B: ToBody<'b>>(&'a mut self, uri: &str, body: B) -> Request<'a, 'b> {
+    Request::new(self, Post, Some(body.to_body())).uri(uri)
   }
-  */
 }
 
 pub enum Method {
@@ -45,7 +45,10 @@ pub struct Request<'a, 'b> {
   err: Option<ErrCode>,
   handle: &'a mut Handle,
   headers: ffi::List,
-  body: Option<Body<'b>>
+  body: Option<Body<'b>>,
+  body_type: bool, // whether or not the body type was set
+  content_type: bool, // whether or not the content type was set
+  expect_continue: bool, // whether to expect a 100 continue from the server
 }
 
 impl<'a, 'b> Request<'a, 'b> {
@@ -53,7 +56,7 @@ impl<'a, 'b> Request<'a, 'b> {
     macro_rules! set_method(
       ($val:expr) => ({
         match handle.easy.setopt($val, 1) {
-          Ok(_) => { None }
+          Ok(_) => None,
           Err(e) => Some(e)
         }
       });
@@ -70,28 +73,11 @@ impl<'a, 'b> Request<'a, 'b> {
       err: err,
       handle: handle,
       headers: ffi::List::new(),
-      body: body
+      body: body,
+      body_type: false,
+      content_type: false,
+      expect_continue: false
     }
-  }
-
-  pub fn method(mut self, method: Method) -> Request<'a, 'b> {
-    macro_rules! set_method(
-      ($val:expr) => ({
-        match self.handle.easy.setopt($val, 1) {
-          Ok(_) => {}
-          Err(e) => self.err = Some(e)
-        }
-        });
-    )
-
-    // TODO: track errors
-    match method {
-      Get => set_method!(opt::HTTPGET),
-      Post => set_method!(opt::POST),
-      _ => { unimplemented!() }
-    }
-
-    self
   }
 
   pub fn uri(mut self, uri: &str) -> Request<'a, 'b> {
@@ -103,40 +89,86 @@ impl<'a, 'b> Request<'a, 'b> {
     self
   }
 
+  pub fn content_length(mut self, len: uint) -> Request<'a, 'b> {
+    if !self.body_type {
+      self.body_type = true;
+      append_header(&mut self.headers, "Content-Type", len.to_str().as_slice());
+    }
+
+    // self.body_size = Fixed(len);
+    self
+  }
+
+  pub fn chunked(mut self) -> Request<'a, 'b> {
+    if !self.body_type {
+      self.body_type = true;
+      append_header(&mut self.headers, "Transfer-Encoding", "chunked");
+    }
+
+    self
+  }
+
+  pub fn expect_continue(mut self) -> Request<'a, 'b> {
+    self.expect_continue = true;
+    self
+  }
+
   pub fn header(mut self, name: &str, val: &str) -> Request<'a, 'b> {
-    self.append_header(name, val);
+    append_header(&mut self.headers, name, val);
     self
   }
 
   pub fn headers<'c, I: Iterator<(&'c str, &'c str)>>(mut self, mut hdrs: I) -> Request<'a, 'b> {
     for (name, val) in hdrs {
-      self.append_header(name, val);
+      append_header(&mut self.headers, name, val);
     }
 
     self
   }
 
-  fn append_header(&mut self, name: &str, val: &str) {
-    let mut c_str = Vec::with_capacity(name.len() + val.len() + 3);
-    c_str.push_all(name.as_bytes());
-    c_str.push(':' as u8);
-    c_str.push(' ' as u8);
-    c_str.push_all(val.as_bytes());
-    c_str.push(0);
-
-    self.headers.push_bytes(c_str.as_slice());
-  }
-
   pub fn exec(mut self) -> Result<Response, ErrCode> {
-    match self.err {
+    let Request { err, handle, mut headers, mut body, body_type, content_type, expect_continue, .. } = self;
+
+    match err {
       Some(e) => return Err(e),
       None => {}
     }
 
-    if !self.headers.is_empty() {
-      try!(self.handle.easy.setopt(opt::HTTPHEADER, &self.headers));
+    match body.as_ref() {
+      None => {}
+      Some(body) => {
+        if !body_type {
+          match body.get_size() {
+            Some(len) => append_header(&mut headers, "Content-Length", len.to_str().as_slice()),
+            None => append_header(&mut headers, "Transfer-Encoding", "chunked")
+          }
+        }
+
+        if !content_type {
+          append_header(&mut headers, "Content-Type", "application/octet-stream");
+        }
+
+        if !expect_continue {
+          append_header(&mut headers, "Expect", "");
+        }
+      }
     }
 
-    self.handle.easy.perform(self.body.as_ref())
+    if !headers.is_empty() {
+      try!(handle.easy.setopt(opt::HTTPHEADER, &headers));
+    }
+
+    handle.easy.perform(body.as_mut())
   }
+}
+
+fn append_header(list: &mut ffi::List, name: &str, val: &str) {
+  let mut c_str = Vec::with_capacity(name.len() + val.len() + 3);
+  c_str.push_all(name.as_bytes());
+  c_str.push(':' as u8);
+  c_str.push(' ' as u8);
+  c_str.push_all(val.as_bytes());
+  c_str.push(0);
+
+  list.push_bytes(c_str.as_slice());
 }

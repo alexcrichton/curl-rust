@@ -44,7 +44,7 @@ impl Easy {
   }
 
   #[inline]
-  pub fn perform(&mut self, body: Option<&Body>) -> Result<Response, err::ErrCode> {
+  pub fn perform(&mut self, body: Option<&mut Body>) -> Result<Response, err::ErrCode> {
     let mut builder = ResponseBuilder::new();
 
     unsafe {

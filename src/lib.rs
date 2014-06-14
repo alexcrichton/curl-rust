@@ -2,6 +2,7 @@
 #![feature(macro_rules)]
 
 extern crate libc;
+extern crate url;
 
 use std::io;
 use ffi::{easy,opt};

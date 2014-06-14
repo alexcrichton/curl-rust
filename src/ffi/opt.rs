@@ -1,4 +1,5 @@
 use std::mem;
+use url::Url;
 use libc::{c_void,c_int};
 
 static LONG: c_int          = 0;
@@ -33,6 +34,20 @@ impl OptVal for bool {
 impl<'a> OptVal for &'a str {
   fn with_c_repr(self, f: |*c_void|) {
     self.with_c_str(|arg| f(arg as *c_void))
+  }
+}
+
+impl<'a> OptVal for &'a Url {
+  fn with_c_repr(self, f: |*c_void|) {
+    // TODO: Could be more efficient
+    unimplemented!()
+  }
+}
+
+impl<'a> OptVal for &'a String {
+  fn with_c_repr(self, f: |*c_void|) {
+    // TODO: Could be more efficient
+    unimplemented!()
   }
 }
 

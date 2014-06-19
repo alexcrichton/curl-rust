@@ -18,9 +18,9 @@ pub struct Handle {
 
 impl Handle {
   pub fn new() -> Handle {
-    Handle {
-      easy: Easy::new()
-    }.timeout(DEFAULT_TIMEOUT_MS)
+    Handle { easy: Easy::new() }
+      .timeout(DEFAULT_TIMEOUT_MS)
+      .connect_timeout(DEFAULT_TIMEOUT_MS)
   }
 
   pub fn timeout(mut self, ms: uint) -> Handle {
@@ -28,8 +28,17 @@ impl Handle {
     self
   }
 
+  pub fn connect_timeout(mut self, ms: uint) -> Handle {
+    self.easy.setopt(opt::CONNECTTIMEOUT_MS, ms);
+    self
+  }
+
   pub fn get<'a, 'b>(&'a mut self, uri: &str) -> Request<'a, 'b> {
     Request::new(self, Get, None).uri(uri)
+  }
+
+  pub fn head<'a, 'b>(&'a mut self, uri: &str) -> Request<'a, 'b> {
+    Request::new(self, Head, None).uri(uri)
   }
 
   pub fn post<'a, 'b, B: ToBody<'b>>(&'a mut self, uri: &str, body: B) -> Request<'a, 'b> {
@@ -72,6 +81,7 @@ impl<'a, 'b> Request<'a, 'b> {
     // TODO: track errors
     let err = match method {
       Get => set_method!(opt::HTTPGET),
+      Head => set_method!(opt::NOBODY),
       Post => set_method!(opt::POST),
       _ => { unimplemented!() }
     };

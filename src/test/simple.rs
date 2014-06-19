@@ -52,7 +52,7 @@ pub fn test_get_with_custom_headers() {
 }
 
 #[test]
-pub fn test_simple_post() {
+pub fn test_post_binary_with_slice() {
   let srv = server!(
     recv!(
       "POST / HTTP/1.1\r\n\
@@ -75,6 +75,10 @@ pub fn test_simple_post() {
 
   assert!(res.get_code() == 200);
   assert!(res.get_body() == "Hello".as_bytes());
+}
+
+#[test]
+pub fn test_post_binary_with_string() {
 }
 
 #[test]

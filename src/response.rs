@@ -40,7 +40,7 @@ impl Response {
 
 impl fmt::Show for Response {
   fn fmt(&self, fmt: &mut fmt::Formatter) -> Result<(), fmt::FormatError> {
-    try!(write!(fmt, "Response \\{ {}, ", self.code));
+    try!(write!(fmt, "Response {{{}, ", self.code));
 
     for (name, val) in self.hdrs.iter() {
       try!(write!(fmt, "{}: {}, ", name, val.connect(", ")));
@@ -50,6 +50,8 @@ impl fmt::Show for Response {
       Some(b) => try!(write!(fmt, "{}", b)),
       None => try!(write!(fmt, "bytes[{}]", self.body.len()))
     }
+
+    try!(write!(fmt, "]"));
 
     Ok(())
   }

@@ -25,4 +25,6 @@ macro_rules! wait(
   ($dur:expr) => (server::Wait($dur));
 )
 
-mod simple;
+// mod simple;
+mod get;
+mod post;

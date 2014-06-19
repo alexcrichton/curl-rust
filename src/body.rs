@@ -31,8 +31,21 @@ impl<'a> ToBody<'a> for &'a str {
   }
 }
 
-impl <'a> ToBody<'a> for &'a [u8] {
+impl<'a> ToBody<'a> for &'a [u8] {
   fn to_body(self) -> Body<'a> {
     FixedBody(BufReader::new(self), self.len())
+  }
+}
+
+impl<'a> ToBody<'a> for &'a String {
+  fn to_body(self) -> Body<'a> {
+    self.as_slice().to_body()
+  }
+}
+
+// TODO: https://github.com/rust-lang/rust/issues/14901
+impl<'a> ToBody<'a> for &'a mut Reader {
+  fn to_body(self) -> Body<'a> {
+    ChunkedBody(self)
   }
 }

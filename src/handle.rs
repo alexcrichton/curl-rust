@@ -95,7 +95,6 @@ impl<'a, 'b> Request<'a, 'b> {
       append_header(&mut self.headers, "Content-Type", len.to_str().as_slice());
     }
 
-    // self.body_size = Fixed(len);
     self
   }
 

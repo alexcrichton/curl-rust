@@ -10,6 +10,8 @@ use super::ffi::{consts,easy,err,info,opt};
 use {ErrCode,Response,header};
 use std::io::stdio::stdout;
 
+static DEFAULT_TIMEOUT_MS: uint = 30_000;
+
 pub struct Handle {
   easy: Easy,
 }
@@ -18,7 +20,12 @@ impl Handle {
   pub fn new() -> Handle {
     Handle {
       easy: Easy::new()
-    }
+    }.timeout(DEFAULT_TIMEOUT_MS)
+  }
+
+  pub fn timeout(mut self, ms: uint) -> Handle {
+    self.easy.setopt(opt::TIMEOUT_MS, ms);
+    self
   }
 
   pub fn get<'a, 'b>(&'a mut self, uri: &str) -> Request<'a, 'b> {
@@ -132,6 +139,9 @@ impl<'a, 'b> Request<'a, 'b> {
       Some(e) => return Err(e),
       None => {}
     }
+
+    // Clear custom headers set from the previous request
+    try!(handle.easy.setopt(opt::HTTPHEADER, 0));
 
     match body.as_ref() {
       None => {}

@@ -18,12 +18,12 @@ impl Handle {
   }
 
   pub fn timeout(mut self, ms: uint) -> Handle {
-    self.easy.setopt(opt::TIMEOUT_MS, ms);
+    self.easy.setopt(opt::TIMEOUT_MS, ms).unwrap();
     self
   }
 
   pub fn connect_timeout(mut self, ms: uint) -> Handle {
-    self.easy.setopt(opt::CONNECTTIMEOUT_MS, ms);
+    self.easy.setopt(opt::CONNECTTIMEOUT_MS, ms).unwrap();
     self
   }
 

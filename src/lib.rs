@@ -12,7 +12,8 @@ pub use response::{Headers,Response};
 pub use ffi::version::{
   Version,
   version,
-  version_info
+  version_info,
+  Protocols
 };
 
 mod body;

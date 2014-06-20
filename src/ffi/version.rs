@@ -67,7 +67,7 @@ pub type Version = curl_version_info_data;
 impl curl_version_info_data {
 
   pub fn version_str<'a>(&'a self) -> &'a str {
-    as_str(self.version)
+    as_str(self.version).unwrap()
   }
 
   pub fn version_major(&self) -> uint {
@@ -83,7 +83,7 @@ impl curl_version_info_data {
   }
 
   pub fn host<'a>(&'a self) -> &'a str {
-    as_str(self.host)
+    as_str(self.host).unwrap()
   }
 
   pub fn is_ipv6_enabled(&self) -> bool {
@@ -154,20 +154,54 @@ impl curl_version_info_data {
     (self.features & CURL_VERSION_HTTP2) == CURL_VERSION_HTTP2
   }
 
-  pub fn ssl_version<'a>(&'a self) -> &'a str {
+  pub fn ssl_version<'a>(&'a self) -> Option<&'a str> {
     as_str(self.ssl_version)
   }
 
-  pub fn libz_version<'a>(&'a self) -> &'a str {
+  pub fn libz_version<'a>(&'a self) -> Option<&'a str> {
     as_str(self.libz_version)
   }
 
   pub fn protocols<'a>(&'a self) -> Protocols<'a> {
     Protocols { curr: self.protocols }
   }
+
+  pub fn ares_version<'a>(&'a self) -> Option<&'a str> {
+    as_str(self.ares)
+  }
+
+  pub fn ares_version_num(&self) -> Option<uint> {
+    match self.ares_version() {
+      Some(_) => Some(self.ares_num as uint),
+      None => None
+    }
+  }
+
+  pub fn idn_version<'a>(&'a self) -> Option<&'a str> {
+    if self.is_idn_enabled() {
+      as_str(self.libidn)
+    }
+    else {
+      None
+    }
+  }
+
+  pub fn iconv_version(self) -> Option<uint> {
+    if self.is_conv_enabled() {
+      Some(self.iconv_ver_num as uint)
+    }
+    else {
+      None
+    }
+  }
+
+  pub fn ssh_version<'a>(&'a self) -> Option<&'a str> {
+    as_str(self.libssh_version)
+  }
 }
 
 #[deriving(Clone)]
+#[allow(raw_pointer_deriving)] // TODO: Implement this by hand
 pub struct Protocols<'a> {
   curr: **c_char
 }
@@ -182,7 +216,7 @@ impl<'a> Iterator<&'a str> for Protocols<'a> {
       }
 
       self.curr = self.curr.offset(1);
-      Some(as_str(proto))
+      as_str(proto)
     }
   }
 }
@@ -206,10 +240,14 @@ impl<'a> fmt::Show for Protocols<'a> {
   }
 }
 
-fn as_str<'a>(p: *c_char) -> &'a str {
+fn as_str<'a>(p: *c_char) -> Option<&'a str> {
+  if p == ptr::null() {
+    return None;
+  }
+
   unsafe {
     let v = CString::new(p, false);
-    mem::transmute(v.as_str().unwrap())
+    mem::transmute(v.as_str())
   }
 }
 

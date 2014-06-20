@@ -23,5 +23,5 @@ pub fn test_simple_head() {
   assert!(res.get_code() == 200, "code is {}", res.get_code());
   assert!(res.get_body() == []);
   assert!(res.get_headers().len() == 1);
-  assert!(res.get_header("Content-Length") == ["5".to_string()]);
+  assert!(res.get_header("content-length") == ["5".to_string()]);
 }

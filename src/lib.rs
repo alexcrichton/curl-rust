@@ -10,8 +10,9 @@ pub use response::{Headers,Response};
 
 // Version accessors
 pub use ffi::version::{
+  Version,
   version,
-  ssl_version
+  version_info
 };
 
 mod body;

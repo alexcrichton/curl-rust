@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use libc::{c_int};
 
 static STRING: c_int   = 0x100000;
@@ -10,7 +12,7 @@ static TYPEMASK: c_int = 0xf00000;
 pub type Key = c_int;
 
 macro_rules! DEFINFO(
-  ($name:ident, $ty:ident, $num:expr) => (#[allow(dead_code)] pub static $name: Key = $ty + $num;);
+  ($name:ident, $ty:ident, $num:expr) => (pub static $name: Key = $ty + $num;);
 )
 
 DEFINFO!(EFFECTIVE_URL, STRING, 1)

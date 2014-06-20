@@ -1,4 +1,4 @@
-use std::{mem,ptr};
+use std::{ptr};
 use libc::{c_void};
 use super::opt::OptVal;
 
@@ -21,10 +21,6 @@ impl List {
       len: 0,
       head: ptr::null()
     }
-  }
-
-  pub fn push_str(&mut self, val: &str) {
-    self.push_bytes(val.as_bytes());
   }
 
   pub fn push_bytes(&mut self, val: &[u8]) {

@@ -1,14 +1,8 @@
-use libc::{c_long,size_t};
-use url::Url;
-use std::c_vec::CVec;
-use std::collections::HashMap;
-use std::{io,mem};
 use super::ffi::easy::Easy;
 use super::body::{Body,ToBody};
 use super::ffi;
-use super::ffi::{consts,easy,err,info,opt};
-use {ErrCode,Response,header};
-use std::io::stdio::stdout;
+use super::ffi::opt;
+use {ErrCode,Response};
 
 static DEFAULT_TIMEOUT_MS: uint = 30_000;
 
@@ -142,7 +136,7 @@ impl<'a, 'b> Request<'a, 'b> {
     self
   }
 
-  pub fn exec(mut self) -> Result<Response, ErrCode> {
+  pub fn exec(self) -> Result<Response, ErrCode> {
     let Request { err, handle, mut headers, mut body, body_type, content_type, expect_continue, .. } = self;
 
     match err {

@@ -1,5 +1,5 @@
 use std::c_vec::CVec;
-use std::{io,mem,str};
+use std::{io,mem};
 use std::collections::HashMap;
 use libc::{c_void,c_long,size_t};
 use super::{consts,err,info,opt};

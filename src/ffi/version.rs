@@ -1,8 +1,11 @@
+#![allow(non_camel_case_types)]
+
 use std::c_str::CString;
+use std::mem;
 use libc::{c_char,c_int,c_uint,c_long};
 
 #[repr(C)]
-pub enum CURLversion {
+enum CURLversion {
   CURLVERSION_FIRST,
   CURLVERSION_SECOND,
   CURLVERSION_THIRD,
@@ -10,9 +13,9 @@ pub enum CURLversion {
   CURLVERSION_LAST /* never actually use this */
 }
 
-pub static CURLVERSION_NOW: CURLversion = CURLVERSION_FOURTH;
+static CURLVERSION_NOW: CURLversion = CURLVERSION_FOURTH;
 
-pub struct curl_version_info_data {
+struct curl_version_info_data {
   pub age: CURLversion,
   pub version: *c_char,
   pub version_num: c_uint,
@@ -46,10 +49,19 @@ impl curl_version_info_data {
 #[link(name = "curl")]
 extern {
   fn curl_version() -> *c_char;
-  pub fn curl_version_info(t: CURLversion) -> &'static curl_version_info_data;
+  fn curl_version_info(t: CURLversion) -> &'static curl_version_info_data;
 }
 
-pub fn version() -> String {
-  let v = unsafe { CString::new(curl_version(), false) };
-  v.as_str().unwrap().to_string()
+pub fn version() -> &'static str {
+  unsafe {
+    let v = CString::new(curl_version(), false);
+    mem::transmute(v.as_str().unwrap())
+  }
+}
+
+pub fn ssl_version() -> &'static str {
+  unsafe {
+    let v = CString::new(curl_version_info(CURLVERSION_NOW).ssl_version, false);
+    mem::transmute(v.as_str().unwrap())
+  }
 }

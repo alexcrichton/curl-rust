@@ -8,7 +8,7 @@ pub enum Body<'a> {
 impl<'a> Body<'a> {
   pub fn get_size(&self) -> Option<uint> {
     match self {
-      &FixedBody(b, len) => Some(len),
+      &FixedBody(_, len) => Some(len),
       _ => None
     }
   }

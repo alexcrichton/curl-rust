@@ -4,13 +4,15 @@
 extern crate libc;
 extern crate url;
 
-use std::io;
-use ffi::{easy,opt};
-use body::Body;
-
 pub use ffi::err::ErrCode;
 pub use handle::{Handle,Request};
 pub use response::{Headers,Response};
+
+// Version accessors
+pub use ffi::version::{
+  version,
+  ssl_version
+};
 
 mod body;
 mod ffi;

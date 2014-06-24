@@ -14,11 +14,11 @@ macro_rules! ops(
 )
 
 macro_rules! send(
-  ($($e:expr),*) => (server::SendBytes(bytes!($($e),*)));
+  ($e:expr) => (server::SendBytes($e));
 )
 
 macro_rules! recv(
-  ($($e:expr),*) => (server::ReceiveBytes(bytes!($($e),*)));
+  ($e:expr) => (server::ReceiveBytes($e));
 )
 
 macro_rules! wait(

@@ -5,13 +5,13 @@ use super::server;
 pub fn test_simple_get() {
   let srv = server!(
     recv!(
-      "GET / HTTP/1.1\r\n\
-       Host: localhost:8482\r\n\
-       Accept: */*\r\n\r\n"), // Send the data
+      b"GET / HTTP/1.1\r\n\
+        Host: localhost:8482\r\n\
+        Accept: */*\r\n\r\n"), // Send the data
     send!(
-      "HTTP/1.1 200 OK\r\n\
-       Content-Length: 5\r\n\r\n\
-       Hello\r\n")); // Sends
+      b"HTTP/1.1 200 OK\r\n\
+        Content-Length: 5\r\n\r\n\
+        Hello\r\n")); // Sends
 
   let res = handle()
     .get("http://localhost:8482")
@@ -29,14 +29,14 @@ pub fn test_simple_get() {
 pub fn test_get_with_custom_headers() {
   let srv = server!(
     recv!(
-      "GET / HTTP/1.1\r\n\
-       Host: localhost:8482\r\n\
-       Accept: */*\r\n\
-       User-Agent: Zomg Test\r\n\r\n"),
+      b"GET / HTTP/1.1\r\n\
+        Host: localhost:8482\r\n\
+        Accept: */*\r\n\
+        User-Agent: Zomg Test\r\n\r\n"),
     send!(
-      "HTTP/1.1 200 OK\r\n\
-       Content-Length: 5\r\n\r\n\
-       Hello\r\n\r\n"));
+      b"HTTP/1.1 200 OK\r\n\
+        Content-Length: 5\r\n\r\n\
+        Hello\r\n\r\n"));
 
   let res = handle()
     .get("http://localhost:8482")

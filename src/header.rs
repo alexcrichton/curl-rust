@@ -215,7 +215,7 @@ mod test {
 
   #[test]
   pub fn test_parsing_invalid_bytes() {
-    let res = parse(bytes!("fo", 156, "o: zomg"));
+    let res = parse(b"fo\x9co: zomg");
     assert!(res.is_none());
   }
 }

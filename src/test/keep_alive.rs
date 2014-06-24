@@ -6,21 +6,21 @@ use super::server;
 pub fn test_get_requests() {
   let srv = server!(
     recv!(
-      "GET / HTTP/1.1\r\n\
-       Host: localhost:8482\r\n\
-       Accept: */*\r\n\r\n"),
+      b"GET / HTTP/1.1\r\n\
+        Host: localhost:8482\r\n\
+        Accept: */*\r\n\r\n"),
     send!(
-      "HTTP/1.1 200 OK\r\n\
-       Content-Length: 5\r\n\r\n\
-       Hello\r\n\r\n"),
+      b"HTTP/1.1 200 OK\r\n\
+        Content-Length: 5\r\n\r\n\
+        Hello\r\n\r\n"),
     recv!(
-      "GET /next HTTP/1.1\r\n\
-       Host: localhost:8482\r\n\
-       Accept: */*\r\n\r\n"),
+      b"GET /next HTTP/1.1\r\n\
+        Host: localhost:8482\r\n\
+        Accept: */*\r\n\r\n"),
     send!(
-      "HTTP/1.1 200 OK\r\n\
-       Content-Length: 5\r\n\r\n\
-       World\r\n\r\n"));
+      b"HTTP/1.1 200 OK\r\n\
+        Content-Length: 5\r\n\r\n\
+        World\r\n\r\n"));
 
   let mut handle = handle();
   let res1 = handle.get("http://localhost:8482").exec().unwrap();
@@ -39,25 +39,25 @@ pub fn test_get_requests() {
 pub fn test_post_get_requests() {
   let srv = server!(
     recv!(
-      "POST / HTTP/1.1\r\n\
-       Host: localhost:8482\r\n\
-       Accept: */*\r\n\
-       Content-Length: 5\r\n\
-       Content-Type: application/octet-stream\r\n\
-       \r\n\
-       Hello"),
+      b"POST / HTTP/1.1\r\n\
+        Host: localhost:8482\r\n\
+        Accept: */*\r\n\
+        Content-Length: 5\r\n\
+        Content-Type: application/octet-stream\r\n\
+        \r\n\
+        Hello"),
     send!(
-      "HTTP/1.1 200 OK\r\n\
-       Content-Length: 5\r\n\r\n\
-       World\r\n\r\n"),
+      b"HTTP/1.1 200 OK\r\n\
+        Content-Length: 5\r\n\r\n\
+        World\r\n\r\n"),
     recv!(
-      "GET /next HTTP/1.1\r\n\
-       Host: localhost:8482\r\n\
-       Accept: */*\r\n\r\n"),
+      b"GET /next HTTP/1.1\r\n\
+        Host: localhost:8482\r\n\
+        Accept: */*\r\n\r\n"),
     send!(
-      "HTTP/1.1 200 OK\r\n\
-       Content-Length: 4\r\n\r\n\
-       NEXT\r\n\r\n"));
+      b"HTTP/1.1 200 OK\r\n\
+        Content-Length: 4\r\n\r\n\
+        NEXT\r\n\r\n"));
 
   let mut handle = handle();
   let res1 = handle.post("http://localhost:8482", "Hello").exec().unwrap();

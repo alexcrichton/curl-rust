@@ -5,17 +5,17 @@ use super::server;
 pub fn test_post_binary_with_slice() {
   let srv = server!(
     recv!(
-      "POST / HTTP/1.1\r\n\
-       Host: localhost:8482\r\n\
-       Accept: */*\r\n\
-       Content-Length: 11\r\n\
-       Content-Type: application/octet-stream\r\n\
-       \r\n\
-       Foo Bar Baz"),
+      b"POST / HTTP/1.1\r\n\
+        Host: localhost:8482\r\n\
+        Accept: */*\r\n\
+        Content-Length: 11\r\n\
+        Content-Type: application/octet-stream\r\n\
+        \r\n\
+        Foo Bar Baz"),
     send!(
-      "HTTP/1.1 200 OK\r\n\
-       Content-Length: 5\r\n\r\n\
-       Hello\r\n\r\n"));
+      b"HTTP/1.1 200 OK\r\n\
+        Content-Length: 5\r\n\r\n\
+        Hello\r\n\r\n"));
 
   let res = ::handle()
     .post("http://localhost:8482", "Foo Bar Baz")
@@ -31,17 +31,17 @@ pub fn test_post_binary_with_slice() {
 pub fn test_post_binary_with_string() {
   let srv = server!(
     recv!(
-      "POST / HTTP/1.1\r\n\
-       Host: localhost:8482\r\n\
-       Accept: */*\r\n\
-       Content-Length: 11\r\n\
-       Content-Type: application/octet-stream\r\n\
-       \r\n\
-       Foo Bar Baz"),
+      b"POST / HTTP/1.1\r\n\
+        Host: localhost:8482\r\n\
+        Accept: */*\r\n\
+        Content-Length: 11\r\n\
+        Content-Type: application/octet-stream\r\n\
+        \r\n\
+        Foo Bar Baz"),
     send!(
-      "HTTP/1.1 200 OK\r\n\
-       Content-Length: 5\r\n\r\n\
-       Hello\r\n\r\n"));
+      b"HTTP/1.1 200 OK\r\n\
+        Content-Length: 5\r\n\r\n\
+        Hello\r\n\r\n"));
 
   let body = "Foo Bar Baz".to_string();
   let res = ::handle()
@@ -58,20 +58,20 @@ pub fn test_post_binary_with_string() {
 pub fn test_post_binary_with_reader() {
   let srv = server!(
     recv!(
-      "POST / HTTP/1.1\r\n\
-       Host: localhost:8482\r\n\
-       Accept: */*\r\n\
-       Transfer-Encoding: chunked\r\n\
-       Content-Type: application/octet-stream\r\n\
-       \r\n\
-       b\r\n\
-       Foo Bar Baz"),
+      b"POST / HTTP/1.1\r\n\
+        Host: localhost:8482\r\n\
+        Accept: */*\r\n\
+        Transfer-Encoding: chunked\r\n\
+        Content-Type: application/octet-stream\r\n\
+        \r\n\
+        b\r\n\
+        Foo Bar Baz"),
     send!(
-      "HTTP/1.1 200 OK\r\n\
-       Content-Length: 5\r\n\r\n\
-       Hello\r\n\r\n"));
+      b"HTTP/1.1 200 OK\r\n\
+        Content-Length: 5\r\n\r\n\
+        Hello\r\n\r\n"));
 
-  let mut body = MemReader::new(Vec::from_slice(bytes!("Foo Bar Baz")));
+  let mut body = MemReader::new(Vec::from_slice(b"Foo Bar Baz"));
   let res = ::handle()
     .post("http://localhost:8482", &mut body as &mut Reader)
     .exec().unwrap();

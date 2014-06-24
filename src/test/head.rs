@@ -5,13 +5,13 @@ use super::server;
 pub fn test_simple_head() {
   let srv = server!(
     recv!(
-      "HEAD / HTTP/1.1\r\n\
-       Host: localhost:8482\r\n\
-       Accept: */*\r\n\
-       \r\n"), // Send the data
+      b"HEAD / HTTP/1.1\r\n\
+        Host: localhost:8482\r\n\
+        Accept: */*\r\n\
+        \r\n"), // Send the data
     send!(
-      "HTTP/1.1 200 OK\r\n\
-       Content-Length: 5\r\n\r\n"));
+      b"HTTP/1.1 200 OK\r\n\
+        Content-Length: 5\r\n\r\n"));
 
   let res = handle()
     .head("http://localhost:8482")

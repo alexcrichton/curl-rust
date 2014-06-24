@@ -1,3 +1,4 @@
+use std::sync::{Once, ONCE_INIT};
 use std::c_vec::CVec;
 use std::{io,mem};
 use std::collections::HashMap;
@@ -16,6 +17,7 @@ extern {
   pub fn curl_easy_perform(curl: *CURL) -> ErrCode;
   pub fn curl_easy_cleanup(curl: *CURL);
   pub fn curl_easy_getinfo(curl: *CURL, info: info::Key, ...) -> ErrCode;
+  pub fn curl_global_cleanup();
 }
 
 pub struct Easy {
@@ -24,6 +26,12 @@ pub struct Easy {
 
 impl Easy {
   pub fn new() -> Easy {
+    // Schedule curl to be cleaned up after we're done with this whole process
+    static mut INIT: Once = ONCE_INIT;
+    unsafe {
+      INIT.doit(|| ::std::rt::at_exit(proc() curl_global_cleanup()))
+    }
+
     Easy {
       curl: unsafe { curl_easy_init() }
     }

@@ -129,7 +129,7 @@ pub enum ErrCode {
 
 #[link(name = "curl")]
 extern {
-  fn curl_easy_strerror(code: ErrCode) -> *c_char;
+  fn curl_easy_strerror(code: ErrCode) -> *const c_char;
 }
 
 impl ErrCode {

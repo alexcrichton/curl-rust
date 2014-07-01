@@ -6,13 +6,13 @@ type Node = c_void;
 
 #[link(name = "curl")]
 extern {
-  fn curl_slist_append(list: *Node, val: *u8) -> *Node;
-  fn curl_slist_free_all(list: *Node);
+  fn curl_slist_append(list: *const Node, val: *const u8) -> *const Node;
+  fn curl_slist_free_all(list: *const Node);
 }
 
 pub struct List {
   len: uint,
-  head: *Node,
+  head: *const Node,
 }
 
 impl List {
@@ -48,7 +48,7 @@ impl Drop for List {
 }
 
 impl<'a> OptVal for &'a List {
-  fn with_c_repr(self, f: |*c_void|) {
-    f(self.head as *c_void)
+  fn with_c_repr(self, f: |*const c_void|) {
+    f(self.head as *const c_void)
   }
 }

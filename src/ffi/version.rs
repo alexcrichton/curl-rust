@@ -36,30 +36,30 @@ struct curl_version_info_data {
   #[allow(dead_code)]
   age: CURLversion,
 
-  version: *c_char,
+  version: *const c_char,
   version_num: c_uint,
-  host: *c_char,
+  host: *const c_char,
   features: c_int,
-  ssl_version: *c_char,
+  ssl_version: *const c_char,
 
   #[allow(dead_code)]
   ssl_version_num: c_long,
 
-  libz_version: *c_char,
+  libz_version: *const c_char,
 
   /* protocols is terminated by an entry with a NULL protoname */
-  protocols: **c_char,
+  protocols: *const *const c_char,
 
   /* The fields below this were added in CURL_VERSION_SECOND */
-  ares: *c_char,
+  ares: *const c_char,
   ares_num: c_int,
 
   /* This field was added in CURL_VERSION_THIRD */
-  libidn: *c_char,
+  libidn: *const c_char,
 
   /* These field were added in CURL_VERSION_FOURTH */
   iconv_ver_num: c_int,
-  libssh_version: *c_char,
+  libssh_version: *const c_char,
 }
 
 pub type Version = curl_version_info_data;
@@ -203,7 +203,7 @@ impl curl_version_info_data {
 #[deriving(Clone)]
 #[allow(raw_pointer_deriving)] // TODO: Implement this by hand
 pub struct Protocols<'a> {
-  curr: **c_char
+  curr: *const *const c_char
 }
 
 impl<'a> Iterator<&'a str> for Protocols<'a> {
@@ -240,7 +240,7 @@ impl<'a> fmt::Show for Protocols<'a> {
   }
 }
 
-fn as_str<'a>(p: *c_char) -> Option<&'a str> {
+fn as_str<'a>(p: *const c_char) -> Option<&'a str> {
   if p == ptr::null() {
     return None;
   }
@@ -253,7 +253,7 @@ fn as_str<'a>(p: *c_char) -> Option<&'a str> {
 
 #[link(name = "curl")]
 extern {
-  fn curl_version() -> *c_char;
+  fn curl_version() -> *const c_char;
   fn curl_version_info(t: CURLversion) -> &'static curl_version_info_data;
 }
 

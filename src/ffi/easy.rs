@@ -12,16 +12,16 @@ type CURL = c_void;
 
 #[link(name = "curl")]
 extern {
-  pub fn curl_easy_init() -> *CURL;
-  pub fn curl_easy_setopt(curl: *CURL, option: opt::Opt, ...) -> ErrCode;
-  pub fn curl_easy_perform(curl: *CURL) -> ErrCode;
-  pub fn curl_easy_cleanup(curl: *CURL);
-  pub fn curl_easy_getinfo(curl: *CURL, info: info::Key, ...) -> ErrCode;
+  pub fn curl_easy_init() -> *mut CURL;
+  pub fn curl_easy_setopt(curl: *mut CURL, option: opt::Opt, ...) -> ErrCode;
+  pub fn curl_easy_perform(curl: *mut CURL) -> ErrCode;
+  pub fn curl_easy_cleanup(curl: *mut CURL);
+  pub fn curl_easy_getinfo(curl: *const CURL, info: info::Key, ...) -> ErrCode;
   pub fn curl_global_cleanup();
 }
 
 pub struct Easy {
-  curl: *CURL
+  curl: *mut CURL
 }
 
 impl Easy {
@@ -92,7 +92,7 @@ impl Easy {
 
   fn get_info_long(&self, key: info::Key) -> Result<c_long, err::ErrCode> {
     let v: c_long = 0;
-    let res = unsafe { curl_easy_getinfo(self.curl, key, &v) };
+    let res = unsafe { curl_easy_getinfo(self.curl as *const CURL, key, &v) };
 
     if !res.is_success() {
       return Err(res);

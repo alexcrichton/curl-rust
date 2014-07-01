@@ -65,7 +65,7 @@ impl<'a, 'b> Request<'a, 'b> {
   fn new<'a, 'b>(handle: &'a mut Handle, method: Method, body: Option<Body<'b>>) -> Request<'a, 'b> {
     macro_rules! set_method(
       ($val:expr) => ({
-        match handle.easy.setopt($val, 1) {
+        match handle.easy.setopt($val, 1i) {
           Ok(_) => None,
           Err(e) => Some(e)
         }
@@ -145,7 +145,7 @@ impl<'a, 'b> Request<'a, 'b> {
     }
 
     // Clear custom headers set from the previous request
-    try!(handle.easy.setopt(opt::HTTPHEADER, 0));
+    try!(handle.easy.setopt(opt::HTTPHEADER, 0u));
 
     match body.as_ref() {
       None => {}

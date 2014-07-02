@@ -28,23 +28,23 @@ impl Handle {
   }
 
   pub fn get<'a, 'b>(&'a mut self, uri: &str) -> Request<'a, 'b> {
-    Request::new(self, Get, None).uri(uri)
+    Request::new(self, Get).uri(uri)
   }
 
   pub fn head<'a, 'b>(&'a mut self, uri: &str) -> Request<'a, 'b> {
-    Request::new(self, Head, None).uri(uri)
+    Request::new(self, Head).uri(uri)
   }
 
   pub fn post<'a, 'b, B: ToBody<'b>>(&'a mut self, uri: &str, body: B) -> Request<'a, 'b> {
-    Request::new(self, Post, Some(body.to_body())).uri(uri)
+    Request::new(self, Post).uri(uri).body(body)
   }
 
   pub fn put<'a, 'b, B: ToBody<'b>>(&'a mut self, uri: &str, body: B) -> Request<'a, 'b> {
-    Request::new(self, Put, Some(body.to_body())).uri(uri)
+    Request::new(self, Put).uri(uri).body(body)
   }
 
-  pub fn delete<'a, 'b, B: ToBody<'b>>(&'a mut self, uri: &str, body: Option<B>) -> Request<'a, 'b> {
-    Request::new(self, Delete, body.map(|b| b.to_body())).uri(uri)
+  pub fn delete<'a, 'b>(&'a mut self, uri: &str) -> Request<'a, 'b> {
+    Request::new(self, Delete).uri(uri)
   }
 }
 
@@ -62,6 +62,7 @@ pub enum Method {
 pub struct Request<'a, 'b> {
   err: Option<ErrCode>,
   handle: &'a mut Handle,
+  method: Method,
   headers: ffi::List,
   body: Option<Body<'b>>,
   body_type: bool, // whether or not the body type was set
@@ -71,43 +72,13 @@ pub struct Request<'a, 'b> {
 }
 
 impl<'a, 'b> Request<'a, 'b> {
-  fn new<'a, 'b>(handle: &'a mut Handle, method: Method, body: Option<Body<'b>>) -> Request<'a, 'b> {
-    macro_rules! set_method(
-      ($val:expr) => ({
-        match handle.easy.setopt($val, 1i) {
-          Ok(_) => None,
-          Err(e) => Some(e)
-        }
-      });
-    )
-
-    // TODO: track errors
-    let err = match method {
-      Get => set_method!(opt::HTTPGET),
-      Head => set_method!(opt::NOBODY),
-      Post => set_method!(opt::POST),
-      Put => set_method!(opt::UPLOAD),
-      Delete => {
-        debug!("custom request: DELETE");
-        if body.is_some() {
-          set_method!(opt::UPLOAD)
-        }
-        else {
-          None
-        }.or(
-          match handle.easy.setopt(opt::CUSTOMREQUEST, "DELETE") {
-            Ok(_) => None,
-            Err(e) => Some(e)
-          })
-      }
-      _ => { unimplemented!() }
-    };
-
+  fn new<'a, 'b>(handle: &'a mut Handle, method: Method) -> Request<'a, 'b> {
     Request {
-      err: err,
+      err: None,
       handle: handle,
+      method: method,
       headers: ffi::List::new(),
-      body: body,
+      body: None,
       body_type: false,
       content_type: false,
       expect_continue: false,
@@ -121,6 +92,11 @@ impl<'a, 'b> Request<'a, 'b> {
       Err(e) => self.err = Some(e)
     }
 
+    self
+  }
+
+  pub fn body<B: ToBody<'b>>(mut self, body: B) -> Request<'a, 'b> {
+    self.body = Some(body.to_body());
     self
   }
 
@@ -166,7 +142,19 @@ impl<'a, 'b> Request<'a, 'b> {
   }
 
   pub fn exec(self) -> Result<Response, ErrCode> {
-    let Request { err, handle, mut headers, mut body, body_type, content_type, expect_continue, progress, .. } = self;
+    // Deconstruct the struct
+    let Request {
+      err,
+      handle,
+      method,
+      mut headers,
+      mut body,
+      body_type,
+      content_type,
+      expect_continue,
+      progress,
+      ..
+    } = self;
 
     match err {
       Some(e) => return Err(e),
@@ -176,16 +164,34 @@ impl<'a, 'b> Request<'a, 'b> {
     // Clear custom headers set from the previous request
     try!(handle.easy.setopt(opt::HTTPHEADER, 0u));
 
+    match method {
+      Get => try!(handle.easy.setopt(opt::HTTPGET, 1i)),
+      Head => try!(handle.easy.setopt(opt::NOBODY, 1i)),
+      Post => try!(handle.easy.setopt(opt::POST, 1i)),
+      Put => try!(handle.easy.setopt(opt::UPLOAD, 1i)),
+      Delete => {
+        if body.is_some() {
+          try!(handle.easy.setopt(opt::UPLOAD, 1i));
+        }
+
+        try!(handle.easy.setopt(opt::CUSTOMREQUEST, "DELETE"));
+      }
+      _ => unimplemented!()
+    }
+
     match body.as_ref() {
       None => {}
       Some(body) => {
+        debug!("handling body");
+
         if !body_type {
           match body.get_size() {
             Some(len) => {
-              // TODO: Be smart about setting these options
-              debug!("setting INFILESIZE={}", len);
-              try!(handle.easy.setopt(opt::POSTFIELDSIZE, len));
-              try!(handle.easy.setopt(opt::INFILESIZE, len));
+              match method {
+                Post => try!(handle.easy.setopt(opt::POSTFIELDSIZE, len)),
+                Put | Delete => try!(handle.easy.setopt(opt::INFILESIZE, len)),
+                _ => {}
+              }
             }
             None => append_header(&mut headers, "Transfer-Encoding", "chunked")
           }

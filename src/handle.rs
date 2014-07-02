@@ -42,6 +42,10 @@ impl Handle {
   pub fn put<'a, 'b, B: ToBody<'b>>(&'a mut self, uri: &str, body: B) -> Request<'a, 'b> {
     Request::new(self, Put, Some(body.to_body())).uri(uri)
   }
+
+  pub fn delete<'a, 'b, B: ToBody<'b>>(&'a mut self, uri: &str, body: Option<B>) -> Request<'a, 'b> {
+    Request::new(self, Delete, body.map(|b| b.to_body())).uri(uri)
+  }
 }
 
 pub enum Method {
@@ -83,6 +87,19 @@ impl<'a, 'b> Request<'a, 'b> {
       Head => set_method!(opt::NOBODY),
       Post => set_method!(opt::POST),
       Put => set_method!(opt::UPLOAD),
+      Delete => {
+        debug!("custom request: DELETE");
+        if body.is_some() {
+          set_method!(opt::UPLOAD)
+        }
+        else {
+          None
+        }.or(
+          match handle.easy.setopt(opt::CUSTOMREQUEST, "DELETE") {
+            Ok(_) => None,
+            Err(e) => Some(e)
+          })
+      }
       _ => { unimplemented!() }
     };
 

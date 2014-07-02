@@ -30,4 +30,5 @@ mod get;
 mod head;
 mod post;
 mod put;
+mod delete;
 mod keep_alive;

@@ -69,6 +69,8 @@ impl Easy {
         None => 0
       };
 
+      debug!("setting read fn: {}", body_p != 0);
+
       // Set callback options
       curl_easy_setopt(self.curl, opt::READFUNCTION, curl_read_fn);
       curl_easy_setopt(self.curl, opt::READDATA, body_p);

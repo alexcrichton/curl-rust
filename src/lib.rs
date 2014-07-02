@@ -3,15 +3,12 @@
 #![feature(phase)]
 
 extern crate libc;
-extern crate url;
 
 #[phase(plugin, link)]
 extern crate log;
 
 pub use ffi::easy::ProgressCb;
 pub use ffi::err::ErrCode;
-pub use handle::{Handle,Request};
-pub use response::{Headers,Response};
 
 // Version accessors
 pub use ffi::version::{
@@ -21,16 +18,8 @@ pub use ffi::version::{
   Protocols
 };
 
-mod body;
 mod ffi;
-mod handle;
-mod header;
-mod response;
+pub mod http;
 
 #[cfg(test)]
 mod test;
-
-#[inline]
-pub fn handle() -> Handle {
-  Handle::new()
-}

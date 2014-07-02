@@ -1,4 +1,4 @@
-use {handle};
+use http::handle;
 use super::server;
 
 #[test]

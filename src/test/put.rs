@@ -1,3 +1,4 @@
+use http;
 use super::server;
 
 #[test]
@@ -16,7 +17,7 @@ pub fn test_put_binary_with_slice() {
         Content-Length: 5\r\n\r\n\
         Hello\r\n\r\n"));
 
-  let res = ::handle()
+  let res = http::handle()
     .put("http://localhost:8482", "Foo Bar Baz")
     .exec().unwrap();
 

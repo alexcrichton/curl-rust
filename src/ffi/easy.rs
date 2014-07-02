@@ -5,8 +5,8 @@ use std::collections::HashMap;
 use libc::{c_void,c_int,c_long,c_double,size_t};
 use super::{consts,err,info,opt};
 use super::err::ErrCode;
-use super::super::body::Body;
-use {header,Response};
+use http::body::Body;
+use http::{header,Response};
 
 type CURL = c_void;
 pub type ProgressCb<'a> = |uint, uint, uint, uint|:'a -> ();

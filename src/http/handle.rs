@@ -1,8 +1,9 @@
-use super::ffi::easy::Easy;
-use super::body::{Body,ToBody};
-use super::ffi;
-use super::ffi::opt;
-use {ProgressCb,ErrCode,Response};
+use ffi;
+use ffi::opt;
+use ffi::easy::Easy;
+use http::Response;
+use http::body::{Body,ToBody};
+use {ProgressCb,ErrCode};
 
 static DEFAULT_TIMEOUT_MS: uint = 30_000;
 

@@ -1,5 +1,5 @@
 use std::str::from_utf8_lossy;
-use {handle};
+use http::handle;
 use super::server;
 
 #[test]

@@ -1,4 +1,5 @@
 use std::io::MemReader;
+use http;
 use super::server;
 
 #[test]
@@ -17,7 +18,7 @@ pub fn test_post_binary_with_slice() {
         Content-Length: 5\r\n\r\n\
         Hello\r\n\r\n"));
 
-  let res = ::handle()
+  let res = http::handle()
     .post("http://localhost:8482", "Foo Bar Baz")
     .exec().unwrap();
 
@@ -44,7 +45,7 @@ pub fn test_post_binary_with_string() {
         Hello\r\n\r\n"));
 
   let body = "Foo Bar Baz".to_string();
-  let res = ::handle()
+  let res = http::handle()
     .post("http://localhost:8482", &body)
     .exec().unwrap();
 
@@ -72,7 +73,7 @@ pub fn test_post_binary_with_reader() {
         Hello\r\n\r\n"));
 
   let mut body = MemReader::new(Vec::from_slice(b"Foo Bar Baz"));
-  let res = ::handle()
+  let res = http::handle()
     .post("http://localhost:8482", &mut body as &mut Reader)
     .exec().unwrap();
 

@@ -1,3 +1,4 @@
+use http;
 use super::server;
 
 #[test]
@@ -13,7 +14,7 @@ pub fn test_delete_with_no_body() {
         Content-Length: 5\r\n\r\n\
         Hello\r\n\r\n"));
 
-  let res = ::handle()
+  let res = http::handle()
     .delete("http://localhost:8482")
     .exec(); // .unwrap();
 
@@ -40,7 +41,7 @@ pub fn test_delete_binary_with_slice() {
         Content-Length: 5\r\n\r\n\
         Hello\r\n\r\n"));
 
-  let res = ::handle()
+  let res = http::handle()
     .delete("http://localhost:8482")
     .body("Foo Bar Baz")
     .exec(); // .unwrap();

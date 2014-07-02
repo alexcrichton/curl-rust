@@ -1,8 +1,12 @@
 #![crate_id = "curl"]
 #![feature(macro_rules)]
+#![feature(phase)]
 
 extern crate libc;
 extern crate url;
+
+#[phase(plugin, link)]
+extern crate log;
 
 pub use ffi::easy::ProgressCb;
 pub use ffi::err::ErrCode;

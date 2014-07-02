@@ -38,6 +38,10 @@ impl Handle {
   pub fn post<'a, 'b, B: ToBody<'b>>(&'a mut self, uri: &str, body: B) -> Request<'a, 'b> {
     Request::new(self, Post, Some(body.to_body())).uri(uri)
   }
+
+  pub fn put<'a, 'b, B: ToBody<'b>>(&'a mut self, uri: &str, body: B) -> Request<'a, 'b> {
+    Request::new(self, Put, Some(body.to_body())).uri(uri)
+  }
 }
 
 pub enum Method {
@@ -78,6 +82,7 @@ impl<'a, 'b> Request<'a, 'b> {
       Get => set_method!(opt::HTTPGET),
       Head => set_method!(opt::NOBODY),
       Post => set_method!(opt::POST),
+      Put => set_method!(opt::UPLOAD),
       _ => { unimplemented!() }
     };
 
@@ -159,7 +164,12 @@ impl<'a, 'b> Request<'a, 'b> {
       Some(body) => {
         if !body_type {
           match body.get_size() {
-            Some(len) => append_header(&mut headers, "Content-Length", len.to_str().as_slice()),
+            Some(len) => {
+              // TODO: Be smart about setting these options
+              debug!("setting INFILESIZE={}", len);
+              try!(handle.easy.setopt(opt::POSTFIELDSIZE, len));
+              try!(handle.easy.setopt(opt::INFILESIZE, len));
+            }
             None => append_header(&mut headers, "Transfer-Encoding", "chunked")
           }
         }
@@ -183,6 +193,8 @@ impl<'a, 'b> Request<'a, 'b> {
 }
 
 fn append_header(list: &mut ffi::List, name: &str, val: &str) {
+  debug!("append header; name={}; val={}", name, val);
+
   let mut c_str = Vec::with_capacity(name.len() + val.len() + 3);
   c_str.push_all(name.as_bytes());
   c_str.push(':' as u8);

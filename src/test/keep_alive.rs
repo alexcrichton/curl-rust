@@ -42,8 +42,8 @@ pub fn test_post_get_requests() {
       b"POST / HTTP/1.1\r\n\
         Host: localhost:8482\r\n\
         Accept: */*\r\n\
-        Content-Length: 5\r\n\
         Content-Type: application/octet-stream\r\n\
+        Content-Length: 5\r\n\
         \r\n\
         Hello"),
     send!(
@@ -59,7 +59,7 @@ pub fn test_post_get_requests() {
         Content-Length: 4\r\n\r\n\
         NEXT\r\n\r\n"));
 
-  let mut handle = handle();
+  let mut handle = handle().timeout(100);
   let res1 = handle.post("http://localhost:8482", "Hello").exec().unwrap();
   let res2 = handle.get("http://localhost:8482/next").exec().unwrap();
 

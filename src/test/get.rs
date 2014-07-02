@@ -68,7 +68,7 @@ pub fn test_get_tracking_progress() {
 
   let res = handle()
     .get("http://localhost:8482")
-    .progress(|dltotal, dlnow, ultotal, ulnow| {
+    .progress(|_, dlnow, _, _| {
       cnt = cnt + 1u;
       dl = dlnow
     })

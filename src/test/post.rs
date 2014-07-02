@@ -8,8 +8,8 @@ pub fn test_post_binary_with_slice() {
       b"POST / HTTP/1.1\r\n\
         Host: localhost:8482\r\n\
         Accept: */*\r\n\
-        Content-Length: 11\r\n\
         Content-Type: application/octet-stream\r\n\
+        Content-Length: 11\r\n\
         \r\n\
         Foo Bar Baz"),
     send!(
@@ -34,8 +34,8 @@ pub fn test_post_binary_with_string() {
       b"POST / HTTP/1.1\r\n\
         Host: localhost:8482\r\n\
         Accept: */*\r\n\
-        Content-Length: 11\r\n\
         Content-Type: application/octet-stream\r\n\
+        Content-Length: 11\r\n\
         \r\n\
         Foo Bar Baz"),
     send!(

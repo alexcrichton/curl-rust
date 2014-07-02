@@ -29,4 +29,5 @@ macro_rules! wait(
 mod get;
 mod head;
 mod post;
+mod put;
 mod keep_alive;

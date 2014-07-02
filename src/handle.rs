@@ -2,7 +2,7 @@ use super::ffi::easy::Easy;
 use super::body::{Body,ToBody};
 use super::ffi;
 use super::ffi::opt;
-use {ErrCode,Response};
+use {ProgressCb,ErrCode,Response};
 
 static DEFAULT_TIMEOUT_MS: uint = 30_000;
 
@@ -59,6 +59,7 @@ pub struct Request<'a, 'b> {
   body_type: bool, // whether or not the body type was set
   content_type: bool, // whether or not the content type was set
   expect_continue: bool, // whether to expect a 100 continue from the server
+  progress: Option<ProgressCb<'b>>,
 }
 
 impl<'a, 'b> Request<'a, 'b> {
@@ -87,7 +88,8 @@ impl<'a, 'b> Request<'a, 'b> {
       body: body,
       body_type: false,
       content_type: false,
-      expect_continue: false
+      expect_continue: false,
+      progress: None
     }
   }
 
@@ -136,8 +138,13 @@ impl<'a, 'b> Request<'a, 'b> {
     self
   }
 
+  pub fn progress(mut self, cb: ProgressCb<'b>) -> Request<'a, 'b> {
+    self.progress = Some(cb);
+    self
+  }
+
   pub fn exec(self) -> Result<Response, ErrCode> {
-    let Request { err, handle, mut headers, mut body, body_type, content_type, expect_continue, .. } = self;
+    let Request { err, handle, mut headers, mut body, body_type, content_type, expect_continue, progress, .. } = self;
 
     match err {
       Some(e) => return Err(e),
@@ -171,7 +178,7 @@ impl<'a, 'b> Request<'a, 'b> {
       try!(handle.easy.setopt(opt::HTTPHEADER, &headers));
     }
 
-    handle.easy.perform(body.as_mut())
+    handle.easy.perform(body.as_mut(), progress)
   }
 }
 

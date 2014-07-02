@@ -2,13 +2,14 @@ use std::sync::{Once, ONCE_INIT};
 use std::c_vec::CVec;
 use std::{io,mem};
 use std::collections::HashMap;
-use libc::{c_void,c_long,size_t};
+use libc::{c_void,c_int,c_long,c_double,size_t};
 use super::{consts,err,info,opt};
 use super::err::ErrCode;
 use super::super::body::Body;
 use {header,Response};
 
 type CURL = c_void;
+pub type ProgressCb<'a> = |uint, uint, uint, uint|:'a -> ();
 
 #[link(name = "curl")]
 extern {
@@ -26,14 +27,15 @@ pub struct Easy {
 
 impl Easy {
   pub fn new() -> Easy {
-    // Schedule curl to be cleaned up after we're done with this whole process
-    static mut INIT: Once = ONCE_INIT;
-    unsafe {
-      INIT.doit(|| ::std::rt::at_exit(proc() curl_global_cleanup()))
-    }
+    // Ensure that curl is globally initialized
+    global_init();
 
     Easy {
-      curl: unsafe { curl_easy_init() }
+      curl: unsafe {
+        let p = curl_easy_init();
+        curl_easy_setopt(p, opt::NOPROGRESS, 0u);
+        p
+      }
     }
   }
 
@@ -52,13 +54,18 @@ impl Easy {
   }
 
   #[inline]
-  pub fn perform(&mut self, body: Option<&mut Body>) -> Result<Response, err::ErrCode> {
+  pub fn perform(&mut self, body: Option<&mut Body>, progress: Option<ProgressCb>) -> Result<Response, err::ErrCode> {
     let mut builder = ResponseBuilder::new();
 
     unsafe {
       let resp_p: uint = mem::transmute(&builder);
       let body_p: uint = match body {
         Some(b) => mem::transmute(b),
+        None => 0
+      };
+
+      let progress_p: uint = match progress.as_ref() {
+        Some(cb) => mem::transmute(cb),
         None => 0
       };
 
@@ -71,6 +78,9 @@ impl Easy {
 
       curl_easy_setopt(self.curl, opt::HEADERFUNCTION, curl_header_fn);
       curl_easy_setopt(self.curl, opt::HEADERDATA, resp_p);
+
+      curl_easy_setopt(self.curl, opt::PROGRESSFUNCTION, curl_progress_fn);
+      curl_easy_setopt(self.curl, opt::PROGRESSDATA, progress_p);
     }
 
     let err = unsafe { curl_easy_perform(self.curl) };
@@ -99,6 +109,15 @@ impl Easy {
     }
 
     Ok(v)
+  }
+}
+
+#[inline]
+fn global_init() {
+  // Schedule curl to be cleaned up after we're done with this whole process
+  static mut INIT: Once = ONCE_INIT;
+  unsafe {
+    INIT.doit(|| ::std::rt::at_exit(proc() curl_global_cleanup()))
   }
 }
 
@@ -158,7 +177,6 @@ impl ResponseBuilder {
  * ===== Callbacks =====
  */
 
-#[no_mangle]
 pub extern "C" fn curl_read_fn(p: *mut u8, size: size_t, nmemb: size_t, body: *mut Body) -> size_t {
   if body.is_null() {
     return 0;
@@ -178,7 +196,6 @@ pub extern "C" fn curl_read_fn(p: *mut u8, size: size_t, nmemb: size_t, body: *m
   }
 }
 
-#[no_mangle]
 pub extern "C" fn curl_write_fn(p: *mut u8, size: size_t, nmemb: size_t, resp: *mut ResponseBuilder) -> size_t {
   if !resp.is_null() {
     let builder: &mut ResponseBuilder = unsafe { mem::transmute(resp) };
@@ -189,7 +206,6 @@ pub extern "C" fn curl_write_fn(p: *mut u8, size: size_t, nmemb: size_t, resp: *
   size * nmemb
 }
 
-#[no_mangle]
 pub extern "C" fn curl_header_fn(p: *mut u8, size: size_t, nmemb: size_t, resp: &mut ResponseBuilder) -> size_t {
   // TODO: Skip the first call (it seems to be the status line)
 
@@ -203,4 +219,18 @@ pub extern "C" fn curl_header_fn(p: *mut u8, size: size_t, nmemb: size_t, resp: 
   }
 
   vec.len() as size_t
+}
+
+pub extern "C" fn curl_progress_fn(cb: *mut ProgressCb, dltotal: c_double, dlnow: c_double, ultotal: c_double, ulnow: c_double) -> c_int {
+  #[inline]
+  fn to_uint(v: c_double) -> uint {
+    if v > 0.0 { v as uint } else { 0 }
+  }
+
+  if !cb.is_null() {
+    let cb: &mut ProgressCb = unsafe { &mut *cb };
+    (*cb)(to_uint(dltotal), to_uint(dlnow), to_uint(ultotal), to_uint(ulnow));
+  }
+
+  0
 }

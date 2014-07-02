@@ -4,6 +4,7 @@
 extern crate libc;
 extern crate url;
 
+pub use ffi::easy::ProgressCb;
 pub use ffi::err::ErrCode;
 pub use handle::{Handle,Request};
 pub use response::{Headers,Response};

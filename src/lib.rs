@@ -1,4 +1,4 @@
-#![crate_id = "curl"]
+#![crate_name = "curl"]
 #![feature(macro_rules)]
 #![feature(phase)]
 

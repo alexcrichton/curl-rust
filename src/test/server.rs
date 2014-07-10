@@ -1,6 +1,7 @@
 use std::io::net::tcp::{TcpListener,TcpStream};
 use std::io::{Acceptor, Listener};
 use std::io::timer;
+use std::collections::HashSet;
 
 // Global handle to the running test HTTP server
 local_data_key!(handle: Handle)
@@ -90,7 +91,10 @@ impl OpSequence {
             }
           }
 
-          if b != act.as_slice() {
+          let req1 = parse_request(b.as_slice());
+          let req2 = parse_request(act.as_slice());
+
+          if req1 != req2 {
             return Err(format!(
                 "received unexpected byte sequence.\n\nExpected:\n{}\n\nReceived:\n{}",
                 to_debug_str(b), to_debug_str(act.as_slice())));
@@ -101,7 +105,28 @@ impl OpSequence {
       }
     }
 
-    Ok(())
+    return Ok(());
+
+    fn parse_request<'a>(req: &'a [u8]) -> (&'a [u8],
+                                            HashSet<&'a [u8]>,
+                                            &'a [u8]) {
+      let mut start = None;
+      let mut headers = HashSet::new();
+      let mut taken = 0;
+
+      for part in req.split(|a| *a == b'\n') {
+        taken += part.len() + 1;
+        if start.is_none() {
+          start = Some(part);
+        } else if part.len() == 1 {
+          break;
+        } else {
+          headers.insert(part);
+        }
+      }
+
+      (start.unwrap(), headers, req.slice_from(taken))
+    }
   }
 }
 

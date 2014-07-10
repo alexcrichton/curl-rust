@@ -1,3 +1,5 @@
+use std::str;
+
 use ffi;
 use ffi::opt;
 use ffi::easy::Easy;
@@ -131,6 +133,15 @@ impl<'a, 'b> Request<'a, 'b> {
     self
   }
 
+  pub fn get_header<'a>(&'a self, name: &str) -> Option<&'a str> {
+    for hdr in self.headers.iter() {
+      if hdr.starts_with(name.as_bytes()) {
+        return str::from_utf8(hdr.slice_from(name.len() + 2));
+      }
+    }
+    None
+  }
+
   pub fn headers<'c, I: Iterator<(&'c str, &'c str)>>(mut self, mut hdrs: I) -> Request<'a, 'b> {
     for (name, val) in hdrs {
       append_header(&mut self.headers, name, val);
@@ -230,13 +241,18 @@ impl<'a, 'b> Request<'a, 'b> {
 
 fn append_header(list: &mut ffi::List, name: &str, val: &str) {
   debug!("append header; name={}; val={}", name, val);
+  let s = format!("{}: {}\0", name, val);
+  list.push_bytes(s.as_bytes());
+}
 
-  let mut c_str = Vec::with_capacity(name.len() + val.len() + 3);
-  c_str.push_all(name.as_bytes());
-  c_str.push(':' as u8);
-  c_str.push(' ' as u8);
-  c_str.push_all(val.as_bytes());
-  c_str.push(0);
+#[cfg(test)]
+mod tests {
+    use super::Handle;
 
-  list.push_bytes(c_str.as_slice());
+    #[test]
+    fn get_header() {
+        let mut h = Handle::new();
+        let r = h.get("/foo").header("foo", "bar");
+        assert_eq!(r.get_header("foo"), Some("bar"));
+    }
 }

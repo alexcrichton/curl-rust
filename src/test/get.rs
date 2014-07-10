@@ -80,3 +80,35 @@ pub fn test_get_tracking_progress() {
   assert!(dl == 5);
   assert!(cnt > 1);
 }
+
+#[test]
+pub fn follows_redirects() {
+  let srv1 = server!(
+    recv!(
+      b"GET / HTTP/1.1\r\n\
+        Host: localhost:8482\r\n\
+        Accept: */*\r\n\r\n"),
+    send!(
+      b"HTTP/1.1 301 Moved Permanently\r\n\
+        Location: http://localhost:8482/test\r\n\r\n"));
+  let srv2 = server!(
+    recv!(
+      b"GET /test HTTP/1.1\r\n\
+        Host: localhost:8482\r\n\
+        Accept: */*\r\n\r\n"),
+    send!(
+      b"HTTP/1.1 200 OK\r\n\r\n\
+      response!"));
+
+  let res = handle()
+    .get("http://localhost:8482")
+    .follow_redirects(true)
+    .exec()
+    .unwrap();
+
+  srv1.assert();
+  srv2.assert();
+
+  assert!(res.get_code() == 200);
+  assert_eq!(res.get_body(), b"response!");
+}

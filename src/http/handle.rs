@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use ffi;
 use ffi::opt;
 use ffi::easy::Easy;
@@ -64,12 +66,13 @@ pub struct Request<'a, 'b> {
   err: Option<ErrCode>,
   handle: &'a mut Handle,
   method: Method,
-  headers: ffi::List,
+  headers: HashMap<String, Vec<String>>,
   body: Option<Body<'b>>,
   body_type: bool, // whether or not the body type was set
   content_type: bool, // whether or not the content type was set
   expect_continue: bool, // whether to expect a 100 continue from the server
   progress: Option<ProgressCb<'b>>,
+  follow: bool,
 }
 
 impl<'a, 'b> Request<'a, 'b> {
@@ -78,12 +81,13 @@ impl<'a, 'b> Request<'a, 'b> {
       err: None,
       handle: handle,
       method: method,
-      headers: ffi::List::new(),
+      headers: HashMap::new(),
       body: None,
       body_type: false,
       content_type: false,
       expect_continue: false,
-      progress: None
+      progress: None,
+      follow: false,
     }
   }
 
@@ -104,7 +108,7 @@ impl<'a, 'b> Request<'a, 'b> {
   pub fn content_length(mut self, len: uint) -> Request<'a, 'b> {
     if !self.body_type {
       self.body_type = true;
-      append_header(&mut self.headers, "Content-Type", len.to_str().as_slice());
+      append_header(&mut self.headers, "Content-Length", len.to_string().as_slice());
     }
 
     self
@@ -129,16 +133,25 @@ impl<'a, 'b> Request<'a, 'b> {
     self
   }
 
-  pub fn headers<'c, I: Iterator<(&'c str, &'c str)>>(mut self, mut hdrs: I) -> Request<'a, 'b> {
+  pub fn get_header<'a>(&'a self, name: &str) -> Option<&'a [String]> {
+    self.headers.find_equiv(&name).map(|a| a.as_slice())
+  }
+
+  pub fn headers<'c, 'd, I: Iterator<(&'c str, &'d str)>>(mut self, mut hdrs: I)
+                                                          -> Request<'a, 'b> {
     for (name, val) in hdrs {
       append_header(&mut self.headers, name, val);
     }
-
     self
   }
 
   pub fn progress(mut self, cb: ProgressCb<'b>) -> Request<'a, 'b> {
     self.progress = Some(cb);
+    self
+  }
+
+  pub fn follow_redirects(mut self, follow: bool) -> Request<'a, 'b> {
+    self.follow = follow;
     self
   }
 
@@ -154,8 +167,13 @@ impl<'a, 'b> Request<'a, 'b> {
       content_type,
       expect_continue,
       progress,
+      follow,
       ..
     } = self;
+
+    if follow {
+      try!(handle.easy.setopt(opt::FOLLOWLOCATION, 1i));
+    }
 
     match err {
       Some(e) => return Err(e),
@@ -208,23 +226,39 @@ impl<'a, 'b> Request<'a, 'b> {
       }
     }
 
+    let mut ffi_headers = ffi::List::new();
     if !headers.is_empty() {
-      try!(handle.easy.setopt(opt::HTTPHEADER, &headers));
+      let mut buf = Vec::new();
+      for (k, v) in headers.iter() {
+        buf.push_all(k.as_bytes());
+        buf.push_all(b": ");
+        for v in v.iter() {
+          buf.push_all(v.as_bytes());
+          buf.push(0);
+          ffi_headers.push_bytes(buf.as_slice());
+          buf.truncate(k.len() + 2);
+        }
+        buf.truncate(0);
+      }
+      try!(handle.easy.setopt(opt::HTTPHEADER, &ffi_headers));
     }
 
     handle.easy.perform(body.as_mut(), progress)
   }
 }
 
-fn append_header(list: &mut ffi::List, name: &str, val: &str) {
-  debug!("append header; name={}; val={}", name, val);
+fn append_header(map: &mut HashMap<String, Vec<String>>, key: &str, val: &str) {
+  map.find_or_insert(key.to_string(), Vec::new()).push(val.to_string());
+}
 
-  let mut c_str = Vec::with_capacity(name.len() + val.len() + 3);
-  c_str.push_all(name.as_bytes());
-  c_str.push(':' as u8);
-  c_str.push(' ' as u8);
-  c_str.push_all(val.as_bytes());
-  c_str.push(0);
+#[cfg(test)]
+mod tests {
+    use super::Handle;
 
-  list.push_bytes(c_str.as_slice());
+    #[test]
+    fn get_header() {
+        let mut h = Handle::new();
+        let r = h.get("/foo").header("foo", "bar");
+        assert_eq!(r.get_header("foo"), Some(&["bar".to_string()]));
+    }
 }

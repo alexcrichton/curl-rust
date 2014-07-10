@@ -70,6 +70,7 @@ pub struct Request<'a, 'b> {
   content_type: bool, // whether or not the content type was set
   expect_continue: bool, // whether to expect a 100 continue from the server
   progress: Option<ProgressCb<'b>>,
+  follow: bool,
 }
 
 impl<'a, 'b> Request<'a, 'b> {
@@ -83,7 +84,8 @@ impl<'a, 'b> Request<'a, 'b> {
       body_type: false,
       content_type: false,
       expect_continue: false,
-      progress: None
+      progress: None,
+      follow: false,
     }
   }
 
@@ -104,7 +106,7 @@ impl<'a, 'b> Request<'a, 'b> {
   pub fn content_length(mut self, len: uint) -> Request<'a, 'b> {
     if !self.body_type {
       self.body_type = true;
-      append_header(&mut self.headers, "Content-Type", len.to_str().as_slice());
+      append_header(&mut self.headers, "Content-Type", len.to_string().as_slice());
     }
 
     self
@@ -142,6 +144,11 @@ impl<'a, 'b> Request<'a, 'b> {
     self
   }
 
+  pub fn follow_redirects(mut self, follow: bool) -> Request<'a, 'b> {
+    self.follow = follow;
+    self
+  }
+
   pub fn exec(self) -> Result<Response, ErrCode> {
     // Deconstruct the struct
     let Request {
@@ -154,8 +161,13 @@ impl<'a, 'b> Request<'a, 'b> {
       content_type,
       expect_continue,
       progress,
+      follow,
       ..
     } = self;
+
+    if follow {
+      try!(handle.easy.setopt(opt::FOLLOWLOCATION, 1i));
+    }
 
     match err {
       Some(e) => return Err(e),

@@ -36,6 +36,10 @@ impl Response {
   pub fn get_body<'a>(&'a self) -> &'a [u8] {
     self.body.as_slice()
   }
+
+  pub fn move_body(self) -> Vec<u8> {
+      self.body
+  }
 }
 
 impl fmt::Show for Response {

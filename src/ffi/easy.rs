@@ -101,6 +101,10 @@ impl Easy {
   pub fn get_response_code(&self) -> Result<uint, err::ErrCode> {
     Ok(try!(self.get_info_long(info::RESPONSE_CODE)) as uint)
   }
+  
+  pub fn get_total_time(&self) -> Result<uint, err::ErrCode> {
+    Ok(try!(self.get_info_long(info::TOTAL_TIME)) as uint)
+  }
 
   fn get_info_long(&self, key: info::Key) -> Result<c_long, err::ErrCode> {
     let v: c_long = 0;

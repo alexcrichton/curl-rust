@@ -12,10 +12,10 @@ pub use ffi::err::ErrCode;
 
 // Version accessors
 pub use ffi::version::{
-  Version,
-  version,
-  version_info,
-  Protocols
+    Version,
+    version,
+    version_info,
+    Protocols
 };
 
 mod ffi;

@@ -8,5 +8,5 @@ mod response;
 
 #[inline]
 pub fn handle() -> Handle {
-  Handle::new()
+    Handle::new()
 }

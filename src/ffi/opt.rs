@@ -8,39 +8,45 @@ static OFF_T: c_int         = 30_000;
 pub type Opt = c_int;
 
 pub trait OptVal {
-  fn with_c_repr(self, f: |*const c_void|);
+    fn with_c_repr(self, f: |*const c_void|);
 }
 
 impl OptVal for int {
-  fn with_c_repr(self, f: |*const c_void|) {
-    f(self as *const c_void)
-  }
+    fn with_c_repr(self, f: |*const c_void|) {
+        f(self as *const c_void)
+    }
 }
 
 impl OptVal for uint {
-  fn with_c_repr(self, f: |*const c_void|) {
-    f(self as *const c_void)
-  }
+    fn with_c_repr(self, f: |*const c_void|) {
+        f(self as *const c_void)
+    }
 }
 
 impl OptVal for bool {
-  fn with_c_repr(self, f: |*const c_void|) {
-      f(self as uint as *const c_void)
-  }
+    fn with_c_repr(self, f: |*const c_void|) {
+        f(self as uint as *const c_void)
+    }
 }
 
 impl<'a> OptVal for &'a str {
-  fn with_c_repr(self, f: |*const c_void|) {
-    self.with_c_str(|arg| f(arg as *const c_void))
-  }
+    fn with_c_repr(self, f: |*const c_void|) {
+        self.with_c_str(|arg| f(arg as *const c_void))
+    }
 }
 
 macro_rules! DEFOPT(
-  ($name:ident, $ty:ident, $num:expr) => (#[allow(dead_code)] pub static $name: Opt = $ty + $num;);
+    ($name:ident, $ty:ident, $num:expr) => (
+        #[allow(dead_code)]
+        pub static $name: Opt = $ty + $num;
+    )
 )
 
 macro_rules! ALIAS(
-  ($name:ident, $to:ident) => (#[allow(dead_code)] pub static $name: Opt = $to;);
+    ($name:ident, $to:ident) => (
+        #[allow(dead_code)]
+        pub static $name: Opt = $to;
+    )
 )
 
 DEFOPT!(FILE,                   OBJECTPOINT,     1)
@@ -265,7 +271,7 @@ DEFOPT!(EXPECT_100_TIMEOUT_MS,      LONG,          227)
 DEFOPT!(PROXYHEADER,                OBJECTPOINT,   228)
 DEFOPT!(HEADEROPT,                  LONG,          229)
 
-// Option aliases
+    // Option aliases
 ALIAS!(POST301, POSTREDIR)
 ALIAS!(SSLKEYPASSWD, KEYPASSWD)
 ALIAS!(FTPAPPEND, APPEND)

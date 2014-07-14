@@ -8,23 +8,23 @@ local_data_key!(handle: Handle)
 
 // Setup an op sequence with the test HTTP server
 pub fn setup(ops: OpSequence) -> OpSequenceResult {
-  // If the server si not started
-  ensure_server_started();
+    // If the server si not started
+    ensure_server_started();
 
-  // Setup a channel to receive the response on
-  let (tx, rx) = channel();
+    // Setup a channel to receive the response on
+    let (tx, rx) = channel();
 
-  // Send the op sequence to the server task
-  handle.get().unwrap().send(ops, tx);
+    // Send the op sequence to the server task
+    handle.get().unwrap().send(ops, tx);
 
-  OpSequenceResult::new(rx)
+    OpSequenceResult::new(rx)
 }
 
 /* Handle to the running HTTP server task. Communication with the server
  * happesn over channels.
  */
 struct Handle {
-  tx: Sender<(OpSequence, Sender<Result<(),String>>)>
+    tx: Sender<(OpSequence, Sender<Result<(),String>>)>
 }
 
 /* Operations for the test server to perform:
@@ -35,194 +35,195 @@ struct Handle {
  */
 #[deriving(Clone,PartialEq,Show)]
 pub enum Op {
-  SendBytes(&'static [u8]),
-  ReceiveBytes(&'static [u8]),
-  Wait(uint),
-  Shutdown
+    SendBytes(&'static [u8]),
+    ReceiveBytes(&'static [u8]),
+    Wait(uint),
+    Shutdown
 }
 
 /* An ordered sequence of operations for the HTTP server to perform
- */
+*/
 pub struct OpSequence {
-  ops: Vec<Op>
+    ops: Vec<Op>
 }
 
 /* Represents the completion of the of the op sequence by the HTTP
  * server.
  */
 pub struct OpSequenceResult {
-  rx: Receiver<Result<(),String>>
+    rx: Receiver<Result<(),String>>
 }
 
 impl OpSequence {
-  pub fn new(op: Op) -> OpSequence {
-    OpSequence { ops: vec!(op) }
-  }
+    pub fn new(op: Op) -> OpSequence {
+        OpSequence { ops: vec!(op) }
+    }
 
-  pub fn concat(op: Op, seq: OpSequence) -> OpSequence {
-    let mut ops = vec!(op);
-    ops.push_all(seq.ops.as_slice());
-    OpSequence { ops: ops }
-  }
+    pub fn concat(op: Op, seq: OpSequence) -> OpSequence {
+        let mut ops = vec!(op);
+        ops.push_all(seq.ops.as_slice());
+        OpSequence { ops: ops }
+    }
 
-  pub fn is_shutdown(&self) -> bool {
-    self.ops.len() == 1 && self.ops.get(0) == &Shutdown
-  }
+    pub fn is_shutdown(&self) -> bool {
+        self.ops.len() == 1 && self.ops.get(0) == &Shutdown
+    }
 
-  pub fn apply(&self, sock: &mut TcpStream) -> Result<(), String> {
-    for op in self.ops.iter() {
-      match op {
-        &SendBytes(b) => {
-          match sock.write(b) {
-            Ok(_) => {}
-            Err(e) => return Err(e.desc.to_string())
-          }
-        }
-        &ReceiveBytes(b) => {
-          let mut rem = b.len();
-          let mut act = Vec::from_elem(rem, 0u8);
+    pub fn apply(&self, sock: &mut TcpStream) -> Result<(), String> {
+        for op in self.ops.iter() {
+            match op {
+                &SendBytes(b) => {
+                    match sock.write(b) {
+                        Ok(_) => {}
+                        Err(e) => return Err(e.desc.to_string())
+                    }
+                }
+                &ReceiveBytes(b) => {
+                    let mut rem = b.len();
+                    let mut act = Vec::from_elem(rem, 0u8);
 
-          while rem > 0 {
-            match sock.read(act.mut_slice_from(b.len() - rem)) {
-              Ok(i) => rem = rem - i,
-              Err(e) => {
-                return Err(e.desc.to_string())
-              }
+                    while rem > 0 {
+                        match sock.read(act.mut_slice_from(b.len() - rem)) {
+                            Ok(i) => rem = rem - i,
+                            Err(e) => {
+                                return Err(e.desc.to_string())
+                            }
+                        }
+                    }
+
+                    let req1 = parse_request(b.as_slice());
+                    let req2 = parse_request(act.as_slice());
+
+                    if req1 != req2 {
+                        return Err(format!(
+                                "received unexpected byte sequence.\n\nExpected:\n{}\n\nReceived:\n{}",
+                                to_debug_str(b), to_debug_str(act.as_slice())));
+                    }
+                }
+                &Wait(ms) => { timer::sleep(ms as u64) }
+                &Shutdown => return Err("Shutdown must be sent on its own".to_string())
             }
-          }
-
-          let req1 = parse_request(b.as_slice());
-          let req2 = parse_request(act.as_slice());
-
-          if req1 != req2 {
-            return Err(format!(
-                "received unexpected byte sequence.\n\nExpected:\n{}\n\nReceived:\n{}",
-                to_debug_str(b), to_debug_str(act.as_slice())));
-          }
         }
-        &Wait(ms) => { timer::sleep(ms as u64) }
-        &Shutdown => return Err("Shutdown must be sent on its own".to_string())
-      }
-    }
 
-    return Ok(());
+        return Ok(());
 
-    fn parse_request<'a>(req: &'a [u8]) -> (&'a [u8],
-                                            HashSet<&'a [u8]>,
-                                            &'a [u8]) {
-      let mut start = None;
-      let mut headers = HashSet::new();
-      let mut taken = 0;
+        fn parse_request<'a>(req: &'a [u8]) -> (&'a [u8],
+                                                HashSet<&'a [u8]>,
+                                                &'a [u8]) {
+            let mut start = None;
+            let mut headers = HashSet::new();
+            let mut taken = 0;
 
-      for part in req.split(|a| *a == b'\n') {
-        taken += part.len() + 1;
-        if start.is_none() {
-          start = Some(part);
-        } else if part.len() == 1 {
-          break;
-        } else {
-          headers.insert(part);
+            for part in req.split(|a| *a == b'\n') {
+                taken += part.len() + 1;
+
+                if start.is_none() {
+                    start = Some(part);
+                } else if part.len() == 1 {
+                    break;
+                } else {
+                    headers.insert(part);
+                }
+            }
+
+            (start.unwrap(), headers, req.slice_from(taken))
         }
-      }
-
-      (start.unwrap(), headers, req.slice_from(taken))
     }
-  }
 }
 
 fn to_debug_str(bytes: &[u8]) -> String {
-  let mut ret = String::new();
+    let mut ret = String::new();
 
-  for b in bytes.iter() {
-    let b = *b as char;
+    for b in bytes.iter() {
+        let b = *b as char;
 
-    if b >= ' ' && b <= '~' {
-      ret.push_char(b);
+        if b >= ' ' && b <= '~' {
+            ret.push_char(b);
+        }
+        else if b == '\n' {
+            ret.push_str("\\n\n");
+        }
+        else if b == '\r' {
+            ret.push_str("\\r");
+        }
+        else {
+            ret.push_char('?');
+        }
     }
-    else if b == '\n' {
-      ret.push_str("\\n\n");
-    }
-    else if b == '\r' {
-      ret.push_str("\\r");
-    }
-    else {
-      ret.push_char('?');
-    }
-  }
 
-  ret
+    ret
 }
 
 impl Handle {
-  fn new(tx: Sender<(OpSequence, Sender<Result<(),String>>)>) -> Handle {
-    Handle { tx: tx }
-  }
+    fn new(tx: Sender<(OpSequence, Sender<Result<(),String>>)>) -> Handle {
+        Handle { tx: tx }
+    }
 
-  fn send(&self, ops: OpSequence, resp: Sender<Result<(),String>>) {
-    self.tx.send((ops, resp));
-  }
+    fn send(&self, ops: OpSequence, resp: Sender<Result<(),String>>) {
+        self.tx.send((ops, resp));
+    }
 }
 
 impl Drop for Handle {
-  fn drop(&mut self) {
-    let (tx, rx) = channel();
-    self.send(OpSequence::new(Shutdown), tx);
-    rx.recv().unwrap();
-  }
+    fn drop(&mut self) {
+        let (tx, rx) = channel();
+        self.send(OpSequence::new(Shutdown), tx);
+        rx.recv().unwrap();
+    }
 }
 
 impl OpSequenceResult {
-  pub fn new(rx: Receiver<Result<(),String>>) -> OpSequenceResult {
-    OpSequenceResult { rx: rx }
-  }
-
-  pub fn assert(&self) {
-    match self.rx.recv() {
-      Ok(_) => {}
-      Err(e) => fail!("http exchange did not proceed as expected: {}", e)
+    pub fn new(rx: Receiver<Result<(),String>>) -> OpSequenceResult {
+        OpSequenceResult { rx: rx }
     }
-  }
+
+    pub fn assert(&self) {
+        match self.rx.recv() {
+            Ok(_) => {}
+            Err(e) => fail!("http exchange did not proceed as expected: {}", e)
+        }
+    }
 }
 
 fn ensure_server_started() {
-  if handle.get().is_none() {
-    handle.replace(Some(start_server()));
-  }
+    if handle.get().is_none() {
+        handle.replace(Some(start_server()));
+    }
 }
 
 fn start_server() -> Handle {
-  let (ops_tx, ops_rx) = channel();
-  let (ini_tx, ini_rx) = channel();
+    let (ops_tx, ops_rx) = channel();
+    let (ini_tx, ini_rx) = channel();
 
-  spawn(proc() {
-    let mut srv = TcpListener::bind("127.0.0.1", 8482).unwrap().listen().unwrap();
+    spawn(proc() {
+        let mut srv = TcpListener::bind("127.0.0.1", 8482).unwrap().listen().unwrap();
 
-    ini_tx.send(true);
+        ini_tx.send(true);
 
-    loop {
-      let (ops, resp_tx): (OpSequence, Sender<Result<(),String>>) = ops_rx.recv();
+        loop {
+            let (ops, resp_tx): (OpSequence, Sender<Result<(),String>>) = ops_rx.recv();
 
-      if ops.is_shutdown() {
-        resp_tx.send(Ok(()));
-        return;
-      }
+            if ops.is_shutdown() {
+                resp_tx.send(Ok(()));
+                return;
+            }
 
-      let mut sock = match srv.accept() {
-        Ok(s) => s,
-        Err(e) => {
-          resp_tx.send(Err(format!("server accept err: {}", e)));
-          return;
+            let mut sock = match srv.accept() {
+                Ok(s) => s,
+                Err(e) => {
+                    resp_tx.send(Err(format!("server accept err: {}", e)));
+                    return;
+                }
+            };
+
+            sock.set_timeout(Some(100));
+
+            resp_tx.send(ops.apply(&mut sock));
         }
-      };
+    });
 
-      sock.set_timeout(Some(100));
+    // Wait until the server is listening
+    ini_rx.recv();
 
-      resp_tx.send(ops.apply(&mut sock));
-    }
-  });
-
-  // Wait until the server is listening
-  ini_rx.recv();
-
-  Handle::new(ops_tx)
+    Handle::new(ops_tx)
 }

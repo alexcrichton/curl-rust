@@ -3,8 +3,3 @@
 name = "curl"
 version = "0.0.1"
 authors = ["Carl Lerche <me@carllerche.com>"]
-
-[[lib]]
-
-name = "curl"
-path = "src/lib.rs"

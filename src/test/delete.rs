@@ -5,7 +5,7 @@ use super::server;
 pub fn test_delete_with_no_body() {
     let srv = server!(
         recv!(b"DELETE / HTTP/1.1\r\n\
-                Host: localhost:8482\r\n\
+                Host: localhost:{PORT}\r\n\
                 Accept: */*\r\n\
                 \r\n"),
         send!(b"HTTP/1.1 200 OK\r\n\
@@ -14,7 +14,7 @@ pub fn test_delete_with_no_body() {
     );
 
     let res = http::handle()
-        .delete("http://localhost:8482")
+        .delete(server::url("/"))
         .exec();
 
     srv.assert();
@@ -28,7 +28,7 @@ pub fn test_delete_with_no_body() {
 pub fn test_delete_binary_with_slice() {
     let srv = server!(
         recv!(b"DELETE / HTTP/1.1\r\n\
-                Host: localhost:8482\r\n\
+                Host: localhost:{PORT}\r\n\
                 Accept: */*\r\n\
                 Content-Type: application/octet-stream\r\n\
                 Content-Length: 11\r\n\
@@ -40,7 +40,7 @@ pub fn test_delete_binary_with_slice() {
     );
 
     let res = http::handle()
-        .delete("http://localhost:8482")
+        .delete(server::url("/"))
         .body("Foo Bar Baz")
         .exec(); // .unwrap();
 

@@ -6,13 +6,13 @@ use super::server;
 pub fn test_get_requests() {
     let srv = server!(
         recv!(b"GET / HTTP/1.1\r\n\
-                Host: localhost:8482\r\n\
+                Host: localhost:{PORT}\r\n\
                 Accept: */*\r\n\r\n"),
         send!(b"HTTP/1.1 200 OK\r\n\
                 Content-Length: 5\r\n\r\n\
                 Hello\r\n\r\n"),
         recv!(b"GET /next HTTP/1.1\r\n\
-                Host: localhost:8482\r\n\
+                Host: localhost:{PORT}\r\n\
                 Accept: */*\r\n\r\n"),
         send!(b"HTTP/1.1 200 OK\r\n\
                 Content-Length: 5\r\n\r\n\
@@ -20,8 +20,8 @@ pub fn test_get_requests() {
     );
 
     let mut handle = handle();
-    let res1 = handle.get("http://localhost:8482").exec().unwrap();
-    let res2 = handle.get("http://localhost:8482/next").exec().unwrap();
+    let res1 = handle.get(server::url("/")).exec().unwrap();
+    let res2 = handle.get(server::url("/next")).exec().unwrap();
 
     srv.assert();
 
@@ -36,7 +36,7 @@ pub fn test_get_requests() {
 pub fn test_post_get_requests() {
     let srv = server!(
         recv!(b"POST / HTTP/1.1\r\n\
-                Host: localhost:8482\r\n\
+                Host: localhost:{PORT}\r\n\
                 Accept: */*\r\n\
                 Content-Type: application/octet-stream\r\n\
                 Content-Length: 5\r\n\
@@ -46,7 +46,7 @@ pub fn test_post_get_requests() {
                 Content-Length: 5\r\n\r\n\
                 World\r\n\r\n"),
         recv!(b"GET /next HTTP/1.1\r\n\
-                Host: localhost:8482\r\n\
+                Host: localhost:{PORT}\r\n\
                 Accept: */*\r\n\r\n"),
         send!(b"HTTP/1.1 200 OK\r\n\
                 Content-Length: 4\r\n\r\n\
@@ -54,8 +54,8 @@ pub fn test_post_get_requests() {
     );
 
     let mut handle = handle().timeout(100);
-    let res1 = handle.post("http://localhost:8482", "Hello").exec().unwrap();
-    let res2 = handle.get("http://localhost:8482/next").exec().unwrap();
+    let res1 = handle.post(server::url("/"), "Hello").exec().unwrap();
+    let res2 = handle.get(server::url("/next")).exec().unwrap();
 
     srv.assert();
 

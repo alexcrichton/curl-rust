@@ -5,7 +5,7 @@ use super::server;
 pub fn test_simple_head() {
     let srv = server!(
         recv!(b"HEAD / HTTP/1.1\r\n\
-                Host: localhost:8482\r\n\
+                Host: localhost:{PORT}\r\n\
                 Accept: */*\r\n\
                 \r\n"), // Send the data
         send!(b"HTTP/1.1 200 OK\r\n\
@@ -13,7 +13,7 @@ pub fn test_simple_head() {
     );
 
     let res = handle()
-        .head("http://localhost:8482")
+        .head(server::url("/"))
         .exec();
 
     srv.assert();

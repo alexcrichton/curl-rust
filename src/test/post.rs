@@ -6,7 +6,7 @@ use super::server;
 pub fn test_post_binary_with_slice() {
     let srv = server!(
         recv!(b"POST / HTTP/1.1\r\n\
-                Host: localhost:8482\r\n\
+                Host: localhost:{PORT}\r\n\
                 Accept: */*\r\n\
                 Content-Type: application/octet-stream\r\n\
                 Content-Length: 11\r\n\
@@ -18,7 +18,7 @@ pub fn test_post_binary_with_slice() {
     );
 
     let res = http::handle()
-        .post("http://localhost:8482", "Foo Bar Baz")
+        .post(server::url("/"), "Foo Bar Baz")
         .exec().unwrap();
 
     srv.assert();
@@ -31,7 +31,7 @@ pub fn test_post_binary_with_slice() {
 pub fn test_post_binary_with_string() {
     let srv = server!(
         recv!(b"POST / HTTP/1.1\r\n\
-                Host: localhost:8482\r\n\
+                Host: localhost:{PORT}\r\n\
                 Accept: */*\r\n\
                 Content-Type: application/octet-stream\r\n\
                 Content-Length: 11\r\n\
@@ -44,7 +44,7 @@ pub fn test_post_binary_with_string() {
 
     let body = "Foo Bar Baz".to_string();
     let res = http::handle()
-        .post("http://localhost:8482", &body)
+        .post(server::url("/"), &body)
         .exec().unwrap();
 
     srv.assert();
@@ -57,7 +57,7 @@ pub fn test_post_binary_with_string() {
 pub fn test_post_binary_with_reader() {
     let srv = server!(
         recv!(b"POST / HTTP/1.1\r\n\
-                Host: localhost:8482\r\n\
+                Host: localhost:{PORT}\r\n\
                 Accept: */*\r\n\
                 Transfer-Encoding: chunked\r\n\
                 Content-Type: application/octet-stream\r\n\
@@ -71,7 +71,7 @@ pub fn test_post_binary_with_reader() {
 
     let mut body = MemReader::new(Vec::from_slice(b"Foo Bar Baz"));
     let res = http::handle()
-        .post("http://localhost:8482", &mut body as &mut Reader)
+        .post(server::url("/"), &mut body as &mut Reader)
         .exec().unwrap();
 
     srv.assert();

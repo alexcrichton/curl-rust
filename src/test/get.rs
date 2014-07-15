@@ -6,7 +6,7 @@ pub fn test_simple_get() {
   let srv = server!(
     recv!(
       b"GET / HTTP/1.1\r\n\
-        Host: localhost:8482\r\n\
+        Host: localhost:{PORT}\r\n\
         Accept: */*\r\n\r\n"), // Send the data
     send!(
       b"HTTP/1.1 200 OK\r\n\
@@ -14,7 +14,7 @@ pub fn test_simple_get() {
         Hello\r\n")); // Sends
 
   let res = handle()
-    .get("http://localhost:8482")
+    .get(server::url("/"))
     .exec().unwrap();
 
   srv.assert();
@@ -30,7 +30,7 @@ pub fn test_get_with_custom_headers() {
   let srv = server!(
     recv!(
       b"GET / HTTP/1.1\r\n\
-        Host: localhost:8482\r\n\
+        Host: localhost:{PORT}\r\n\
         Accept: */*\r\n\
         User-Agent: Zomg Test\r\n\r\n"),
     send!(
@@ -39,7 +39,7 @@ pub fn test_get_with_custom_headers() {
         Hello\r\n\r\n"));
 
   let res = handle()
-    .get("http://localhost:8482")
+    .get(server::url("/"))
     .header("User-Agent", "Zomg Test")
     .exec().unwrap();
 
@@ -56,7 +56,7 @@ pub fn test_get_tracking_progress() {
   let srv = server!(
     recv!(
       b"GET / HTTP/1.1\r\n\
-        Host: localhost:8482\r\n\
+        Host: localhost:{PORT}\r\n\
         Accept: */*\r\n\r\n"),
     send!(
       b"HTTP/1.1 200 OK\r\n\
@@ -67,7 +67,7 @@ pub fn test_get_tracking_progress() {
   let mut cnt = 0;
 
   let res = handle()
-    .get("http://localhost:8482")
+    .get(server::url("/"))
     .progress(|_, dlnow, _, _| {
       cnt = cnt + 1u;
       dl = dlnow
@@ -86,22 +86,22 @@ pub fn follows_redirects() {
   let srv1 = server!(
     recv!(
       b"GET / HTTP/1.1\r\n\
-        Host: localhost:8482\r\n\
+        Host: localhost:{PORT}\r\n\
         Accept: */*\r\n\r\n"),
     send!(
       b"HTTP/1.1 301 Moved Permanently\r\n\
-        Location: http://localhost:8482/test\r\n\r\n"));
+        Location: http://localhost:{PORT}/test\r\n\r\n"));
   let srv2 = server!(
     recv!(
       b"GET /test HTTP/1.1\r\n\
-        Host: localhost:8482\r\n\
+        Host: localhost:{PORT}\r\n\
         Accept: */*\r\n\r\n"),
     send!(
       b"HTTP/1.1 200 OK\r\n\r\n\
       response!"));
 
   let res = handle()
-    .get("http://localhost:8482")
+    .get(server::url("/"))
     .follow_redirects(true)
     .exec()
     .unwrap();

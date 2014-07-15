@@ -1,3 +1,5 @@
+use std::str;
+use std::io::net::ip::Port;
 use std::io::net::tcp::{TcpListener,TcpStream};
 use std::io::{Acceptor, Listener};
 use std::io::timer;
@@ -20,10 +22,20 @@ pub fn setup(ops: OpSequence) -> OpSequenceResult {
     OpSequenceResult::new(rx)
 }
 
+pub fn url(path: &str) -> String {
+    format!("http://localhost:{}{}", port(), path)
+}
+
+fn port() -> uint {
+    ensure_server_started();
+    handle.get().unwrap().port()
+}
+
 /* Handle to the running HTTP server task. Communication with the server
  * happesn over channels.
  */
 struct Handle {
+    port: Port,
     tx: Sender<(OpSequence, Sender<Result<(),String>>)>
 }
 
@@ -43,6 +55,7 @@ pub enum Op {
 
 /* An ordered sequence of operations for the HTTP server to perform
 */
+#[deriving(Show)]
 pub struct OpSequence {
     ops: Vec<Op>
 }
@@ -69,16 +82,18 @@ impl OpSequence {
         self.ops.len() == 1 && self.ops.get(0) == &Shutdown
     }
 
-    pub fn apply(&self, sock: &mut TcpStream) -> Result<(), String> {
+    pub fn apply(&self, sock: &mut TcpStream, port: uint) -> Result<(), String> {
         for op in self.ops.iter() {
             match op {
                 &SendBytes(b) => {
-                    match sock.write(b) {
+                    let b = insert_port(b, port);
+                    match sock.write(b.as_slice()) {
                         Ok(_) => {}
                         Err(e) => return Err(e.desc.to_string())
                     }
                 }
                 &ReceiveBytes(b) => {
+                    let b = insert_port(b, port);
                     let mut rem = b.len();
                     let mut act = Vec::from_elem(rem, 0u8);
 
@@ -97,7 +112,7 @@ impl OpSequence {
                     if req1 != req2 {
                         return Err(format!(
                                 "received unexpected byte sequence.\n\nExpected:\n{}\n\nReceived:\n{}",
-                                to_debug_str(b), to_debug_str(act.as_slice())));
+                                to_debug_str(b.as_slice()), to_debug_str(act.as_slice())));
                     }
                 }
                 &Wait(ms) => { timer::sleep(ms as u64) }
@@ -106,6 +121,12 @@ impl OpSequence {
         }
 
         return Ok(());
+
+        fn insert_port(bytes: &'static [u8], port: uint) -> Vec<u8> {
+            let s = str::from_utf8(bytes).unwrap();
+            let p = port.to_string();
+            str::replace(s, "{PORT}", p.as_slice()).into_bytes()
+        }
 
         fn parse_request<'a>(req: &'a [u8]) -> (&'a [u8],
                                                 HashSet<&'a [u8]>,
@@ -124,6 +145,10 @@ impl OpSequence {
                 } else {
                     headers.insert(part);
                 }
+            }
+
+            if taken > req.len() {
+                taken = req.len();
             }
 
             (start.unwrap(), headers, req.slice_from(taken))
@@ -155,12 +180,16 @@ fn to_debug_str(bytes: &[u8]) -> String {
 }
 
 impl Handle {
-    fn new(tx: Sender<(OpSequence, Sender<Result<(),String>>)>) -> Handle {
-        Handle { tx: tx }
+    fn new(tx: Sender<(OpSequence, Sender<Result<(),String>>)>, port: Port) -> Handle {
+        Handle { tx: tx, port: port }
     }
 
     fn send(&self, ops: OpSequence, resp: Sender<Result<(),String>>) {
         self.tx.send((ops, resp));
+    }
+
+    fn port(&self) -> uint {
+        self.port as uint
     }
 }
 
@@ -195,8 +224,12 @@ fn start_server() -> Handle {
     let (ops_tx, ops_rx) = channel();
     let (ini_tx, ini_rx) = channel();
 
+    let mut listener = TcpListener::bind("127.0.0.1", 0).unwrap();
+    let port = listener.socket_name().unwrap().port;
+
     spawn(proc() {
-        let mut srv = TcpListener::bind("127.0.0.1", 8482).unwrap().listen().unwrap();
+        let mut listener = listener;
+        let mut srv = listener.listen().unwrap();
 
         ini_tx.send(true);
 
@@ -218,12 +251,12 @@ fn start_server() -> Handle {
 
             sock.set_timeout(Some(100));
 
-            resp_tx.send(ops.apply(&mut sock));
+            resp_tx.send(ops.apply(&mut sock, port as uint));
         }
     });
 
     // Wait until the server is listening
     ini_rx.recv();
 
-    Handle::new(ops_tx)
+    Handle::new(ops_tx, port)
 }

@@ -30,24 +30,24 @@ impl Handle {
         self
     }
 
-    pub fn get<'a, 'b>(&'a mut self, uri: &str) -> Request<'a, 'b> {
-        Request::new(self, Get).uri(uri)
+    pub fn get<'a, 'b, S: Str>(&'a mut self, uri: S) -> Request<'a, 'b> {
+        Request::new(self, Get).uri(uri.as_slice())
     }
 
-    pub fn head<'a, 'b>(&'a mut self, uri: &str) -> Request<'a, 'b> {
-        Request::new(self, Head).uri(uri)
+    pub fn head<'a, 'b, S: Str>(&'a mut self, uri: S) -> Request<'a, 'b> {
+        Request::new(self, Head).uri(uri.as_slice())
     }
 
-    pub fn post<'a, 'b, B: ToBody<'b>>(&'a mut self, uri: &str, body: B) -> Request<'a, 'b> {
-        Request::new(self, Post).uri(uri).body(body)
+    pub fn post<'a, 'b, S: Str, B: ToBody<'b>>(&'a mut self, uri: S, body: B) -> Request<'a, 'b> {
+        Request::new(self, Post).uri(uri.as_slice()).body(body)
     }
 
-    pub fn put<'a, 'b, B: ToBody<'b>>(&'a mut self, uri: &str, body: B) -> Request<'a, 'b> {
-        Request::new(self, Put).uri(uri).body(body)
+    pub fn put<'a, 'b, S: Str, B: ToBody<'b>>(&'a mut self, uri: S, body: B) -> Request<'a, 'b> {
+        Request::new(self, Put).uri(uri.as_slice()).body(body)
     }
 
-    pub fn delete<'a, 'b>(&'a mut self, uri: &str) -> Request<'a, 'b> {
-        Request::new(self, Delete).uri(uri)
+    pub fn delete<'a, 'b, S: Str>(&'a mut self, uri: S) -> Request<'a, 'b> {
+        Request::new(self, Delete).uri(uri.as_slice())
     }
 }
 

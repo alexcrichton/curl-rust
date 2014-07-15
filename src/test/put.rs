@@ -5,7 +5,7 @@ use super::server;
 pub fn test_put_binary_with_slice() {
     let srv = server!(
         recv!(b"PUT / HTTP/1.1\r\n\
-                Host: localhost:8482\r\n\
+                Host: localhost:{PORT}\r\n\
                 Accept: */*\r\n\
                 Content-Type: application/octet-stream\r\n\
                 Content-Length: 11\r\n\
@@ -17,7 +17,7 @@ pub fn test_put_binary_with_slice() {
     );
 
     let res = http::handle()
-        .put("http://localhost:8482", "Foo Bar Baz")
+        .put(server::url("/"), "Foo Bar Baz")
         .exec().unwrap();
 
     srv.assert();

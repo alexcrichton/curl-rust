@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use url::Url;
 
 use ffi;
 use ffi::opt;
@@ -30,24 +31,24 @@ impl Handle {
         self
     }
 
-    pub fn get<'a, 'b, S: Str>(&'a mut self, uri: S) -> Request<'a, 'b> {
-        Request::new(self, Get).uri(uri.as_slice())
+    pub fn get<'a, 'b, U: ToUrl>(&'a mut self, uri: U) -> Request<'a, 'b> {
+        Request::new(self, Get).uri(uri)
     }
 
-    pub fn head<'a, 'b, S: Str>(&'a mut self, uri: S) -> Request<'a, 'b> {
-        Request::new(self, Head).uri(uri.as_slice())
+    pub fn head<'a, 'b, U: ToUrl>(&'a mut self, uri: U) -> Request<'a, 'b> {
+        Request::new(self, Head).uri(uri)
     }
 
-    pub fn post<'a, 'b, S: Str, B: ToBody<'b>>(&'a mut self, uri: S, body: B) -> Request<'a, 'b> {
-        Request::new(self, Post).uri(uri.as_slice()).body(body)
+    pub fn post<'a, 'b, U: ToUrl, B: ToBody<'b>>(&'a mut self, uri: U, body: B) -> Request<'a, 'b> {
+        Request::new(self, Post).uri(uri).body(body)
     }
 
-    pub fn put<'a, 'b, S: Str, B: ToBody<'b>>(&'a mut self, uri: S, body: B) -> Request<'a, 'b> {
-        Request::new(self, Put).uri(uri.as_slice()).body(body)
+    pub fn put<'a, 'b, U: ToUrl, B: ToBody<'b>>(&'a mut self, uri: U, body: B) -> Request<'a, 'b> {
+        Request::new(self, Put).uri(uri).body(body)
     }
 
-    pub fn delete<'a, 'b, S: Str>(&'a mut self, uri: S) -> Request<'a, 'b> {
-        Request::new(self, Delete).uri(uri.as_slice())
+    pub fn delete<'a, 'b, U: ToUrl>(&'a mut self, uri: U) -> Request<'a, 'b> {
+        Request::new(self, Delete).uri(uri)
     }
 }
 
@@ -91,11 +92,13 @@ impl<'a, 'b> Request<'a, 'b> {
         }
     }
 
-    pub fn uri(mut self, uri: &str) -> Request<'a, 'b> {
-        match self.handle.easy.setopt(opt::URL, uri) {
-            Ok(_) => {}
-            Err(e) => self.err = Some(e)
-        }
+    pub fn uri<U: ToUrl>(mut self, uri: U) -> Request<'a, 'b> {
+        uri.with_url_str(|s| {
+            match self.handle.easy.setopt(opt::URL, s) {
+                Ok(_) => {}
+                Err(e) => self.err = Some(e)
+            }
+        });
 
         self
     }
@@ -254,6 +257,28 @@ impl<'a, 'b> Request<'a, 'b> {
 
 fn append_header(map: &mut HashMap<String, Vec<String>>, key: &str, val: &str) {
     map.find_or_insert(key.to_string(), Vec::new()).push(val.to_string());
+}
+
+pub trait ToUrl{
+    fn with_url_str(self, f: |&str|);
+}
+
+impl<'a> ToUrl for &'a str {
+    fn with_url_str(self, f: |&str|) {
+        f(self);
+    }
+}
+
+impl<'a> ToUrl for &'a Url {
+    fn with_url_str(self, f: |&str|) {
+        self.to_string().with_url_str(f);
+    }
+}
+
+impl ToUrl for String {
+    fn with_url_str(self, f: |&str|) {
+        self.as_slice().with_url_str(f);
+    }
 }
 
 #[cfg(test)]

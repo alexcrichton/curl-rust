@@ -3,6 +3,7 @@
 #![feature(phase)]
 
 extern crate libc;
+extern crate url;
 
 #[phase(plugin, link)]
 extern crate log;

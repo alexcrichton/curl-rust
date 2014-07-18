@@ -69,11 +69,16 @@ pub struct Request<'a, 'b> {
     method: Method,
     headers: HashMap<String, Vec<String>>,
     body: Option<Body<'b>>,
-    body_type: bool, // whether or not the body type was set
+    body_type: Option<BodyType>,
     content_type: bool, // whether or not the content type was set
     expect_continue: bool, // whether to expect a 100 continue from the server
     progress: Option<ProgressCb<'b>>,
     follow: bool,
+}
+
+enum BodyType {
+    Fixed(uint),
+    Chunked,
 }
 
 impl<'a, 'b> Request<'a, 'b> {
@@ -84,7 +89,7 @@ impl<'a, 'b> Request<'a, 'b> {
             method: method,
             headers: HashMap::new(),
             body: None,
-            body_type: false,
+            body_type: None,
             content_type: false,
             expect_continue: false,
             progress: None,
@@ -118,20 +123,12 @@ impl<'a, 'b> Request<'a, 'b> {
     }
 
     pub fn content_length(mut self, len: uint) -> Request<'a, 'b> {
-        if !self.body_type {
-            self.body_type = true;
-            append_header(&mut self.headers, "Content-Length", len.to_string().as_slice());
-        }
-
+        self.body_type = Some(Fixed(len));
         self
     }
 
     pub fn chunked(mut self) -> Request<'a, 'b> {
-        if !self.body_type {
-            self.body_type = true;
-            append_header(&mut self.headers, "Transfer-Encoding", "chunked");
-        }
-
+        self.body_type = Some(Chunked);
         self
     }
 
@@ -215,17 +212,26 @@ impl<'a, 'b> Request<'a, 'b> {
             Some(body) => {
                 debug!("handling body");
 
-                if !body_type {
-                    match body.get_size() {
-                        Some(len) => {
-                            match method {
-                                Post => try!(handle.easy.setopt(opt::POSTFIELDSIZE, len)),
-                                Put | Delete => try!(handle.easy.setopt(opt::INFILESIZE, len)),
-                                _ => {}
-                            }
+                let body_type = body_type.unwrap_or(match body.get_size() {
+                    Some(len) => Fixed(len),
+                    None => Chunked,
+                });
+
+                match body_type {
+                    Fixed(len) => {
+                        match method {
+                            Post => try!(handle.easy.setopt(opt::POSTFIELDSIZE, len)),
+                            Put | Delete  => try!(handle.easy.setopt(opt::INFILESIZE, len)),
+                            _ => {}
                         }
-                        None => append_header(&mut headers, "Transfer-Encoding", "chunked")
+                        append_header(&mut headers, "Content-Length",
+                                      len.to_string().as_slice());
                     }
+                    Chunked => {
+                        append_header(&mut headers, "Transfer-Encoding",
+                                      "chunked");
+                    }
+
                 }
 
                 if !content_type {

@@ -26,6 +26,7 @@ macro_rules! wait(
 mod get;
 mod head;
 mod post;
+mod proxy;
 mod put;
 mod delete;
 mod keep_alive;

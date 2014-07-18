@@ -31,6 +31,14 @@ impl Handle {
         self
     }
 
+    pub fn proxy<U: ToUrl>(mut self, proxy: U) -> Handle {
+        proxy.with_url_str(|s| {
+            self.easy.setopt(opt::PROXY, s).unwrap();
+        });
+
+        self
+    }
+
     pub fn get<'a, 'b, U: ToUrl>(&'a mut self, uri: U) -> Request<'a, 'b> {
         Request::new(self, Get).uri(uri)
     }

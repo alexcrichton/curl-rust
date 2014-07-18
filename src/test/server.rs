@@ -79,7 +79,7 @@ impl OpSequence {
     }
 
     pub fn is_shutdown(&self) -> bool {
-        self.ops.len() == 1 && self.ops.get(0) == &Shutdown
+        self.ops.len() == 1 && self.ops[0] == Shutdown
     }
 
     pub fn apply(&self, sock: &mut TcpStream, port: uint) -> Result<(), String> {
@@ -228,7 +228,7 @@ fn start_server() -> Handle {
     let port = listener.socket_name().unwrap().port;
 
     spawn(proc() {
-        let mut listener = listener;
+        let listener = listener;
         let mut srv = listener.listen().unwrap();
 
         ini_tx.send(true);

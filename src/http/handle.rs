@@ -108,6 +108,15 @@ impl<'a, 'b> Request<'a, 'b> {
         self
     }
 
+    pub fn content_type(mut self, ty: &str) -> Request<'a, 'b> {
+        if !self.content_type {
+            self.content_type = true;
+            append_header(&mut self.headers, "Content-Type", ty);
+        }
+
+        self
+    }
+
     pub fn content_length(mut self, len: uint) -> Request<'a, 'b> {
         if !self.body_type {
             self.body_type = true;

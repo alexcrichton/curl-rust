@@ -3,3 +3,6 @@
 name = "curl"
 version = "0.0.1"
 authors = ["Carl Lerche <me@carllerche.com>"]
+
+[dependencies.url]
+git = "https://github.com/servo/rust-url"

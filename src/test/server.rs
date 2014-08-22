@@ -1,9 +1,10 @@
-use std::str;
+use std::collections::HashSet;
 use std::io::net::ip::Port;
 use std::io::net::tcp::{TcpListener,TcpStream};
-use std::io::{Acceptor, Listener};
 use std::io::timer;
-use std::collections::HashSet;
+use std::io::{Acceptor, Listener};
+use std::str;
+use std::time::Duration;
 
 // Global handle to the running test HTTP server
 local_data_key!(handle: Handle)
@@ -115,7 +116,7 @@ impl OpSequence {
                                 to_debug_str(b.as_slice()), to_debug_str(act.as_slice())));
                     }
                 }
-                &Wait(ms) => { timer::sleep(ms as u64) }
+                &Wait(ms) => { timer::sleep(Duration::milliseconds(ms as i32)) }
                 &Shutdown => return Err("Shutdown must be sent on its own".to_string())
             }
         }

@@ -312,6 +312,6 @@ mod tests {
     fn get_header() {
         let mut h = Handle::new();
         let r = h.get("/foo").header("foo", "bar");
-        assert_eq!(r.get_header("foo"), Some(&["bar".to_string()]));
+        assert_eq!(r.get_header("foo"), Some(["bar".to_string()].as_slice()));
     }
 }

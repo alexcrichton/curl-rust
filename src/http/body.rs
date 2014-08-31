@@ -2,7 +2,7 @@ use std::io::{BufReader,IoResult,Reader};
 
 pub enum Body<'a> {
     FixedBody(BufReader<'a>, uint),
-    ChunkedBody(&'a mut Reader)
+    ChunkedBody(&'a mut Reader + Send)
 }
 
 impl<'a> Body<'a> {
@@ -44,7 +44,7 @@ impl<'a> ToBody<'a> for &'a String {
 }
 
 // TODO: https://github.com/rust-lang/rust/issues/14901
-impl<'a> ToBody<'a> for &'a mut Reader {
+impl<'a> ToBody<'a> for &'a mut Reader + Send {
     fn to_body(self) -> Body<'a> {
         ChunkedBody(self)
     }

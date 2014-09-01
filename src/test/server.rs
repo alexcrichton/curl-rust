@@ -116,7 +116,7 @@ impl OpSequence {
                                 to_debug_str(b.as_slice()), to_debug_str(act.as_slice())));
                     }
                 }
-                &Wait(ms) => { timer::sleep(Duration::milliseconds(ms as i32)) }
+                &Wait(ms) => { timer::sleep(Duration::milliseconds(ms as i64)) }
                 &Shutdown => return Err("Shutdown must be sent on its own".to_string())
             }
         }

@@ -1,0 +1,5 @@
+[package]
+name = "curl-sys"
+version = "0.0.1"
+authors = []
+build = "make -C build"

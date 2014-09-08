@@ -6,7 +6,6 @@ use super::opt::OptVal;
 
 type curl_slist = c_void;
 
-#[link(name = "curl")]
 extern {
     fn curl_slist_append(list: *mut curl_slist, val: *const u8) -> *mut curl_slist;
     fn curl_slist_free_all(list: *mut curl_slist);

@@ -1,0 +1,2 @@
+# apparently curl has trouple building with CRLF line endings
+* text eol=lf

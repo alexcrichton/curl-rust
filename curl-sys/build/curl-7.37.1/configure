@@ -13035,7 +13035,7 @@ fi
 	# The linker will automatically build a .lib file if we build a DLL.
 	old_archive_from_new_cmds='true'
 	# FIXME: Should let the user specify the lib program.
-	old_archive_cmds='lib -OUT:$oldlib$oldobjs$old_deplibs'
+	old_archive_cmds='ar crus $oldlib$oldobjs$old_deplibs'
 	enable_shared_with_static_runtimes=yes
 	;;
       esac

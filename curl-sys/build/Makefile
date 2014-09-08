@@ -1,3 +1,8 @@
+# OSX always has libcurl, so we do nothing on osx
+ifneq ($(findstring darwin,$(TARGET)),)
+all:
+else
+
 ifneq ($(findstring i686,$(TARGET)),)
 export CFLAGS := $(CFLAGS) -m32 -ffunction-sections -fdata-sections
 else
@@ -16,17 +21,23 @@ OPTS := $(OPTS) \
 	--disable-ldap --disable-ldaps --disable-ftp --disable-rtsp \
 	--disable-dict --disable-telnet --disable-tftp --disable-pop3 \
 	--disable-imap --disable-smtp --disable-gopher --disable-manual \
-	--enable-optimize \
+	--enable-optimize --without-librtmp \
         --prefix="$(OUT_DIR)"
 
 PWD := $(CURDIR)
 LIBCURL := curl-7.37.1
 
+# If libcurl exists locally, don't do anything. Otherwise go and build curl
 all:
+	pkg-config --exists libcurl || $(MAKE) build_curl
+
+build_curl:
 	rm -rf "$(OUT_DIR)/include" "$(OUT_DIR)/lib" "$(OUT_DIR)/build"
 	mkdir -p "$(OUT_DIR)/build" "$(OUT_DIR)/lib/pkgconfig"
-	[ -f "$(OUT_DIR)/build/Makefile" ] && \
-		make -C "$(OUT_DIR)/build" distclean || true
 	(cd "$(OUT_DIR)/build" && "$(PWD)/$(LIBCURL)/configure" $(OPTS))
-	make -C "$(OUT_DIR)/build/src"
-	make -C "$(OUT_DIR)/build/src" install
+	make -C "$(OUT_DIR)/build"
+	make -C "$(OUT_DIR)/build" install
+	cp "$(OUT_DIR)/lib/libcurl.a" "$(OUT_DIR)/libcurl.a" || exit 0
+	cp "$(OUT_DIR)/lib/libcurl.lib" "$(OUT_DIR)/libcurl.a" || exit 0
+
+endif

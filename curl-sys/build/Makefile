@@ -21,7 +21,7 @@ OPTS := $(OPTS) \
 	--disable-ldap --disable-ldaps --disable-ftp --disable-rtsp \
 	--disable-dict --disable-telnet --disable-tftp --disable-pop3 \
 	--disable-imap --disable-smtp --disable-gopher --disable-manual \
-	--enable-optimize --without-librtmp \
+	--enable-optimize --without-librtmp --without-libidn \
         --prefix="$(OUT_DIR)"
 
 PWD := $(CURDIR)
@@ -32,12 +32,11 @@ all:
 	pkg-config --exists libcurl || $(MAKE) build_curl
 
 build_curl:
-	rm -rf "$(OUT_DIR)/include" "$(OUT_DIR)/lib" "$(OUT_DIR)/build"
-	mkdir -p "$(OUT_DIR)/build" "$(OUT_DIR)/lib/pkgconfig"
+	mkdir -p "$(OUT_DIR)/build"
 	(cd "$(OUT_DIR)/build" && "$(PWD)/$(LIBCURL)/configure" $(OPTS))
 	make -C "$(OUT_DIR)/build"
-	make -C "$(OUT_DIR)/build" install
-	cp "$(OUT_DIR)/lib/libcurl.a" "$(OUT_DIR)/libcurl.a" || exit 0
-	cp "$(OUT_DIR)/lib/libcurl.lib" "$(OUT_DIR)/libcurl.a" || exit 0
+	cp "$(OUT_DIR)/build/lib/.libs/libcurl.a" "$(OUT_DIR)/libcurl.a" || exit 0
+	cp "$(OUT_DIR)/build/lib/.libs/libcurl.lib" "$(OUT_DIR)/libcurl.a" || exit 0
+	cp "$(OUT_DIR)/build/libcurl.pc" "$(OUT_DIR)/libcurl.pc"
 
 endif

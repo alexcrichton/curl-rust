@@ -1,3 +1,4 @@
+use std::path::Path;
 use libc::{c_void,c_int};
 
 static LONG: c_int          = 0;
@@ -30,6 +31,12 @@ impl OptVal for bool {
 }
 
 impl<'a> OptVal for &'a str {
+    fn with_c_repr(self, f: |*const c_void|) {
+        self.with_c_str(|arg| f(arg as *const c_void))
+    }
+}
+
+impl<'a> OptVal for &'a Path {
     fn with_c_repr(self, f: |*const c_void|) {
         self.with_c_str(|arg| f(arg as *const c_void))
     }

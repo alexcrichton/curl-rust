@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::path::Path;
 use url::Url;
 
 use ffi;
@@ -36,6 +37,11 @@ impl Handle {
             self.easy.setopt(opt::PROXY, s).unwrap();
         });
 
+        self
+    }
+
+    pub fn ssl_ca_path(mut self, path: &Path) -> Handle {
+        self.easy.setopt(opt::CAPATH, path).unwrap();
         self
     }
 

@@ -45,6 +45,11 @@ impl Handle {
         self
     }
 
+    pub fn ssl_ca_info(mut self, path: &Path) -> Handle {
+        self.easy.setopt(opt::CAINFO, path).unwrap();
+        self
+    }
+
     pub fn get<'a, 'b, U: ToUrl>(&'a mut self, uri: U) -> Request<'a, 'b> {
         Request::new(self, Get).uri(uri)
     }

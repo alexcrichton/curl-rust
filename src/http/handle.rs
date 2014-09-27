@@ -32,6 +32,11 @@ impl Handle {
         self
     }
 
+    pub fn verbose(mut self) -> Handle {
+        self.easy.setopt(opt::VERBOSE, 1u).unwrap();
+        self
+    }
+
     pub fn proxy<U: ToUrl>(mut self, proxy: U) -> Handle {
         proxy.with_url_str(|s| {
             self.easy.setopt(opt::PROXY, s).unwrap();

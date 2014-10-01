@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::collections::hashmap::{Occupied, Vacant};
 use std::path::Path;
 use url::Url;
 
@@ -295,7 +296,14 @@ impl<'a, 'b> Request<'a, 'b> {
 }
 
 fn append_header(map: &mut HashMap<String, Vec<String>>, key: &str, val: &str) {
-    map.find_or_insert(key.to_string(), Vec::new()).push(val.to_string());
+    match map.entry(key.to_string()) {
+        Vacant(entry) => {
+            let mut values = Vec::new();
+            values.push(val.to_string());
+            entry.set(values)
+        },
+        Occupied(entry) => entry.into_mut()
+    };
 }
 
 pub trait ToUrl{

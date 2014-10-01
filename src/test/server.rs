@@ -99,7 +99,7 @@ impl OpSequence {
                     let mut act = Vec::from_elem(rem, 0u8);
 
                     while rem > 0 {
-                        match sock.read(act.mut_slice_from(b.len() - rem)) {
+                        match sock.read(act.slice_from_mut(b.len() - rem)) {
                             Ok(i) => rem = rem - i,
                             Err(e) => {
                                 return Err(e.desc.to_string())
@@ -164,7 +164,7 @@ fn to_debug_str(bytes: &[u8]) -> String {
         let b = *b as char;
 
         if b >= ' ' && b <= '~' {
-            ret.push_char(b);
+            ret.push(b);
         }
         else if b == '\n' {
             ret.push_str("\\n\n");
@@ -173,7 +173,7 @@ fn to_debug_str(bytes: &[u8]) -> String {
             ret.push_str("\\r");
         }
         else {
-            ret.push_char('?');
+            ret.push('?');
         }
     }
 

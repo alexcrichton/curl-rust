@@ -2,4 +2,4 @@
 name = "curl-sys"
 version = "0.0.1"
 authors = []
-build = "make -C build"
+build = "build/make.sh -C build"

@@ -5,8 +5,10 @@ else
 
 ifneq ($(findstring i686,$(TARGET)),)
 export CFLAGS := $(CFLAGS) -m32 -ffunction-sections -fdata-sections
-else
+else ifneq ($(findstring x86_64,$(TARGET)),)
 export CFLAGS := $(CFLAGS) -fPIC -m64 -ffunction-sections -fdata-sections
+else
+export CFLAGS := $(CFLAGS) -fPIC -ffunction-sections -fdata-sections
 endif
 
 ifneq ($(findstring mingw,$(TARGET)),)

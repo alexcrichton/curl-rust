@@ -23,5 +23,5 @@ extern {}
 extern {}
 
 // Everywhere else, we just let pkg-config figure it out.
-#[cfg(not(windows), not(target_os = "macos"))]
+#[cfg(all(not(windows), not(target_os = "macos")))]
 link_config!("libcurl", ["favor_static"])

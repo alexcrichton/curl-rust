@@ -20,7 +20,7 @@ impl List {
     pub fn new() -> List {
         List {
             len: 0,
-            head: ptr::mut_null()
+            head: ptr::null_mut()
         }
     }
 

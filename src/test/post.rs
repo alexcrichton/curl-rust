@@ -69,7 +69,7 @@ pub fn test_post_binary_with_reader() {
                 Hello\r\n\r\n")
     );
 
-    let mut body = MemReader::new(Vec::from_slice(b"Foo Bar Baz"));
+    let mut body = MemReader::new(b"Foo Bar Baz".to_vec());
     let res = http::handle()
         .post(server::url("/"), &mut body)
         .exec().unwrap();
@@ -95,7 +95,7 @@ pub fn test_post_binary_with_reader_and_content_length() {
                 Hello\r\n\r\n")
     );
 
-    let mut body = MemReader::new(Vec::from_slice(b"Foo Bar Baz"));
+    let mut body = MemReader::new(b"Foo Bar Baz".to_vec());
     let res = http::handle()
         .post(server::url("/"), &mut body)
         .content_length(11)

@@ -1,10 +1,10 @@
 use std::path::Path;
 use libc::{c_void,c_int};
 
-static LONG: c_int          = 0;
-static OBJECTPOINT: c_int   = 10_000;
-static FUNCTIONPOINT: c_int = 20_000;
-static OFF_T: c_int         = 30_000;
+const LONG: c_int          = 0;
+const OBJECTPOINT: c_int   = 10_000;
+const FUNCTIONPOINT: c_int = 20_000;
+const OFF_T: c_int         = 30_000;
 
 pub type Opt = c_int;
 
@@ -45,14 +45,14 @@ impl<'a> OptVal for &'a Path {
 macro_rules! DEFOPT(
     ($name:ident, $ty:ident, $num:expr) => (
         #[allow(dead_code)]
-        pub static $name: Opt = $ty + $num;
+        pub const $name: Opt = $ty + $num;
     )
 )
 
 macro_rules! ALIAS(
     ($name:ident, $to:ident) => (
         #[allow(dead_code)]
-        pub static $name: Opt = $to;
+        pub const $name: Opt = $to;
     )
 )
 

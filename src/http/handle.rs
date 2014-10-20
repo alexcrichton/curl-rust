@@ -55,6 +55,20 @@ impl Handle {
         self.easy.setopt(opt::CAINFO, path).unwrap();
         self
     }
+    
+    pub fn cookie_jar(mut self, path: &Path) -> Handle {
+        self.easy.setopt(opt::COOKIEJAR, path).unwrap();
+        self
+    }
+
+    pub fn cookie_file(mut self, path: &Path) -> Handle {
+        self.easy.setopt(opt::COOKIEFILE, path).unwrap();
+        self
+    }
+
+    pub fn cookies(mut self, path: &Path) -> Handle {
+        self.cookie_jar(path).cookie_file(path)
+    }
 
     pub fn get<'a, 'b, U: ToUrl>(&'a mut self, uri: U) -> Request<'a, 'b> {
         Request::new(self, Get).uri(uri)

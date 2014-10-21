@@ -52,7 +52,7 @@ macro_rules! DEFOPT(
 macro_rules! ALIAS(
     ($name:ident, $to:ident) => (
         #[allow(dead_code)]
-        pub static $name: Opt = $to;
+        pub const $name: Opt = $to;
     )
 )
 

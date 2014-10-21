@@ -158,7 +158,7 @@ impl ResponseBuilder {
 
     fn add_header(&mut self, name: &str, val: &str) {
         // TODO: Reduce allocations
-        use std::ascii::OwnedStrAsciiExt;
+        use std::ascii::OwnedAsciiExt;
         let name = name.to_string().into_ascii_lower();
 
         let inserted = match self.hdrs.find_mut(&name) {

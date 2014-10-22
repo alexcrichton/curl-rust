@@ -11,4 +11,5 @@ git = "https://github.com/servo/rust-url"
 git = "https://github.com/alexcrichton/link-config"
 
 [dependencies.curl-sys]
+version = "*"
 path = "curl-sys"

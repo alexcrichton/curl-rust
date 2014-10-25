@@ -107,7 +107,7 @@ enum BodyType {
 }
 
 impl<'a, 'b> Request<'a, 'b> {
-    fn new<'a, 'b>(handle: &'a mut Handle, method: Method) -> Request<'a, 'b> {
+    pub fn new<'a, 'b>(handle: &'a mut Handle, method: Method) -> Request<'a, 'b> {
         Request {
             err: None,
             handle: handle,

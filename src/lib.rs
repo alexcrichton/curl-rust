@@ -5,6 +5,8 @@
 extern crate libc;
 extern crate url;
 
+extern crate "openssl-static-sys" as openssl_static_sys;
+
 #[phase(plugin)] extern crate "link-config" as link_config;
 #[phase(plugin, link)] extern crate log;
 

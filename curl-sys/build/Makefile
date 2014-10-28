@@ -15,6 +15,8 @@ ifneq ($(findstring mingw,$(TARGET)),)
 # Otherwise apparently the makefiles get corrupted and aren't valid
 export LD=$(shell which ld)
 OPTS := --with-winssl
+else
+OPTS := --without-ca-bundle --without-ca-path
 endif
 
 OPTS := $(OPTS) \
@@ -24,6 +26,7 @@ OPTS := $(OPTS) \
 	--disable-dict --disable-telnet --disable-tftp --disable-pop3 \
 	--disable-imap --disable-smtp --disable-gopher --disable-manual \
 	--enable-optimize --without-librtmp --without-libidn \
+	--without-nghttp2 --without-libssh2 \
         --prefix="$(OUT_DIR)"
 
 PWD := $(CURDIR)

@@ -210,7 +210,7 @@ impl OpSequenceResult {
     pub fn assert(&self) {
         match self.rx.recv() {
             Ok(_) => {}
-            Err(e) => fail!("http exchange did not proceed as expected: {}", e)
+            Err(e) => panic!("http exchange did not proceed as expected: {}", e)
         }
     }
 }

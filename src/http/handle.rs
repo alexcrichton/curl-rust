@@ -168,7 +168,7 @@ impl<'a, 'b> Request<'a, 'b> {
     }
 
     pub fn get_header<'a>(&'a self, name: &str) -> Option<&'a [String]> {
-        self.headers.find_equiv(&name).map(|a| a.as_slice())
+        self.headers.find_equiv(name).map(|a| a.as_slice())
     }
 
     pub fn headers<'c, 'd, I: Iterator<(&'c str, &'d str)>>(mut self, mut hdrs: I) -> Request<'a, 'b> {

@@ -29,14 +29,12 @@ impl List {
         self.len += 1;
         self.head = unsafe { curl_slist_append(self.head, val.as_ptr()) };
     }
-}
 
-impl Collection for List {
-    fn len(&self) -> uint {
+    pub fn len(&self) -> uint {
         self.len
     }
 
-    fn is_empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.len == 0
     }
 }

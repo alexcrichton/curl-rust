@@ -1,5 +1,5 @@
 use std::c_str::CString;
-use std::fmt;
+use std::{error, fmt, str};
 use libc::{c_int,c_char};
 
 #[allow(non_camel_case_types)]
@@ -146,5 +146,11 @@ impl fmt::Show for ErrCode {
             Some(s) => write!(fmt, "{}", s),
             None => write!(fmt, "<unknown err>")
         }
+    }
+}
+
+impl error::Error for ErrCode {
+    fn description(&self) -> &str {
+        unsafe { str::raw::c_str_to_static_slice(curl_easy_strerror(*self)) }
     }
 }

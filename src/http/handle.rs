@@ -1,4 +1,4 @@
-use std::collections::hashmap::{HashMap, Occupied, Vacant};
+use std::collections::hash_map::{HashMap, Occupied, Vacant};
 
 use openssl_static_sys;
 use url::Url;

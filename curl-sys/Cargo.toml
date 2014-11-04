@@ -1,0 +1,41 @@
+[package]
+name = "curl-sys"
+version = "0.0.1"
+authors = []
+links = "curl"
+build = "build.rs"
+
+[build-dependencies.pkg-config]
+git = "https://github.com/alexcrichton/pkg-config-rs"
+
+[lib]
+name = "curl-sys"
+path = "lib.rs"
+
+# Unix platforms use OpenSSL for now to provide SSL functionality
+[target.i686-apple-darwin.dependencies.openssl-sys]
+  git = "https://github.com/alexcrichton/openssl-sys"
+[target.x86_64-apple-darwin.dependencies.openssl-sys]
+  git = "https://github.com/alexcrichton/openssl-sys"
+[target.i686-unknown-linux-gnu.dependencies.openssl-sys]
+  git = "https://github.com/alexcrichton/openssl-sys"
+[target.x86_64-unknown-linux-gnu.dependencies.openssl-sys]
+  git = "https://github.com/alexcrichton/openssl-sys"
+[target.i686-unknown-freebsd.dependencies.openssl-sys]
+  git = "https://github.com/alexcrichton/openssl-sys"
+[target.x86_64-unknown-freebsd.dependencies.openssl-sys]
+  git = "https://github.com/alexcrichton/openssl-sys"
+
+# Unix platforms also use libz for compression
+[target.i686-apple-darwin.dependencies.libz-sys]
+  git = "https://github.com/alexcrichton/libz-sys"
+[target.x86_64-apple-darwin.dependencies.libz-sys]
+  git = "https://github.com/alexcrichton/libz-sys"
+[target.i686-unknown-linux-gnu.dependencies.libz-sys]
+  git = "https://github.com/alexcrichton/libz-sys"
+[target.x86_64-unknown-linux-gnu.dependencies.libz-sys]
+  git = "https://github.com/alexcrichton/libz-sys"
+[target.i686-unknown-freebsd.dependencies.libz-sys]
+  git = "https://github.com/alexcrichton/libz-sys"
+[target.x86_64-unknown-freebsd.dependencies.libz-sys]
+  git = "https://github.com/alexcrichton/libz-sys"

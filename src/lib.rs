@@ -4,9 +4,10 @@
 
 extern crate libc;
 extern crate url;
+#[phase(plugin, link)] extern crate log;
 
-#[phase(plugin, link)]
-extern crate log;
+extern crate "curl-sys" as curl_ffi;
+#[cfg(unix)] extern crate "openssl-sys" as openssl;
 
 pub use ffi::easy::ProgressCb;
 pub use ffi::err::ErrCode;

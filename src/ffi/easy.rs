@@ -2,27 +2,18 @@ use std::sync::{Once, ONCE_INIT};
 use std::c_vec::CVec;
 use std::{io,mem};
 use std::collections::HashMap;
-use libc::{c_void,c_int,c_long,c_double,size_t};
+use libc::{c_int,c_long,c_double,size_t};
 use super::{consts,err,info,opt};
 use super::err::ErrCode;
 use http::body::Body;
 use http::{header,Response};
 
-type CURL = c_void;
+use curl_ffi as ffi;
+
 pub type ProgressCb<'a> = |uint, uint, uint, uint|:'a -> ();
 
-#[link(name = "curl")]
-extern {
-    pub fn curl_easy_init() -> *mut CURL;
-    pub fn curl_easy_setopt(curl: *mut CURL, option: opt::Opt, ...) -> ErrCode;
-    pub fn curl_easy_perform(curl: *mut CURL) -> ErrCode;
-    pub fn curl_easy_cleanup(curl: *mut CURL);
-    pub fn curl_easy_getinfo(curl: *const CURL, info: info::Key, ...) -> ErrCode;
-    pub fn curl_global_cleanup();
-}
-
 pub struct Easy {
-    curl: *mut CURL
+    curl: *mut ffi::CURL
 }
 
 impl Easy {
@@ -31,8 +22,8 @@ impl Easy {
         global_init();
 
         let handle = unsafe {
-            let p = curl_easy_init();
-            curl_easy_setopt(p, opt::NOPROGRESS, 0u);
+            let p = ffi::curl_easy_init();
+            ffi::curl_easy_setopt(p, opt::NOPROGRESS, 0u);
             p
         };
 
@@ -42,11 +33,11 @@ impl Easy {
     #[inline]
     pub fn setopt<T: opt::OptVal>(&mut self, option: opt::Opt, val: T) -> Result<(), err::ErrCode> {
         // TODO: Prevent setting callback related options
-        let mut res = err::OK;
+        let mut res = err::ErrCode(err::OK);
 
         unsafe {
             val.with_c_repr(|repr| {
-                res = curl_easy_setopt(self.curl, option, repr);
+                res = err::ErrCode(ffi::curl_easy_setopt(self.curl, option, repr));
             })
         }
 
@@ -72,20 +63,20 @@ impl Easy {
             debug!("setting read fn: {}", body_p != 0);
 
             // Set callback options
-            curl_easy_setopt(self.curl, opt::READFUNCTION, curl_read_fn);
-            curl_easy_setopt(self.curl, opt::READDATA, body_p);
+            ffi::curl_easy_setopt(self.curl, opt::READFUNCTION, curl_read_fn);
+            ffi::curl_easy_setopt(self.curl, opt::READDATA, body_p);
 
-            curl_easy_setopt(self.curl, opt::WRITEFUNCTION, curl_write_fn);
-            curl_easy_setopt(self.curl, opt::WRITEDATA, resp_p);
+            ffi::curl_easy_setopt(self.curl, opt::WRITEFUNCTION, curl_write_fn);
+            ffi::curl_easy_setopt(self.curl, opt::WRITEDATA, resp_p);
 
-            curl_easy_setopt(self.curl, opt::HEADERFUNCTION, curl_header_fn);
-            curl_easy_setopt(self.curl, opt::HEADERDATA, resp_p);
+            ffi::curl_easy_setopt(self.curl, opt::HEADERFUNCTION, curl_header_fn);
+            ffi::curl_easy_setopt(self.curl, opt::HEADERDATA, resp_p);
 
-            curl_easy_setopt(self.curl, opt::PROGRESSFUNCTION, curl_progress_fn);
-            curl_easy_setopt(self.curl, opt::PROGRESSDATA, progress_p);
+            ffi::curl_easy_setopt(self.curl, opt::PROGRESSFUNCTION, curl_progress_fn);
+            ffi::curl_easy_setopt(self.curl, opt::PROGRESSDATA, progress_p);
         }
 
-        let err = unsafe { curl_easy_perform(self.curl) };
+        let err = err::ErrCode(unsafe { ffi::curl_easy_perform(self.curl) });
 
         // If the request failed, abort here
         if !err.is_success() {
@@ -108,9 +99,9 @@ impl Easy {
 
     fn get_info_long(&self, key: info::Key) -> Result<c_long, err::ErrCode> {
         let v: c_long = 0;
-        let res = unsafe {
-            curl_easy_getinfo(self.curl as *const CURL, key, &v)
-        };
+        let res = err::ErrCode(unsafe {
+            ffi::curl_easy_getinfo(self.curl as *const _, key, &v)
+        });
 
         if !res.is_success() {
             return Err(res);
@@ -125,13 +116,13 @@ fn global_init() {
     // Schedule curl to be cleaned up after we're done with this whole process
     static mut INIT: Once = ONCE_INIT;
     unsafe {
-        INIT.doit(|| ::std::rt::at_exit(proc() curl_global_cleanup()))
+        INIT.doit(|| ::std::rt::at_exit(proc() ffi::curl_global_cleanup()))
     }
 }
 
 impl Drop for Easy {
     fn drop(&mut self) {
-        unsafe { curl_easy_cleanup(self.curl) }
+        unsafe { ffi::curl_easy_cleanup(self.curl) }
     }
 }
 

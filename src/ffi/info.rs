@@ -1,20 +1,9 @@
 #![allow(dead_code)]
 
-use libc::{c_int};
+use curl_ffi as ffi;
 
-const STRING: c_int   = 0x100000;
-const LONG: c_int     = 0x200000;
-const DOUBLE: c_int   = 0x300000;
-const SLIST:  c_int   = 0x400000;
-const MASK: c_int     = 0x0fffff;
-const TYPEMASK: c_int = 0xf00000;
+pub use curl_ffi::CURLINFO_EFFECTIVE_URL as EFFECTIVE_URL;
+pub use curl_ffi::CURLINFO_RESPONSE_CODE as RESPONSE_CODE;
+pub use curl_ffi::CURLINFO_TOTAL_TIME as TOTAL_TIME;
 
-pub type Key = c_int;
-
-macro_rules! DEFINFO(
-    ($name:ident, $ty:ident, $num:expr) => (pub const $name: Key = $ty + $num;);
-)
-
-DEFINFO!(EFFECTIVE_URL, STRING, 1)
-DEFINFO!(RESPONSE_CODE, LONG,   2)
-DEFINFO!(TOTAL_TIME, DOUBLE,    5)
+pub type Key = ffi::CURLINFO;

@@ -1,6 +1,5 @@
-use std::collections::HashMap;
-use std::collections::hash_map::{Occupied, Vacant};
-use std::path::Path;
+use std::collections::hash_map::{HashMap, Occupied, Vacant};
+
 use url::Url;
 
 use ffi;
@@ -18,9 +17,25 @@ pub struct Handle {
 
 impl Handle {
     pub fn new() -> Handle {
-        Handle { easy: Easy::new() }
+        return configure(Handle { easy: Easy::new() }
             .timeout(DEFAULT_TIMEOUT_MS)
-            .connect_timeout(DEFAULT_TIMEOUT_MS)
+            .connect_timeout(DEFAULT_TIMEOUT_MS));
+
+        #[cfg(unix)]
+        fn configure(handle: Handle) -> Handle {
+            let probe = ::openssl::probe::probe();
+            let handle = match probe.cert_file {
+                Some(ref path) => handle.ssl_ca_info(path),
+                None => handle,
+            };
+            match probe.cert_dir {
+                Some(ref path) => handle.ssl_ca_path(path),
+                None => handle,
+            }
+        }
+
+        #[cfg(not(unix))]
+        fn configure(handle: Handle) -> Handle { handle }
     }
 
     pub fn timeout(mut self, ms: uint) -> Handle {
@@ -55,7 +70,7 @@ impl Handle {
         self.easy.setopt(opt::CAINFO, path).unwrap();
         self
     }
-    
+
     pub fn cookie_jar(mut self, path: &Path) -> Handle {
         self.easy.setopt(opt::COOKIEJAR, path).unwrap();
         self
@@ -66,7 +81,7 @@ impl Handle {
         self
     }
 
-    pub fn cookies(mut self, path: &Path) -> Handle {
+    pub fn cookies(self, path: &Path) -> Handle {
         self.cookie_jar(path).cookie_file(path)
     }
 

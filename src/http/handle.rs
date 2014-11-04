@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::collections::hashmap::{Occupied, Vacant};
+use std::collections::hash_map::{Occupied, Vacant};
 use std::path::Path;
 use url::Url;
 

@@ -102,10 +102,13 @@ impl OpSequence {
                         match sock.read(act.slice_from_mut(b.len() - rem)) {
                             Ok(i) => rem = rem - i,
                             Err(e) => {
+                                debug!("aborting due to error; error={}; remaining={}; bytes=\n{}",
+                                       e.desc.to_string(), rem, to_debug_str(act.as_slice()));
                                 return Err(e.desc.to_string())
                             }
                         }
                     }
+                    debug!("server received bytes; bytes=\n{}", to_debug_str(act.as_slice()));
 
                     let req1 = parse_request(b.as_slice());
                     let req2 = parse_request(act.as_slice());

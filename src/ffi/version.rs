@@ -251,7 +251,6 @@ fn as_str<'a>(p: *const c_char) -> Option<&'a str> {
     }
 }
 
-#[link(name = "curl")]
 extern {
     fn curl_version() -> *const c_char;
     fn curl_version_info(t: CURLversion) -> &'static curl_version_info_data;

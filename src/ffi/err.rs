@@ -127,7 +127,6 @@ pub enum ErrCode {
     LAST /* never use! */
 }
 
-#[link(name = "curl")]
 extern {
     fn curl_easy_strerror(code: ErrCode) -> *const c_char;
 }

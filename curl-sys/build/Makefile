@@ -11,7 +11,7 @@ else
 export CFLAGS := $(CFLAGS) -fPIC -ffunction-sections -fdata-sections
 endif
 
-ifneq ($(findstring mingw,$(TARGET)),)
+ifneq ($(findstring windows,$(TARGET)),)
 # Otherwise apparently the makefiles get corrupted and aren't valid
 export LD=$(shell which ld)
 OPTS := --with-winssl

@@ -1,20 +1,14 @@
-#![allow(non_camel_case_types)]
+#![allow(dead_code)]
 
 use std::ptr;
 use libc::c_void;
 use super::opt::OptVal;
 
-type curl_slist = c_void;
-
-#[link(name = "curl")]
-extern {
-    fn curl_slist_append(list: *mut curl_slist, val: *const u8) -> *mut curl_slist;
-    fn curl_slist_free_all(list: *mut curl_slist);
-}
+use curl_ffi as ffi;
 
 pub struct List {
     len: uint,
-    head: *mut curl_slist,
+    head: *mut ffi::curl_slist,
 }
 
 impl List {
@@ -28,7 +22,7 @@ impl List {
     pub fn push_bytes(&mut self, val: &[u8]) {
         assert!(val[val.len() - 1] == 0);
         self.len += 1;
-        self.head = unsafe { curl_slist_append(self.head, val.as_ptr()) };
+        self.head = unsafe { ffi::curl_slist_append(self.head, val.as_ptr()) };
     }
 
     pub fn len(&self) -> uint {
@@ -43,7 +37,7 @@ impl List {
 impl Drop for List {
     fn drop(&mut self) {
         if !self.is_empty() {
-            unsafe { curl_slist_free_all(self.head) }
+            unsafe { ffi::curl_slist_free_all(self.head) }
         }
     }
 }

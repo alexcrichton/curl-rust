@@ -1,146 +1,117 @@
 use std::c_str::CString;
-use std::{error, fmt, str};
-use libc::{c_int,c_char};
+use std::error;
+use std::fmt;
+use std::str;
 
-#[allow(non_camel_case_types)]
+use curl_ffi as ffi;
 
-#[repr(C)]
-pub enum ErrCode {
-    OK = 0,
-    UNSUPPORTED_PROTOCOL,    /* 1 */
-    FAILED_INIT,             /* 2 */
-    URL_MALFORMAT,           /* 3 */
-    NOT_BUILT_IN,            /* 4 - [was obsoleted in August 2007 for
-                                7.17.0, reused in April 2011 for 7.21.5] */
-    COULDNT_RESOLVE_PROXY,   /* 5 */
-    COULDNT_RESOLVE_HOST,    /* 6 */
-    COULDNT_CONNECT,         /* 7 */
-    FTP_WEIRD_SERVER_REPLY,  /* 8 */
-    REMOTE_ACCESS_DENIED,    /* 9 a service was denied by the server
-                                due to lack of access - when login fails
-                                this is not returned. */
-    FTP_ACCEPT_FAILED,       /* 10 - [was obsoleted in April 2006 for
-                                7.15.4, reused in Dec 2011 for 7.24.0]*/
-    FTP_WEIRD_PASS_REPLY,    /* 11 */
-    FTP_ACCEPT_TIMEOUT,      /* 12 - timeout occurred accepting server
-                                [was obsoleted in August 2007 for 7.17.0,
-                                reused in Dec 2011 for 7.24.0]*/
-    FTP_WEIRD_PASV_REPLY,    /* 13 */
-    FTP_WEIRD_227_FORMAT,    /* 14 */
-    FTP_CANT_GET_HOST,       /* 15 */
-    OBSOLETE16,              /* 16 - NOT USED */
-    FTP_COULDNT_SET_TYPE,    /* 17 */
-    PARTIAL_FILE,            /* 18 */
-    FTP_COULDNT_RETR_FILE,   /* 19 */
-    OBSOLETE20,              /* 20 - NOT USED */
-    QUOTE_ERROR,             /* 21 - quote command failure */
-    HTTP_RETURNED_ERROR,     /* 22 */
-    WRITE_ERROR,             /* 23 */
-    OBSOLETE24,              /* 24 - NOT USED */
-    UPLOAD_FAILED,           /* 25 - failed upload "command" */
-    READ_ERROR,              /* 26 - couldn't open/read from file */
-    OUT_OF_MEMORY,           /* 27 */
-    /* Note: CURLE_OUT_OF_MEMORY may sometimes indicate a conversion error
-       instead of a memory allocation error if CURL_DOES_CONVERSIONS
-       is defined
-       */
-    OPERATION_TIMEDOUT,      /* 28 - the timeout time was reached */
-    OBSOLETE29,              /* 29 - NOT USED */
-    FTP_PORT_FAILED,         /* 30 - FTP PORT operation failed */
-    FTP_COULDNT_USE_REST,    /* 31 - the REST command failed */
-    OBSOLETE32,              /* 32 - NOT USED */
-    RANGE_ERROR,             /* 33 - RANGE "command" didn't work */
-    HTTP_POST_ERROR,         /* 34 */
-    SSL_CONNECT_ERROR,       /* 35 - wrong when connecting with SSL */
-    BAD_DOWNLOAD_RESUME,     /* 36 - couldn't resume download */
-    FILE_COULDNT_READ_FILE,  /* 37 */
-    LDAP_CANNOT_BIND,        /* 38 */
-    LDAP_SEARCH_FAILED,      /* 39 */
-    OBSOLETE40,              /* 40 - NOT USED */
-    FUNCTION_NOT_FOUND,      /* 41 */
-    ABORTED_BY_CALLBACK,     /* 42 */
-    BAD_FUNCTION_ARGUMENT,   /* 43 */
-    OBSOLETE44,              /* 44 - NOT USED */
-    INTERFACE_FAILED,        /* 45 - CURLOPT_INTERFACE failed */
-    OBSOLETE46,              /* 46 - NOT USED */
-    TOO_MANY_REDIRECTS ,     /* 47 - catch endless re-direct loops */
-    UNKNOWN_OPTION,          /* 48 - User specified an unknown option */
-    TELNET_OPTION_SYNTAX ,   /* 49 - Malformed telnet option */
-    OBSOLETE50,              /* 50 - NOT USED */
-    PEER_FAILED_VERIFICATION, /* 51 - peer's certificate or fingerprint
-                                 wasn't verified fine */
-    GOT_NOTHING,             /* 52 - when this is a specific error */
-    SSL_ENGINE_NOTFOUND,     /* 53 - SSL crypto engine not found */
-    SSL_ENGINE_SETFAILED,    /* 54 - can not set SSL crypto engine as
-                                default */
-    SEND_ERROR,              /* 55 - failed sending network data */
-    RECV_ERROR,              /* 56 - failure in receiving network data */
-    OBSOLETE57,              /* 57 - NOT IN USE */
-    SSL_CERTPROBLEM,         /* 58 - problem with the local certificate */
-    SSL_CIPHER,              /* 59 - couldn't use specified cipher */
-    SSL_CACERT,              /* 60 - problem with the CA cert (path?) */
-    BAD_CONTENT_ENCODING,    /* 61 - Unrecognized/bad encoding */
-    LDAP_INVALID_URL,        /* 62 - Invalid LDAP URL */
-    FILESIZE_EXCEEDED,       /* 63 - Maximum file size exceeded */
-    USE_SSL_FAILED,          /* 64 - Requested FTP SSL level failed */
-    SEND_FAIL_REWIND,        /* 65 - Sending the data requires a rewind
-                                that failed */
-    SSL_ENGINE_INITFAILED,   /* 66 - failed to initialise ENGINE */
-    LOGIN_DENIED,            /* 67 - user, password or similar was not
-                                accepted and we failed to login */
-    TFTP_NOTFOUND,           /* 68 - file not found on server */
-    TFTP_PERM,               /* 69 - permission problem on server */
-    REMOTE_DISK_FULL,        /* 70 - out of disk space on server */
-    TFTP_ILLEGAL,            /* 71 - Illegal TFTP operation */
-    TFTP_UNKNOWNID,          /* 72 - Unknown transfer ID */
-    REMOTE_FILE_EXISTS,      /* 73 - File already exists */
-    TFTP_NOSUCHUSER,         /* 74 - No such user */
-    CONV_FAILED,             /* 75 - conversion failed */
-    CONV_REQD,               /* 76 - caller must register conversion
-                                callbacks using curl_easy_setopt options
-                                CURLOPT_CONV_FROM_NETWORK_FUNCTION,
-                                CURLOPT_CONV_TO_NETWORK_FUNCTION, and
-                                CURLOPT_CONV_FROM_UTF8_FUNCTION */
-    SSL_CACERT_BADFILE,      /* 77 - could not load CACERT file, missing
-                                or wrong format */
-    REMOTE_FILE_NOT_FOUND,   /* 78 - remote file not found */
-    SSH,                     /* 79 - error from the SSH layer, somewhat
-                                generic so the error message will be of
-                                interest when this has happened */
+pub use curl_ffi::CURLE_OK as OK;
+pub use curl_ffi::CURLE_UNSUPPORTED_PROTOCOL as UNSUPPORTED_PROTOCOL;
+pub use curl_ffi::CURLE_FAILED_INIT as FAILED_INIT;
+pub use curl_ffi::CURLE_URL_MALFORMAT as URL_MALFORMAT;
+pub use curl_ffi::CURLE_NOT_BUILT_IN as NOT_BUILT_IN;
+pub use curl_ffi::CURLE_COULDNT_RESOLVE_PROXY as COULDNT_RESOLVE_PROXY;
+pub use curl_ffi::CURLE_COULDNT_RESOLVE_HOST as COULDNT_RESOLVE_HOST;
+pub use curl_ffi::CURLE_COULDNT_CONNECT as COULDNT_CONNECT;
+pub use curl_ffi::CURLE_FTP_WEIRD_SERVER_REPLY as FTP_WEIRD_SERVER_REPLY;
+pub use curl_ffi::CURLE_REMOTE_ACCESS_DENIED as REMOTE_ACCESS_DENIED;
+pub use curl_ffi::CURLE_FTP_ACCEPT_FAILED as FTP_ACCEPT_FAILED;
+pub use curl_ffi::CURLE_FTP_WEIRD_PASS_REPLY as FTP_WEIRD_PASS_REPLY;
+pub use curl_ffi::CURLE_FTP_ACCEPT_TIMEOUT as FTP_ACCEPT_TIMEOUT;
+pub use curl_ffi::CURLE_FTP_WEIRD_PASV_REPLY as FTP_WEIRD_PASV_REPLY;
+pub use curl_ffi::CURLE_FTP_WEIRD_227_FORMAT as FTP_WEIRD_227_FORMAT;
+pub use curl_ffi::CURLE_FTP_CANT_GET_HOST as FTP_CANT_GET_HOST;
+pub use curl_ffi::CURLE_OBSOLETE16 as OBSOLETE16;
+pub use curl_ffi::CURLE_FTP_COULDNT_SET_TYPE as FTP_COULDNT_SET_TYPE;
+pub use curl_ffi::CURLE_PARTIAL_FILE as PARTIAL_FILE;
+pub use curl_ffi::CURLE_FTP_COULDNT_RETR_FILE as FTP_COULDNT_RETR_FILE;
+pub use curl_ffi::CURLE_OBSOLETE20 as OBSOLETE20;
+pub use curl_ffi::CURLE_QUOTE_ERROR as QUOTE_ERROR;
+pub use curl_ffi::CURLE_HTTP_RETURNED_ERROR as HTTP_RETURNED_ERROR;
+pub use curl_ffi::CURLE_WRITE_ERROR as WRITE_ERROR;
+pub use curl_ffi::CURLE_OBSOLETE24 as OBSOLETE24;
+pub use curl_ffi::CURLE_UPLOAD_FAILED as UPLOAD_FAILED;
+pub use curl_ffi::CURLE_READ_ERROR as READ_ERROR;
+pub use curl_ffi::CURLE_OUT_OF_MEMORY as OUT_OF_MEMORY;
+pub use curl_ffi::CURLE_OPERATION_TIMEDOUT as OPERATION_TIMEDOUT;
+pub use curl_ffi::CURLE_OBSOLETE29 as OBSOLETE29;
+pub use curl_ffi::CURLE_FTP_PORT_FAILED as FTP_PORT_FAILED;
+pub use curl_ffi::CURLE_FTP_COULDNT_USE_REST as FTP_COULDNT_USE_REST;
+pub use curl_ffi::CURLE_OBSOLETE32 as OBSOLETE32;
+pub use curl_ffi::CURLE_RANGE_ERROR as RANGE_ERROR;
+pub use curl_ffi::CURLE_HTTP_POST_ERROR as HTTP_POST_ERROR;
+pub use curl_ffi::CURLE_SSL_CONNECT_ERROR as SSL_CONNECT_ERROR;
+pub use curl_ffi::CURLE_BAD_DOWNLOAD_RESUME as BAD_DOWNLOAD_RESUME;
+pub use curl_ffi::CURLE_FILE_COULDNT_READ_FILE as FILE_COULDNT_READ_FILE;
+pub use curl_ffi::CURLE_LDAP_CANNOT_BIND as LDAP_CANNOT_BIND;
+pub use curl_ffi::CURLE_LDAP_SEARCH_FAILED as LDAP_SEARCH_FAILED;
+pub use curl_ffi::CURLE_OBSOLETE40 as OBSOLETE40;
+pub use curl_ffi::CURLE_FUNCTION_NOT_FOUND as FUNCTION_NOT_FOUND;
+pub use curl_ffi::CURLE_ABORTED_BY_CALLBACK as ABORTED_BY_CALLBACK;
+pub use curl_ffi::CURLE_BAD_FUNCTION_ARGUMENT as BAD_FUNCTION_ARGUMENT;
+pub use curl_ffi::CURLE_OBSOLETE44 as OBSOLETE44;
+pub use curl_ffi::CURLE_INTERFACE_FAILED as INTERFACE_FAILED;
+pub use curl_ffi::CURLE_OBSOLETE46 as OBSOLETE46;
+pub use curl_ffi::CURLE_TOO_MANY_REDIRECTS  as TOO_MANY_REDIRECTS ;
+pub use curl_ffi::CURLE_UNKNOWN_OPTION as UNKNOWN_OPTION;
+pub use curl_ffi::CURLE_TELNET_OPTION_SYNTAX  as TELNET_OPTION_SYNTAX ;
+pub use curl_ffi::CURLE_OBSOLETE50 as OBSOLETE50;
+pub use curl_ffi::CURLE_PEER_FAILED_VERIFICATION as PEER_FAILED_VERIFICATION;
+pub use curl_ffi::CURLE_GOT_NOTHING as GOT_NOTHING;
+pub use curl_ffi::CURLE_SSL_ENGINE_NOTFOUND as SSL_ENGINE_NOTFOUND;
+pub use curl_ffi::CURLE_SSL_ENGINE_SETFAILED as SSL_ENGINE_SETFAILED;
+pub use curl_ffi::CURLE_SEND_ERROR as SEND_ERROR;
+pub use curl_ffi::CURLE_RECV_ERROR as RECV_ERROR;
+pub use curl_ffi::CURLE_OBSOLETE57 as OBSOLETE57;
+pub use curl_ffi::CURLE_SSL_CERTPROBLEM as SSL_CERTPROBLEM;
+pub use curl_ffi::CURLE_SSL_CIPHER as SSL_CIPHER;
+pub use curl_ffi::CURLE_SSL_CACERT as SSL_CACERT;
+pub use curl_ffi::CURLE_BAD_CONTENT_ENCODING as BAD_CONTENT_ENCODING;
+pub use curl_ffi::CURLE_LDAP_INVALID_URL as LDAP_INVALID_URL;
+pub use curl_ffi::CURLE_FILESIZE_EXCEEDED as FILESIZE_EXCEEDED;
+pub use curl_ffi::CURLE_USE_SSL_FAILED as USE_SSL_FAILED;
+pub use curl_ffi::CURLE_SEND_FAIL_REWIND as SEND_FAIL_REWIND;
+pub use curl_ffi::CURLE_SSL_ENGINE_INITFAILED as SSL_ENGINE_INITFAILED;
+pub use curl_ffi::CURLE_LOGIN_DENIED as LOGIN_DENIED;
+pub use curl_ffi::CURLE_TFTP_NOTFOUND as TFTP_NOTFOUND;
+pub use curl_ffi::CURLE_TFTP_PERM as TFTP_PERM;
+pub use curl_ffi::CURLE_REMOTE_DISK_FULL as REMOTE_DISK_FULL;
+pub use curl_ffi::CURLE_TFTP_ILLEGAL as TFTP_ILLEGAL;
+pub use curl_ffi::CURLE_TFTP_UNKNOWNID as TFTP_UNKNOWNID;
+pub use curl_ffi::CURLE_REMOTE_FILE_EXISTS as REMOTE_FILE_EXISTS;
+pub use curl_ffi::CURLE_TFTP_NOSUCHUSER as TFTP_NOSUCHUSER;
+pub use curl_ffi::CURLE_CONV_FAILED as CONV_FAILED;
+pub use curl_ffi::CURLE_CONV_REQD as CONV_REQD;
+pub use curl_ffi::CURLE_SSL_CACERT_BADFILE as SSL_CACERT_BADFILE;
+pub use curl_ffi::CURLE_REMOTE_FILE_NOT_FOUND as REMOTE_FILE_NOT_FOUND;
+pub use curl_ffi::CURLE_SSH as SSH;
+pub use curl_ffi::CURLE_SSL_SHUTDOWN_FAILED as SSL_SHUTDOWN_FAILED;
+pub use curl_ffi::CURLE_AGAIN as AGAIN;
+pub use curl_ffi::CURLE_SSL_CRL_BADFILE as SSL_CRL_BADFILE;
+pub use curl_ffi::CURLE_SSL_ISSUER_ERROR as SSL_ISSUER_ERROR;
+pub use curl_ffi::CURLE_FTP_PRET_FAILED as FTP_PRET_FAILED;
+pub use curl_ffi::CURLE_RTSP_CSEQ_ERROR as RTSP_CSEQ_ERROR;
+pub use curl_ffi::CURLE_RTSP_SESSION_ERROR as RTSP_SESSION_ERROR;
+pub use curl_ffi::CURLE_FTP_BAD_FILE_LIST as FTP_BAD_FILE_LIST;
+pub use curl_ffi::CURLE_CHUNK_FAILED as CHUNK_FAILED;
+pub use curl_ffi::CURLE_NO_CONNECTION_AVAILABLE as NO_CONNECTION_AVAILABLE;
+pub use curl_ffi::CURLE_LAST as LAST;
 
-    SSL_SHUTDOWN_FAILED,     /* 80 - Failed to shut down the SSL
-                                connection */
-    AGAIN,                   /* 81 - socket is not ready for send/recv,
-                                wait till it's ready and try again (Added
-                                in 7.18.2) */
-    SSL_CRL_BADFILE,         /* 82 - could not load CRL file, missing or
-                                wrong format (Added in 7.19.0) */
-    SSL_ISSUER_ERROR,        /* 83 - Issuer check failed.  (Added in
-                                7.19.0) */
-    FTP_PRET_FAILED,         /* 84 - a PRET command failed */
-    RTSP_CSEQ_ERROR,         /* 85 - mismatch of RTSP CSeq numbers */
-    RTSP_SESSION_ERROR,      /* 86 - mismatch of RTSP Session Ids */
-    FTP_BAD_FILE_LIST,       /* 87 - unable to parse FTP file list */
-    CHUNK_FAILED,            /* 88 - chunk callback reported error */
-    NO_CONNECTION_AVAILABLE, /* 89 - No connection available, the
-                                session will be queued */
-    LAST /* never use! */
-}
-
-#[link(name = "curl")]
-extern {
-    fn curl_easy_strerror(code: ErrCode) -> *const c_char;
-}
+pub struct ErrCode(pub ffi::CURLcode);
 
 impl ErrCode {
     pub fn is_success(self) -> bool {
-        (self as c_int) == 0
+       self.code() as int == OK as int
     }
+
+    pub fn code(self) -> ffi::CURLcode { let ErrCode(c) = self; c }
 }
 
 impl fmt::Show for ErrCode {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> Result<(), fmt::FormatError> {
-        let c_str = unsafe { CString::new(curl_easy_strerror(*self), false) };
+        let c_str = unsafe {
+            CString::new(ffi::curl_easy_strerror(self.code()), false)
+        };
 
         match c_str.as_str() {
             Some(s) => write!(fmt, "{}", s),
@@ -151,6 +122,7 @@ impl fmt::Show for ErrCode {
 
 impl error::Error for ErrCode {
     fn description(&self) -> &str {
-        unsafe { str::raw::c_str_to_static_slice(curl_easy_strerror(*self)) }
+        let code = self.code();
+        unsafe { str::raw::c_str_to_static_slice(ffi::curl_easy_strerror(code)) }
     }
 }

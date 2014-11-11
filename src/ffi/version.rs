@@ -1,4 +1,5 @@
 #![allow(non_camel_case_types)]
+#![allow(dead_code)]
 
 use std::c_str::CString;
 use std::{fmt,mem,ptr};

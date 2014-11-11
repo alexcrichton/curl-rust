@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::sync::{Once, ONCE_INIT};
 use std::c_vec::CVec;
 use std::{io,mem};
@@ -161,7 +163,7 @@ impl ResponseBuilder {
         use std::ascii::OwnedAsciiExt;
         let name = name.to_string().into_ascii_lower();
 
-        let inserted = match self.hdrs.find_mut(&name) {
+        let inserted = match self.hdrs.get_mut(&name) {
             Some(vals) => {
                 vals.push(val.to_string());
                 true

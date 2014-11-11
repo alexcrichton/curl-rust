@@ -228,7 +228,7 @@ fn start_server() -> Handle {
     let (ops_tx, ops_rx) = channel();
     let (ini_tx, ini_rx) = channel();
 
-    let mut listener = TcpListener::bind("127.0.0.1", 0).unwrap();
+    let mut listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let port = listener.socket_name().unwrap().port;
 
     spawn(proc() {

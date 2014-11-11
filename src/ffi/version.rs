@@ -1,4 +1,5 @@
 #![allow(non_camel_case_types)]
+#![allow(dead_code)]
 
 use std::c_str::CString;
 use std::{fmt,mem,ptr};
@@ -32,6 +33,7 @@ static CURL_VERSION_TLSAUTH_SRP:  c_int = (1 << 14);
 static CURL_VERSION_NTLM_WB:      c_int = (1 << 15);
 static CURL_VERSION_HTTP2:        c_int = (1 << 16);
 
+#[repr(C)]
 struct curl_version_info_data {
     #[allow(dead_code)]
     age: CURLversion,

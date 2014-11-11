@@ -55,7 +55,7 @@ impl Handle {
         self.easy.setopt(opt::CAINFO, path).unwrap();
         self
     }
-    
+
     pub fn cookie_jar(mut self, path: &Path) -> Handle {
         self.easy.setopt(opt::COOKIEJAR, path).unwrap();
         self
@@ -66,7 +66,7 @@ impl Handle {
         self
     }
 
-    pub fn cookies(mut self, path: &Path) -> Handle {
+    pub fn cookies(self, path: &Path) -> Handle {
         self.cookie_jar(path).cookie_file(path)
     }
 

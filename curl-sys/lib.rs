@@ -2,7 +2,7 @@
 #![allow(non_camel_case_types)]
 
 extern crate libc;
-#[cfg(unix)] extern crate "libz-sys" as libz;
+extern crate "libz-sys" as libz;
 #[cfg(unix)] extern crate "openssl-sys" as openssl;
 
 use libc::{c_void, c_int, c_char, c_uint, c_long};

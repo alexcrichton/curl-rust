@@ -4,8 +4,9 @@ name = "curl"
 version = "0.1.0"
 authors = ["Carl Lerche <me@carllerche.com>"]
 
-[dependencies.url]
-git = "https://github.com/servo/rust-url"
+[dependencies]
+
+url = "0.1.x"
 
 [dependencies.curl-sys]
 path = "curl-sys"

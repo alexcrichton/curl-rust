@@ -9,3 +9,4 @@ git = "https://github.com/servo/rust-url"
 
 [dependencies.curl-sys]
 path = "curl-sys"
+version = "*"

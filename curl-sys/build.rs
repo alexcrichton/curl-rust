@@ -20,16 +20,6 @@ fn main() {
         Err(..) => {}
     }
 
-    match os::getenv("DEP_OPENSSL_ROOT") {
-        Some(s) => {
-            let prefix = os::getenv("CMAKE_PREFIX_PATH").unwrap_or(String::new());
-            let mut v = os::split_paths(prefix.as_slice());
-            v.push(Path::new(s));
-            os::setenv("CMAKE_PREFIX_PATH", os::join_paths(v.as_slice()).unwrap());
-        }
-        None => {}
-    }
-
     let mut cflags = os::getenv("CFLAGS").unwrap_or(String::new());
     let windows = target.contains("windows");
     cflags.push_str(" -ffunction-sections -fdata-sections");
@@ -54,6 +44,13 @@ fn main() {
     } else {
         config_opts.push("--without-ca-bundle".to_string());
         config_opts.push("--without-ca-path".to_string());
+
+        match os::getenv("DEP_OPENSSL_ROOT") {
+            Some(s) => {
+                config_opts.push(format!("--with-ssl={}", s));
+            }
+            None => {}
+        }
     }
     config_opts.push("--enable-static=yes".to_string());
     config_opts.push("--enable-shared=no".to_string());

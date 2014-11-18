@@ -68,7 +68,7 @@ pub const CURLOPTTYPE_OBJECTPOINT: c_int   = 10_000;
 pub const CURLOPTTYPE_FUNCTIONPOINT: c_int = 20_000;
 pub const CURLOPTTYPE_OFF_T: c_int         = 30_000;
 
-pub const CURL_VERSION_NOW: CURLversion    = CURL_VERSION_FOURTH;
+pub const CURL_VERSION_NOW: CURLversion    = CURLversion::CURL_VERSION_FOURTH;
 pub const CURL_VERSION_IPV6:         c_int = (1 << 0);
 pub const CURL_VERSION_KERBEROS4:    c_int = (1 << 1);
 pub const CURL_VERSION_SSL:          c_int = (1 << 2);

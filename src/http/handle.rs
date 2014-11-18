@@ -9,6 +9,9 @@ use http::Response;
 use http::body::{Body,ToBody};
 use {ProgressCb,ErrCode};
 
+use self::Method::{Get, Head, Post, Put, Delete};
+use self::BodyType::{Fixed, Chunked};
+
 static DEFAULT_TIMEOUT_MS: uint = 30_000;
 
 pub struct Handle {

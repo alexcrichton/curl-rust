@@ -12,15 +12,15 @@ macro_rules! ops(
 )
 
 macro_rules! send(
-    ($e:expr) => (server::SendBytes($e));
+    ($e:expr) => (server::Op::SendBytes($e));
 )
 
 macro_rules! recv(
-    ($e:expr) => (server::ReceiveBytes($e));
+    ($e:expr) => (server::Op::ReceiveBytes($e));
 )
 
 macro_rules! wait(
-    ($dur:expr) => (server::Wait($dur));
+    ($dur:expr) => (server::Op::Wait($dur));
 )
 
 mod get;

@@ -6,6 +6,8 @@ use std::io::{Acceptor, Listener};
 use std::str;
 use std::time::Duration;
 
+use self::Op::{SendBytes, ReceiveBytes, Wait, Shutdown};
+
 // Global handle to the running test HTTP server
 local_data_key!(handle: Handle)
 

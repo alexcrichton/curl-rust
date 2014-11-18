@@ -1,5 +1,8 @@
 use std::str;
 
+use self::State::{HdrNameStart, HdrName, HdrValStart, HdrNameDiscardWs, HdrVal,
+                  HdrValDiscardWs};
+
 enum State {
     HdrNameStart,
     HdrName,

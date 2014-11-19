@@ -33,7 +33,7 @@ fn main() {
         cflags.push_str(" -fPIC");
     }
 
-    let src = os::getcwd();
+    let src = os::getcwd().unwrap();
     let dst = Path::new(os::getenv("OUT_DIR").unwrap());
 
     let _ = fs::mkdir(&dst.join("build"), io::USER_DIR);

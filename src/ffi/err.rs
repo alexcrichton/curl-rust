@@ -108,7 +108,7 @@ impl ErrCode {
 }
 
 impl fmt::Show for ErrCode {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> Result<(), fmt::FormatError> {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         let c_str = unsafe {
             CString::new(ffi::curl_easy_strerror(self.code()), false)
         };

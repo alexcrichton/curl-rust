@@ -28,7 +28,7 @@ impl Response {
 
     pub fn get_header<'a>(&'a self, name: &str) -> &'a [String] {
         self.hdrs
-            .find_equiv(name)
+            .get(name)
             .map(|v| v.as_slice())
             .unwrap_or(&[])
     }
@@ -43,7 +43,7 @@ impl Response {
 }
 
 impl fmt::Show for Response {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> Result<(), fmt::FormatError> {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         try!(write!(fmt, "Response {{{}, ", self.code));
 
         for (name, val) in self.hdrs.iter() {

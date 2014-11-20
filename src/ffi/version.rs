@@ -169,7 +169,7 @@ impl<'a> Iterator<&'a str> for Protocols<'a> {
 }
 
 impl<'a> fmt::Show for Protocols<'a> {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> Result<(), fmt::FormatError> {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         let mut i = self.clone();
 
         try!(write!(fmt, "["));

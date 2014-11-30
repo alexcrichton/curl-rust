@@ -4,7 +4,7 @@ use self::Body::{FixedBody, ChunkedBody};
 
 pub enum Body<'a> {
     FixedBody(BufReader<'a>, uint),
-    ChunkedBody(&'a mut Reader+'a)
+    ChunkedBody(&'a mut (Reader+'a))
 }
 
 impl<'a> Body<'a> {

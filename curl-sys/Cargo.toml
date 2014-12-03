@@ -24,6 +24,8 @@ git = "https://github.com/alexcrichton/libz-sys"
   git = "https://github.com/sfackler/rust-openssl"
 [target.x86_64-unknown-linux-gnu.dependencies.openssl-sys]
   git = "https://github.com/sfackler/rust-openssl"
+[target.arm-unknown-linux-gnueabihf.dependencies.openssl-sys]
+  git = "https://github.com/sfackler/rust-openssl"
 [target.i686-unknown-freebsd.dependencies.openssl-sys]
   git = "https://github.com/sfackler/rust-openssl"
 [target.x86_64-unknown-freebsd.dependencies.openssl-sys]

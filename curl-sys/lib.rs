@@ -13,6 +13,7 @@ pub type curl_slist = c_void;
 pub type CURLoption = c_int;
 
 #[repr(C)]
+#[deriving(Copy)]
 pub enum CURLversion {
     CURL_VERSION_FIRST,
     CURL_VERSION_SECOND,

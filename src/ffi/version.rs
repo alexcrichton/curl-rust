@@ -147,7 +147,7 @@ impl Version {
     }
 }
 
-#[deriving(Clone)]
+#[deriving(Copy, Clone)]
 #[allow(raw_pointer_deriving)] // TODO: Implement this by hand
 pub struct Protocols<'a> {
     curr: *const *const c_char

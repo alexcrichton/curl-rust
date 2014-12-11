@@ -13,6 +13,7 @@ pub type curl_slist = c_void;
 pub type CURLoption = c_int;
 
 #[repr(C)]
+#[deriving(Copy)]
 pub enum CURLversion {
     CURL_VERSION_FIRST,
     CURL_VERSION_SECOND,
@@ -88,6 +89,7 @@ pub const CURL_VERSION_NTLM_WB:      c_int = (1 << 15);
 pub const CURL_VERSION_HTTP2:        c_int = (1 << 16);
 
 #[repr(C)]
+#[deriving(Copy)]
 pub enum CURLcode {
     CURLE_OK = 0,
     CURLE_UNSUPPORTED_PROTOCOL,    /* 1 */

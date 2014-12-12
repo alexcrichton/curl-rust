@@ -2,13 +2,11 @@
 
 name = "curl"
 version = "0.1.0"
-authors = ["Carl Lerche <me@carllerche.com>", "Alex Crichton <alex@alexcrichton.com>"]
-license = "MIT"
-description = "HTTP client backed by libcurl"
+authors = ["Carl Lerche <me@carllerche.com>"]
 
-exclude = [".*"]
+[dependencies.url]
+git = "https://github.com/servo/rust-url"
 
-[dependencies]
-
-url = "0.1.0"
-curl-sys = "0.1.0"
+[dependencies.curl-sys]
+path = "curl-sys"
+version = "*"

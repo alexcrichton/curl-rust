@@ -2,12 +2,13 @@
 
 name = "curl"
 version = "0.1.0"
-authors = ["Carl Lerche <me@carllerche.com>"]
+authors = ["Carl Lerche <me@carllerche.com>", "Alex Crichton <alex@alexcrichton.com>"]
+license = "MIT"
+description = "HTTP client backed by libcurl"
+
+exclude = [".*"]
 
 [dependencies]
 
-url = "0.1.x"
-
-[dependencies.curl-sys]
-path = "curl-sys"
-version = "*"
+url = "0.1.0"
+curl-sys = "0.1.0"

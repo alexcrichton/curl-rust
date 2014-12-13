@@ -9,18 +9,17 @@ use std::time::Duration;
 use self::Op::{SendBytes, ReceiveBytes, Wait, Shutdown};
 
 // Global handle to the running test HTTP server
-local_data_key!(handle: Handle)
+thread_local!(static HANDLE: Handle = start_server())
 
 // Setup an op sequence with the test HTTP server
 pub fn setup(ops: OpSequence) -> OpSequenceResult {
-    // If the server si not started
-    ensure_server_started();
-
     // Setup a channel to receive the response on
     let (tx, rx) = channel();
 
     // Send the op sequence to the server task
-    handle.get().unwrap().send(ops, tx);
+    HANDLE.with(|h| {
+        h.send(ops, tx);
+    });
 
     OpSequenceResult::new(rx)
 }
@@ -30,12 +29,13 @@ pub fn url(path: &str) -> String {
 }
 
 fn port() -> uint {
-    ensure_server_started();
-    handle.get().unwrap().port()
+    HANDLE.with(|h| {
+        h.port()
+    })
 }
 
 /* Handle to the running HTTP server task. Communication with the server
- * happesn over channels.
+ * happens over channels.
  */
 struct Handle {
     port: Port,
@@ -217,12 +217,6 @@ impl OpSequenceResult {
             Ok(_) => {}
             Err(e) => panic!("http exchange did not proceed as expected: {}", e)
         }
-    }
-}
-
-fn ensure_server_started() {
-    if handle.get().is_none() {
-        handle.replace(Some(start_server()));
     }
 }
 

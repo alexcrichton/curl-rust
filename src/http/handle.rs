@@ -268,8 +268,6 @@ impl<'a, 'b> Request<'a, 'b> {
         match body.as_ref() {
             None => {}
             Some(body) => {
-                debug!("handling body");
-
                 let body_type = body_type.unwrap_or(match body.get_size() {
                     Some(len) => Fixed(len),
                     None => Chunked,

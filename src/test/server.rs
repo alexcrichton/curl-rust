@@ -17,7 +17,7 @@ pub fn setup(ops: OpSequence) -> OpSequenceResult {
     let (tx, rx) = channel();
 
     // Send the op sequence to the server task
-    HANDLE.with(|h| {
+    HANDLE.with(move |h| {
         h.send(ops, tx);
     });
 
@@ -227,7 +227,7 @@ fn start_server() -> Handle {
     let mut listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let port = listener.socket_name().unwrap().port;
 
-    spawn(proc() {
+    spawn(move|| {
         let listener = listener;
         let mut srv = listener.listen().unwrap();
 

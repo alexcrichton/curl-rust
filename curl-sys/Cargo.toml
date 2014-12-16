@@ -1,32 +1,35 @@
 [package]
 name = "curl-sys"
-version = "0.1.0"
-authors = []
+version = "0.1.1"
+authors = ["Carl Lerche <me@carllerche.com"]
 links = "curl"
 build = "build.rs"
+license = "MIT"
+repository = "https://github.com/carllerche/curl-rust"
+description = "Native bindings to the libcurl library"
 
-[build-dependencies.pkg-config]
-git = "https://github.com/alexcrichton/pkg-config-rs"
+[build-dependencies]
+pkg-config = "0.1.0"
 
 [lib]
 name = "curl-sys"
 path = "lib.rs"
 
-[dependencies.libz-sys]
-git = "https://github.com/alexcrichton/libz-sys"
+[dependencies]
+libz-sys = "0.1.0"
 
 # Unix platforms use OpenSSL for now to provide SSL functionality
-[target.i686-apple-darwin.dependencies.openssl-sys]
-  git = "https://github.com/sfackler/rust-openssl"
-[target.x86_64-apple-darwin.dependencies.openssl-sys]
-  git = "https://github.com/sfackler/rust-openssl"
-[target.i686-unknown-linux-gnu.dependencies.openssl-sys]
-  git = "https://github.com/sfackler/rust-openssl"
-[target.x86_64-unknown-linux-gnu.dependencies.openssl-sys]
-  git = "https://github.com/sfackler/rust-openssl"
-[target.arm-unknown-linux-gnueabihf.dependencies.openssl-sys]
-  git = "https://github.com/sfackler/rust-openssl"
-[target.i686-unknown-freebsd.dependencies.openssl-sys]
-  git = "https://github.com/sfackler/rust-openssl"
-[target.x86_64-unknown-freebsd.dependencies.openssl-sys]
-  git = "https://github.com/sfackler/rust-openssl"
+[target.i686-apple-darwin.dependencies]
+openssl-sys = "0.2.0"
+[target.x86_64-apple-darwin.dependencies]
+openssl-sys = "0.2.0"
+[target.i686-unknown-linux-gnu.dependencies]
+openssl-sys = "0.2.0"
+[target.x86_64-unknown-linux-gnu.dependencies]
+openssl-sys = "0.2.0"
+[target.arm-unknown-linux-gnueabihf.dependencies]
+openssl-sys = "0.2.0"
+[target.i686-unknown-freebsd.dependencies]
+openssl-sys = "0.2.0"
+[target.x86_64-unknown-freebsd.dependencies]
+openssl-sys = "0.2.0"

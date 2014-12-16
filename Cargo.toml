@@ -3,10 +3,13 @@
 name = "curl"
 version = "0.1.0"
 authors = ["Carl Lerche <me@carllerche.com>"]
+license = "MIT"
+repository = "https://github.com/carllerche/curl-rust"
+description = "Rust bindings to libcurl for making HTTP requests"
 
-[dependencies.url]
-git = "https://github.com/servo/rust-url"
+[dependencies]
+url = "0.2.0"
 
 [dependencies.curl-sys]
 path = "curl-sys"
-version = "*"
+version = "0.1.0"

@@ -9,7 +9,7 @@ use std::time::Duration;
 use self::Op::{SendBytes, ReceiveBytes, Wait, Shutdown};
 
 // Global handle to the running test HTTP server
-thread_local!(static HANDLE: Handle = start_server())
+thread_local!(static HANDLE: Handle = start_server());
 
 // Setup an op sequence with the test HTTP server
 pub fn setup(ops: OpSequence) -> OpSequenceResult {

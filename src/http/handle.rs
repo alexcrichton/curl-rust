@@ -140,7 +140,7 @@ enum BodyType {
 }
 
 impl<'a, 'b> Request<'a, 'b> {
-    pub fn new<'a, 'b>(handle: &'a mut Handle, method: Method) -> Request<'a, 'b> {
+    pub fn new(handle: &'a mut Handle, method: Method) -> Request<'a, 'b> {
         Request {
             err: None,
             handle: handle,
@@ -200,7 +200,7 @@ impl<'a, 'b> Request<'a, 'b> {
         self
     }
 
-    pub fn get_header<'a>(&'a self, name: &str) -> Option<&'a [String]> {
+    pub fn get_header(&self, name: &str) -> Option<&[String]> {
         self.headers.get(name).map(|a| a.as_slice())
     }
 

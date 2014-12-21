@@ -21,7 +21,6 @@ pub struct Handle {
 impl Handle {
     pub fn new() -> Handle {
         return configure(Handle { easy: Easy::new() }
-            .timeout(DEFAULT_TIMEOUT_MS)
             .connect_timeout(DEFAULT_TIMEOUT_MS));
 
         #[cfg(unix)]

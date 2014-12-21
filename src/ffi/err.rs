@@ -124,6 +124,6 @@ impl fmt::Show for ErrCode {
 impl error::Error for ErrCode {
     fn description(&self) -> &str {
         let code = self.code();
-        unsafe { str::from_c_str(ffi::curl_easy_strerror(code)) }
+        unsafe { str::from_c_str(ffi::curl_easy_strerror(code) as *const _) }
     }
 }

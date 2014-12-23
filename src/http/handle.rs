@@ -1,4 +1,4 @@
-use std::collections::hash_map::{HashMap, Occupied, Vacant};
+use std::collections::hash_map::{HashMap, Entry};
 
 use url::Url;
 
@@ -328,12 +328,12 @@ impl<'a, 'b> Request<'a, 'b> {
 
 fn append_header(map: &mut HashMap<String, Vec<String>>, key: &str, val: &str) {
     match map.entry(key.to_string()) {
-        Vacant(entry) => {
+        Entry::Vacant(entry) => {
             let mut values = Vec::new();
             values.push(val.to_string());
             entry.set(values)
         },
-        Occupied(entry) => entry.into_mut()
+        Entry::Occupied(entry) => entry.into_mut()
     };
 }
 

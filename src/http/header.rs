@@ -98,13 +98,13 @@ pub fn parse<'a>(buf: &'a [u8]) -> Option<(&'a str, &'a str)> {
     }
 
     let name = match str::from_utf8(buf.slice(name_begin, name_end)) {
-        Some(v) => v,
-        None => return None
+        Ok(v) => v,
+        Err(..) => return None
     };
 
     let val = match str::from_utf8(buf.slice(val_begin, val_end)) {
-        Some(v) => v,
-        None => return None
+        Ok(v) => v,
+        Err(..) => return None
     };
 
     Some((name, val))

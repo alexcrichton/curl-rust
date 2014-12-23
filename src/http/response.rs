@@ -51,8 +51,8 @@ impl fmt::Show for Response {
         }
 
         match str::from_utf8(self.body.as_slice()) {
-            Some(b) => try!(write!(fmt, "{}", b)),
-            None => try!(write!(fmt, "bytes[{}]", self.body.len()))
+            Ok(b) => try!(write!(fmt, "{}", b)),
+            Err(..) => try!(write!(fmt, "bytes[{}]", self.body.len()))
         }
 
         try!(write!(fmt, "]"));

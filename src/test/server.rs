@@ -4,6 +4,7 @@ use std::io::net::tcp::{TcpListener,TcpStream};
 use std::io::timer;
 use std::io::{Acceptor, Listener};
 use std::str;
+use std::thread::Thread;
 use std::time::Duration;
 
 use self::Op::{SendBytes, ReceiveBytes, Wait, Shutdown};
@@ -131,7 +132,7 @@ impl OpSequence {
         fn insert_port(bytes: &'static [u8], port: uint) -> Vec<u8> {
             let s = str::from_utf8(bytes).unwrap();
             let p = port.to_string();
-            str::replace(s, "{PORT}", p.as_slice()).into_bytes()
+            s.replace("{PORT}", p.as_slice()).into_bytes()
         }
 
         fn parse_request<'a>(req: &'a [u8]) -> (&'a [u8],
@@ -222,17 +223,12 @@ impl OpSequenceResult {
 
 fn start_server() -> Handle {
     let (ops_tx, ops_rx) = channel();
-    let (ini_tx, ini_rx) = channel();
 
     let mut listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let port = listener.socket_name().unwrap().port;
+    let mut srv = listener.listen().unwrap();
 
-    spawn(move|| {
-        let listener = listener;
-        let mut srv = listener.listen().unwrap();
-
-        ini_tx.send(true);
-
+    Thread::spawn(move || {
         loop {
             let (ops, resp_tx): (OpSequence, Sender<Result<(),String>>) = ops_rx.recv();
 
@@ -253,10 +249,7 @@ fn start_server() -> Handle {
 
             resp_tx.send(ops.apply(&mut sock, port as uint));
         }
-    });
-
-    // Wait until the server is listening
-    ini_rx.recv();
+    }).detach();
 
     Handle::new(ops_tx, port)
 }

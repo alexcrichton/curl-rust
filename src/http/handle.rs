@@ -107,8 +107,13 @@ impl Handle {
         self
     }
 
-    pub fn cookies(self, path: &Path) -> Handle {
+    pub fn cookies(mut self, path: &Path) -> Handle {
         self.cookie_jar(path).cookie_file(path)
+    }
+
+    pub fn cookie(mut self, cookie: &str) -> Handle {
+        self.easy.setopt(opt::COOKIELIST, cookie);
+        self
     }
 
     pub fn get<'a, 'b, U: ToUrl>(&'a mut self, uri: U) -> Request<'a, 'b> {

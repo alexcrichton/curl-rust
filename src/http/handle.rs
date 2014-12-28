@@ -160,6 +160,7 @@ pub struct Request<'a, 'b> {
     expect_continue: bool, // whether to expect a 100 continue from the server
     progress: Option<Box<ProgressCb<'b>>>,
     follow: bool,
+    verify_peer: bool,
 }
 
 enum BodyType {
@@ -180,6 +181,7 @@ impl<'a, 'b> Request<'a, 'b> {
             expect_continue: false,
             progress: None,
             follow: false,
+            verify_peer: true
         }
     }
 
@@ -252,6 +254,11 @@ impl<'a, 'b> Request<'a, 'b> {
         self
     }
 
+    pub fn verify_peer(mut self, verify: bool) -> Request<'a, 'b> {
+        self.verify_peer = verify;
+        self
+    }
+
     pub fn exec(self) -> Result<Response, ErrCode> {
         // Deconstruct the struct
         let Request {
@@ -265,12 +272,16 @@ impl<'a, 'b> Request<'a, 'b> {
             expect_continue,
             progress,
             follow,
+            verify_peer,
             ..
         } = self;
 
         if follow {
             try!(handle.easy.setopt(opt::FOLLOWLOCATION, 1));
         }
+
+        try!(handle.easy.setopt(opt::SSL_VERIFYPEER, verify_peer as int));
+        //try!(handle.easy.setopt(opt::SSL_VERIFYHOST, verify_peer as int));
 
         match err {
             Some(e) => return Err(e),

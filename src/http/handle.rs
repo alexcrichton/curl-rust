@@ -111,6 +111,11 @@ impl Handle {
         self.cookie_jar(path).cookie_file(path)
     }
 
+    pub fn cookie(mut self, cookie: &str) -> Handle {
+        self.easy.setopt(opt::COOKIELIST, cookie).unwrap();
+        self
+    }
+
     pub fn get<'a, 'b, U: ToUrl>(&'a mut self, uri: U) -> Request<'a, 'b> {
         Request::new(self, Get).uri(uri)
     }

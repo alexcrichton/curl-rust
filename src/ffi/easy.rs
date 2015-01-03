@@ -116,7 +116,7 @@ fn global_init() {
     // Schedule curl to be cleaned up after we're done with this whole process
     static mut INIT: Once = ONCE_INIT;
     unsafe {
-        INIT.doit(|| ::std::rt::at_exit(|| ffi::curl_global_cleanup()))
+        INIT.call_once(|| ::std::rt::at_exit(|| ffi::curl_global_cleanup()))
     }
 }
 

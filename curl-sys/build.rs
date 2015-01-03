@@ -1,7 +1,7 @@
 extern crate "pkg-config" as pkg_config;
 
 use std::os;
-use std::io::{mod, fs, Command};
+use std::io::{self, fs, Command};
 use std::io::process::InheritFd;
 use std::io::fs::PathExtensions;
 

@@ -3,7 +3,9 @@ use std::io::net::ip::Port;
 use std::io::net::tcp::{TcpListener,TcpStream};
 use std::io::timer;
 use std::io::{Acceptor, Listener};
+use std::iter::repeat;
 use std::str;
+use std::sync::mpsc::{channel, Sender, Receiver};
 use std::thread::Thread;
 use std::time::Duration;
 
@@ -49,7 +51,7 @@ struct Handle {
  * - Wait for a certain amount of time
  * - Shutdown the server (allows a clean exit at the end of the tests)
  */
-#[deriving(Clone,PartialEq,Show)]
+#[derive(Clone,PartialEq,Show)]
 pub enum Op {
     SendBytes(&'static [u8]),
     ReceiveBytes(&'static [u8]),
@@ -59,7 +61,7 @@ pub enum Op {
 
 /* An ordered sequence of operations for the HTTP server to perform
 */
-#[deriving(Show)]
+#[derive(Show)]
 pub struct OpSequence {
     ops: Vec<Op>
 }
@@ -99,7 +101,7 @@ impl OpSequence {
                 &ReceiveBytes(b) => {
                     let b = insert_port(b, port);
                     let mut rem = b.len();
-                    let mut act = Vec::from_elem(rem, 0u8);
+                    let mut act = repeat(0u8).take(rem).collect::<Vec<_>>();
 
                     while rem > 0 {
                         match sock.read(act.slice_from_mut(b.len() - rem)) {
@@ -192,7 +194,7 @@ impl Handle {
     }
 
     fn send(&self, ops: OpSequence, resp: Sender<Result<(),String>>) {
-        self.tx.send((ops, resp));
+        self.tx.send((ops, resp)).unwrap();
     }
 
     fn port(&self) -> uint {
@@ -204,7 +206,7 @@ impl Drop for Handle {
     fn drop(&mut self) {
         let (tx, rx) = channel();
         self.send(OpSequence::new(Shutdown), tx);
-        rx.recv().unwrap();
+        rx.recv().unwrap().unwrap();
     }
 }
 
@@ -214,7 +216,7 @@ impl OpSequenceResult {
     }
 
     pub fn assert(&self) {
-        match self.rx.recv() {
+        match self.rx.recv().unwrap() {
             Ok(_) => {}
             Err(e) => panic!("http exchange did not proceed as expected: {}", e)
         }
@@ -230,24 +232,25 @@ fn start_server() -> Handle {
 
     Thread::spawn(move || {
         loop {
-            let (ops, resp_tx): (OpSequence, Sender<Result<(),String>>) = ops_rx.recv();
+            let (ops, resp_tx): (OpSequence, Sender<Result<(),String>>) =
+                    ops_rx.recv().unwrap();
 
             if ops.is_shutdown() {
-                resp_tx.send(Ok(()));
+                resp_tx.send(Ok(())).unwrap();
                 return;
             }
 
             let mut sock = match srv.accept() {
                 Ok(s) => s,
                 Err(e) => {
-                    resp_tx.send(Err(format!("server accept err: {}", e)));
+                    resp_tx.send(Err(format!("server accept err: {}", e))).unwrap();
                     return;
                 }
             };
 
             sock.set_timeout(Some(100));
 
-            resp_tx.send(ops.apply(&mut sock, port as uint));
+            resp_tx.send(ops.apply(&mut sock, port as uint)).unwrap();
         }
     }).detach();
 

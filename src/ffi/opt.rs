@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use std::path::Path;
+use std::c_str::ToCStr;
 use libc::{c_void};
 
 use curl_ffi as ffi;

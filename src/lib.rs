@@ -1,6 +1,7 @@
 #![crate_name = "curl"]
 #![feature(macro_rules)]
 #![feature(phase)]
+#![feature(associated_types)]
 
 extern crate libc;
 extern crate url;

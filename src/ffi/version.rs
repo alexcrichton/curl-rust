@@ -153,7 +153,8 @@ pub struct Protocols<'a> {
     curr: *const *const c_char
 }
 
-impl<'a> Iterator<&'a str> for Protocols<'a> {
+impl<'a> Iterator for Protocols<'a> {
+    type Item = &'a str;
     fn next(&mut self) -> Option<&'a str> {
         unsafe {
             let proto = *self.curr;

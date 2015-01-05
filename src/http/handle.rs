@@ -204,7 +204,7 @@ impl<'a, 'b> Request<'a, 'b> {
         self.headers.get(name).map(|a| a.as_slice())
     }
 
-    pub fn headers<'c, 'd, I: Iterator<(&'c str, &'d str)>>(mut self, mut hdrs: I) -> Request<'a, 'b> {
+    pub fn headers<'c, 'd, I: Iterator<Item=(&'c str, &'d str)>>(mut self, mut hdrs: I) -> Request<'a, 'b> {
         for (name, val) in hdrs {
             append_header(&mut self.headers, name, val);
         }

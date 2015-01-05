@@ -327,11 +327,11 @@ impl<'a, 'b> Request<'a, 'b> {
 }
 
 fn append_header(map: &mut HashMap<String, Vec<String>>, key: &str, val: &str) {
-    match map.entry(key.to_string()) {
+    match map.entry(&key.to_string()) {
         Entry::Vacant(entry) => {
             let mut values = Vec::new();
             values.push(val.to_string());
-            entry.set(values)
+            entry.insert(values)
         },
         Entry::Occupied(entry) => entry.into_mut()
     };

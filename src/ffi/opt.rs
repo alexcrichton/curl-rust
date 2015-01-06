@@ -232,35 +232,35 @@ pub use curl_ffi::CURLOPT_XFERINFODATA as XFERINFODATA;
 pub type Opt = ffi::CURLoption;
 
 pub trait OptVal {
-    fn with_c_repr(self, f: |*const c_void|);
+    fn with_c_repr<F>(self, f: F) where F: FnOnce(*const c_void);
 }
 
 impl OptVal for int {
-    fn with_c_repr(self, f: |*const c_void|) {
+    fn with_c_repr<F>(self, f: F) where F: FnOnce(*const c_void) {
         f(self as *const c_void)
     }
 }
 
 impl OptVal for uint {
-    fn with_c_repr(self, f: |*const c_void|) {
+    fn with_c_repr<F>(self, f: F) where F: FnOnce(*const c_void) {
         f(self as *const c_void)
     }
 }
 
 impl OptVal for bool {
-    fn with_c_repr(self, f: |*const c_void|) {
+    fn with_c_repr<F>(self, f: F) where F: FnOnce(*const c_void) {
         f(self as uint as *const c_void)
     }
 }
 
 impl<'a> OptVal for &'a str {
-    fn with_c_repr(self, f: |*const c_void|) {
-        self.with_c_str(|arg| f(arg as *const c_void))
+    fn with_c_repr<F>(self, f: F) where F: FnOnce(*const c_void) {
+        self.with_c_str(move |arg| f(arg as *const c_void))
     }
 }
 
 impl<'a> OptVal for &'a Path {
-    fn with_c_repr(self, f: |*const c_void|) {
-        self.with_c_str(|arg| f(arg as *const c_void))
+    fn with_c_repr<F>(self, f: F) where F: FnOnce(*const c_void) {
+        self.with_c_str(move |arg| f(arg as *const c_void))
     }
 }

@@ -12,7 +12,7 @@ use http::{header,Response};
 
 use curl_ffi as ffi;
 
-pub type ProgressCb<'a> = |uint, uint, uint, uint|:'a -> ();
+pub type ProgressCb<'a> = FnMut(uint, uint, uint, uint) + 'a;
 
 pub struct Easy {
     curl: *mut ffi::CURL
@@ -46,8 +46,10 @@ impl Easy {
         if res.is_success() { Ok(()) } else { Err(res) }
     }
 
-    #[inline]
-    pub fn perform(&mut self, body: Option<&mut Body>, progress: Option<ProgressCb>) -> Result<Response, err::ErrCode> {
+    pub fn perform(&mut self,
+                   body: Option<&mut Body>,
+                   progress: Option<Box<ProgressCb>>)
+                   -> Result<Response, err::ErrCode> {
         let mut builder = ResponseBuilder::new();
 
         unsafe {
@@ -220,14 +222,14 @@ pub extern "C" fn curl_header_fn(p: *mut u8, size: size_t, nmemb: size_t, resp: 
     vec.len() as size_t
 }
 
-pub extern "C" fn curl_progress_fn(cb: *mut ProgressCb, dltotal: c_double, dlnow: c_double, ultotal: c_double, ulnow: c_double) -> c_int {
+pub extern "C" fn curl_progress_fn(cb: *mut Box<ProgressCb>, dltotal: c_double, dlnow: c_double, ultotal: c_double, ulnow: c_double) -> c_int {
     #[inline]
     fn to_uint(v: c_double) -> uint {
         if v > 0.0 { v as uint } else { 0 }
     }
 
     if !cb.is_null() {
-        let cb: &mut ProgressCb = unsafe { &mut *cb };
+        let cb: &mut ProgressCb = unsafe { &mut **cb };
         (*cb)(to_uint(dltotal), to_uint(dlnow), to_uint(ultotal), to_uint(ulnow));
     }
 

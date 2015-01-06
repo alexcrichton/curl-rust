@@ -43,7 +43,7 @@ impl Drop for List {
 }
 
 impl<'a> OptVal for &'a List {
-    fn with_c_repr(self, f: |*const c_void|) {
+    fn with_c_repr<F>(self, f: F) where F: FnOnce(*const c_void) {
         f(self.head as *const c_void)
     }
 }

@@ -130,7 +130,7 @@ pub struct Request<'a, 'b> {
     body_type: Option<BodyType>,
     content_type: bool, // whether or not the content type was set
     expect_continue: bool, // whether to expect a 100 continue from the server
-    progress: Option<ProgressCb<'b>>,
+    progress: Option<Box<ProgressCb<'b>>>,
     follow: bool,
 }
 
@@ -212,8 +212,10 @@ impl<'a, 'b> Request<'a, 'b> {
         self
     }
 
-    pub fn progress(mut self, cb: ProgressCb<'b>) -> Request<'a, 'b> {
-        self.progress = Some(cb);
+    pub fn progress<F>(mut self, cb: F) -> Request<'a, 'b>
+        where F: FnMut(uint, uint, uint, uint) + 'b
+    {
+        self.progress = Some(box cb as Box<ProgressCb<'b>>);
         self
     }
 
@@ -338,23 +340,23 @@ fn append_header(map: &mut HashMap<String, Vec<String>>, key: &str, val: &str) {
 }
 
 pub trait ToUrl{
-    fn with_url_str(self, f: |&str|);
+    fn with_url_str<F>(self, f: F) where F: FnOnce(&str);
 }
 
 impl<'a> ToUrl for &'a str {
-    fn with_url_str(self, f: |&str|) {
+    fn with_url_str<F>(self, f: F) where F: FnOnce(&str) {
         f(self);
     }
 }
 
 impl<'a> ToUrl for &'a Url {
-    fn with_url_str(self, f: |&str|) {
+    fn with_url_str<F>(self, f: F) where F: FnOnce(&str) {
         self.to_string().with_url_str(f);
     }
 }
 
 impl ToUrl for String {
-    fn with_url_str(self, f: |&str|) {
+    fn with_url_str<F>(self, f: F) where F: FnOnce(&str) {
         self.as_slice().with_url_str(f);
     }
 }

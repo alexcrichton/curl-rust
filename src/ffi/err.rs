@@ -1,6 +1,7 @@
-use std::c_str::CString;
+use std::ffi::c_str_to_bytes;
 use std::error;
 use std::fmt;
+use std::mem;
 use std::str;
 
 use curl_ffi as ffi;
@@ -110,13 +111,13 @@ impl ErrCode {
 
 impl fmt::Show for ErrCode {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        let c_str = unsafe {
-            CString::new(ffi::curl_easy_strerror(self.code()), false)
+        let s = unsafe {
+            c_str_to_bytes(mem::copy_lifetime(self, &ffi::curl_easy_strerror(self.code())))
         };
 
-        match c_str.as_str() {
-            Some(s) => write!(fmt, "{}", s),
-            None => write!(fmt, "<unknown err>")
+        match str::from_utf8(s) {
+            Ok(s) => write!(fmt, "{}", s),
+            Err(err) => write!(fmt, "{}", err)
         }
     }
 }
@@ -124,6 +125,9 @@ impl fmt::Show for ErrCode {
 impl error::Error for ErrCode {
     fn description(&self) -> &str {
         let code = self.code();
-        unsafe { str::from_c_str(ffi::curl_easy_strerror(code) as *const _) }
+        let s = unsafe {
+            c_str_to_bytes(mem::copy_lifetime(self, &(ffi::curl_easy_strerror(code) as *const _)))
+        };
+        str::from_utf8(s).unwrap()
     }
 }

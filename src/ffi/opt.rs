@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
+use std::ffi::CString;
 use std::path::Path;
-use std::c_str::ToCStr;
 use libc::{c_void};
 
 use curl_ffi as ffi;
@@ -255,12 +255,14 @@ impl OptVal for bool {
 
 impl<'a> OptVal for &'a str {
     fn with_c_repr<F>(self, f: F) where F: FnOnce(*const c_void) {
-        self.with_c_str(move |arg| f(arg as *const c_void))
+        let s = CString::from_slice(self.as_bytes());
+        f(s.as_ptr() as *const c_void)
     }
 }
 
 impl<'a> OptVal for &'a Path {
     fn with_c_repr<F>(self, f: F) where F: FnOnce(*const c_void) {
-        self.with_c_str(move |arg| f(arg as *const c_void))
+        let s = CString::from_slice(self.as_vec());
+        f(s.as_ptr() as *const c_void)
     }
 }

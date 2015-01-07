@@ -1,11 +1,8 @@
 #![crate_name = "curl"]
-#![feature(macro_rules)]
-#![feature(phase)]
-#![feature(associated_types)]
 
 extern crate libc;
 extern crate url;
-#[cfg(test)] #[phase(plugin, link)] extern crate log;
+#[cfg(test)] #[macro_use] extern crate log;
 
 extern crate "curl-sys" as curl_ffi;
 #[cfg(unix)] extern crate "openssl-sys" as openssl;

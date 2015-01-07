@@ -1,9 +1,9 @@
 #![allow(non_camel_case_types)]
 #![allow(dead_code)]
 
-use std::c_str::CString;
-use std::{fmt,mem,ptr};
-use libc::{c_char,c_int};
+use std::ffi::c_str_to_bytes;
+use std::{fmt, mem, ptr, str};
+use libc::{c_char, c_int};
 
 use curl_ffi as ffi;
 
@@ -148,7 +148,7 @@ impl Version {
 }
 
 #[derive(Copy, Clone)]
-#[allow(raw_pointer_deriving)] // TODO: Implement this by hand
+#[allow(raw_pointer_derive)] // TODO: Implement this by hand
 pub struct Protocols<'a> {
     curr: *const *const c_char
 }
@@ -194,8 +194,8 @@ fn as_str<'a>(p: *const c_char) -> Option<&'a str> {
     }
 
     unsafe {
-        let v = CString::new(p, false);
-        mem::transmute(v.as_str())
+        let tmp : &'a str = "";
+        str::from_utf8(c_str_to_bytes(mem::copy_lifetime(tmp, &p))).ok()
     }
 }
 
@@ -207,7 +207,6 @@ pub fn version_info() -> Version {
 
 pub fn version() -> &'static str {
     unsafe {
-        let v = CString::new(ffi::curl_version(), false);
-        mem::transmute(v.as_str().unwrap())
+        str::from_utf8(c_str_to_bytes(mem::copy_lifetime("", &ffi::curl_version()))).unwrap()
     }
 }

@@ -1,8 +1,7 @@
 #![allow(dead_code)]
 
 use std::sync::{Once, ONCE_INIT};
-use std::c_vec::CVec;
-use std::{io,mem};
+use std::{io, mem, raw};
 use std::collections::HashMap;
 use libc::{c_int,c_long,c_double,size_t};
 use super::{consts,err,info,opt};
@@ -183,7 +182,7 @@ pub extern "C" fn curl_read_fn(p: *mut u8, size: size_t, nmemb: size_t, body: *m
         return 0;
     }
 
-    let mut dst = unsafe { CVec::new(p, (size * nmemb) as uint) };
+    let dst : &mut [u8] = unsafe { mem::transmute(raw::Slice { data: p, len: (size * nmemb) as uint } )};
     let body: &mut Body = unsafe { mem::transmute(body) };
 
     match body.read(dst.as_mut_slice()) {
@@ -200,7 +199,7 @@ pub extern "C" fn curl_read_fn(p: *mut u8, size: size_t, nmemb: size_t, body: *m
 pub extern "C" fn curl_write_fn(p: *mut u8, size: size_t, nmemb: size_t, resp: *mut ResponseBuilder) -> size_t {
     if !resp.is_null() {
         let builder: &mut ResponseBuilder = unsafe { mem::transmute(resp) };
-        let chunk = unsafe { CVec::new(p, (size * nmemb) as uint) };
+        let chunk : &[u8] = unsafe { mem::transmute(raw::Slice { data: p, len: (size * nmemb) as uint } )};
         builder.body.push_all(chunk.as_slice());
     }
 
@@ -210,7 +209,7 @@ pub extern "C" fn curl_write_fn(p: *mut u8, size: size_t, nmemb: size_t, resp: *
 pub extern "C" fn curl_header_fn(p: *mut u8, size: size_t, nmemb: size_t, resp: &mut ResponseBuilder) -> size_t {
     // TODO: Skip the first call (it seems to be the status line)
 
-    let vec = unsafe { CVec::new(p, (size * nmemb) as uint) };
+    let vec : &[u8] = unsafe { mem::transmute(raw::Slice { data: p, len: (size * nmemb) as uint } )};
 
     match header::parse(vec.as_slice()) {
         Some((name, val)) => {

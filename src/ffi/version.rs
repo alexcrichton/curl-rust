@@ -7,6 +7,7 @@ use libc::{c_char, c_int};
 
 use curl_ffi as ffi;
 
+#[allow(missing_copy_implementations)]
 pub struct Version { inner: *mut ffi::curl_version_info_data }
 
 impl Version {

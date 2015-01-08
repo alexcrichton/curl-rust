@@ -1,5 +1,4 @@
-#![feature(macro_rules)]
-#![allow(non_camel_case_types)]
+#![allow(non_camel_case_types, raw_pointer_derive)]
 
 extern crate libc;
 extern crate "libz-sys" as libz;
@@ -23,6 +22,7 @@ pub enum CURLversion {
 }
 
 #[repr(C)]
+#[derive(Copy)]
 pub struct curl_version_info_data {
     pub age: CURLversion,
 

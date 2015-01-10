@@ -17,8 +17,8 @@ impl<'a> Body<'a> {
 
     pub fn read(&mut self, buf: &mut [u8]) -> IoResult<uint> {
         match self {
-            &FixedBody(ref mut r,_) => r.read(buf),
-            &ChunkedBody(ref mut r) => r.read(buf)
+            &mut FixedBody(ref mut r,_) => r.read(buf),
+            &mut ChunkedBody(ref mut r) => r.read(buf)
         }
     }
 }

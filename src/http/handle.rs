@@ -215,7 +215,7 @@ impl<'a, 'b> Request<'a, 'b> {
     pub fn progress<F>(mut self, cb: F) -> Request<'a, 'b>
         where F: FnMut(uint, uint, uint, uint) + 'b
     {
-        self.progress = Some(box cb as Box<ProgressCb<'b>>);
+        self.progress = Some(Box::new(cb) as Box<ProgressCb<'b>>);
         self
     }
 
@@ -329,7 +329,7 @@ impl<'a, 'b> Request<'a, 'b> {
 }
 
 fn append_header(map: &mut HashMap<String, Vec<String>>, key: &str, val: &str) {
-    match map.entry(key) {
+    match map.entry(key.to_string()) {
         Entry::Vacant(entry) => {
             let mut values = Vec::new();
             values.push(val.to_string());

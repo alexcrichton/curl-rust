@@ -89,7 +89,7 @@ pub const CURL_VERSION_NTLM_WB:      c_int = (1 << 15);
 pub const CURL_VERSION_HTTP2:        c_int = (1 << 16);
 
 #[repr(C)]
-#[derive(Copy)]
+#[derive(Copy, Show)]
 pub enum CURLcode {
     CURLE_OK = 0,
     CURLE_UNSUPPORTED_PROTOCOL,    /* 1 */

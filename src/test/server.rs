@@ -252,7 +252,7 @@ fn start_server() -> Handle {
 
             resp_tx.send(ops.apply(&mut sock, port as uint)).unwrap();
         }
-    }).detach();
+    });
 
     Handle::new(ops_tx, port)
 }

@@ -98,7 +98,7 @@ pub use curl_ffi::CURLcode::CURLE_CHUNK_FAILED as CHUNK_FAILED;
 pub use curl_ffi::CURLcode::CURLE_NO_CONNECTION_AVAILABLE as NO_CONNECTION_AVAILABLE;
 pub use curl_ffi::CURLcode::CURLE_LAST as LAST;
 
-#[derive(Copy)]
+#[derive(Copy, Show)]
 pub struct ErrCode(pub ffi::CURLcode);
 
 impl ErrCode {
@@ -109,7 +109,7 @@ impl ErrCode {
     pub fn code(self) -> ffi::CURLcode { let ErrCode(c) = self; c }
 }
 
-impl fmt::Show for ErrCode {
+impl fmt::String for ErrCode {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         let s = unsafe {
             c_str_to_bytes(mem::copy_lifetime(self, &ffi::curl_easy_strerror(self.code())))

@@ -3,19 +3,19 @@ use std::io::{BufReader,IoResult,Reader};
 use self::Body::{FixedBody, ChunkedBody};
 
 pub enum Body<'a> {
-    FixedBody(BufReader<'a>, uint),
+    FixedBody(BufReader<'a>, usize),
     ChunkedBody(&'a mut (Reader+'a))
 }
 
 impl<'a> Body<'a> {
-    pub fn get_size(&self) -> Option<uint> {
+    pub fn get_size(&self) -> Option<usize> {
         match self {
             &FixedBody(_, len) => Some(len),
             _ => None
         }
     }
 
-    pub fn read(&mut self, buf: &mut [u8]) -> IoResult<uint> {
+    pub fn read(&mut self, buf: &mut [u8]) -> IoResult<usize> {
         match self {
             &mut FixedBody(ref mut r,_) => r.read(buf),
             &mut ChunkedBody(ref mut r) => r.read(buf)

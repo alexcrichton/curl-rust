@@ -4,13 +4,13 @@ use std::collections::HashMap;
 pub type Headers = HashMap<String, Vec<String>>;
 
 pub struct Response {
-    code: uint,
+    code: u32,
     hdrs: Headers,
     body: Vec<u8>
 }
 
 impl Response {
-    pub fn new(code: uint, hdrs: Headers, body: Vec<u8>) -> Response {
+    pub fn new(code: u32, hdrs: Headers, body: Vec<u8>) -> Response {
         Response {
             code: code,
             hdrs: hdrs,
@@ -18,7 +18,7 @@ impl Response {
         }
     }
 
-    pub fn get_code(&self) -> uint {
+    pub fn get_code(&self) -> u32 {
         self.code
     }
 

@@ -16,16 +16,16 @@ impl Version {
         as_str(unsafe { (*self.inner).version }).unwrap()
     }
 
-    pub fn version_major(&self) -> uint {
-        (unsafe { (*self.inner).version_num } as uint & 0xFF0000) >> 16
+    pub fn version_major(&self) -> u32 {
+        (unsafe { (*self.inner).version_num } as u32 & 0xFF0000) >> 16
     }
 
-    pub fn version_minor(&self) -> uint {
-        (unsafe { (*self.inner).version_num } as uint & 0xFF00) >> 8
+    pub fn version_minor(&self) -> u32 {
+        (unsafe { (*self.inner).version_num } as u32 & 0xFF00) >> 8
     }
 
-    pub fn version_patch(&self) -> uint {
-        (unsafe { (*self.inner).version_num } as uint & 0xFF)
+    pub fn version_patch(&self) -> u32 {
+        (unsafe { (*self.inner).version_num } as u32 & 0xFF)
     }
 
     pub fn host<'a>(&'a self) -> &'a str {
@@ -118,9 +118,9 @@ impl Version {
         as_str(unsafe { (*self.inner).ares })
     }
 
-    pub fn ares_version_num(&self) -> Option<uint> {
+    pub fn ares_version_num(&self) -> Option<u32> {
         match self.ares_version() {
-            Some(_) => Some(unsafe { (*self.inner).ares_num } as uint),
+            Some(_) => Some(unsafe { (*self.inner).ares_num } as u32),
             None => None
         }
     }
@@ -134,9 +134,9 @@ impl Version {
         }
     }
 
-    pub fn iconv_version(self) -> Option<uint> {
+    pub fn iconv_version(self) -> Option<u32> {
         if self.is_conv_enabled() {
-            Some(unsafe { (*self.inner).iconv_ver_num } as uint)
+            Some(unsafe { (*self.inner).iconv_ver_num } as u32)
         }
         else {
             None

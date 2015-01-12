@@ -7,7 +7,7 @@ use super::opt::OptVal;
 use curl_ffi as ffi;
 
 pub struct List {
-    len: uint,
+    len: usize,
     head: *mut ffi::curl_slist,
 }
 
@@ -25,7 +25,7 @@ impl List {
         self.head = unsafe { ffi::curl_slist_append(self.head, val.as_ptr()) };
     }
 
-    pub fn len(&self) -> uint {
+    pub fn len(&self) -> usize {
         self.len
     }
 

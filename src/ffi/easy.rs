@@ -11,7 +11,7 @@ use http::{header,Response};
 
 use curl_ffi as ffi;
 
-pub type ProgressCb<'a> = FnMut(uint, uint, uint, uint) + 'a;
+pub type ProgressCb<'a> = FnMut(usize, usize, usize, usize) + 'a;
 
 pub struct Easy {
     curl: *mut ffi::CURL
@@ -24,7 +24,7 @@ impl Easy {
 
         let handle = unsafe {
             let p = ffi::curl_easy_init();
-            ffi::curl_easy_setopt(p, opt::NOPROGRESS, 0u);
+            ffi::curl_easy_setopt(p, opt::NOPROGRESS, 0);
             p
         };
 
@@ -52,13 +52,13 @@ impl Easy {
         let mut builder = ResponseBuilder::new();
 
         unsafe {
-            let resp_p: uint = mem::transmute(&builder);
-            let body_p: uint = match body {
+            let resp_p: usize = mem::transmute(&builder);
+            let body_p: usize = match body {
                 Some(b) => mem::transmute(b),
                 None => 0
             };
 
-            let progress_p: uint = match progress.as_ref() {
+            let progress_p: usize = match progress.as_ref() {
                 Some(cb) => mem::transmute(cb),
                 None => 0
             };
@@ -90,12 +90,12 @@ impl Easy {
         Ok(builder.build())
     }
 
-    pub fn get_response_code(&self) -> Result<uint, err::ErrCode> {
-        Ok(try!(self.get_info_long(info::RESPONSE_CODE)) as uint)
+    pub fn get_response_code(&self) -> Result<u32, err::ErrCode> {
+        Ok(try!(self.get_info_long(info::RESPONSE_CODE)) as u32)
     }
 
-    pub fn get_total_time(&self) -> Result<uint, err::ErrCode> {
-        Ok(try!(self.get_info_long(info::TOTAL_TIME)) as uint)
+    pub fn get_total_time(&self) -> Result<usize, err::ErrCode> {
+        Ok(try!(self.get_info_long(info::TOTAL_TIME)) as usize)
     }
 
     fn get_info_long(&self, key: info::Key) -> Result<c_long, err::ErrCode> {
@@ -134,7 +134,7 @@ impl Drop for Easy {
  */
 
 struct ResponseBuilder {
-    code: uint,
+    code: u32,
     hdrs: HashMap<String,Vec<String>>,
     body: Vec<u8>
 }
@@ -182,7 +182,7 @@ pub extern "C" fn curl_read_fn(p: *mut u8, size: size_t, nmemb: size_t, body: *m
         return 0;
     }
 
-    let dst : &mut [u8] = unsafe { mem::transmute(raw::Slice { data: p, len: (size * nmemb) as uint } )};
+    let dst : &mut [u8] = unsafe { mem::transmute(raw::Slice { data: p, len: (size * nmemb) as usize } )};
     let body: &mut Body = unsafe { mem::transmute(body) };
 
     match body.read(dst.as_mut_slice()) {
@@ -199,7 +199,7 @@ pub extern "C" fn curl_read_fn(p: *mut u8, size: size_t, nmemb: size_t, body: *m
 pub extern "C" fn curl_write_fn(p: *mut u8, size: size_t, nmemb: size_t, resp: *mut ResponseBuilder) -> size_t {
     if !resp.is_null() {
         let builder: &mut ResponseBuilder = unsafe { mem::transmute(resp) };
-        let chunk : &[u8] = unsafe { mem::transmute(raw::Slice { data: p, len: (size * nmemb) as uint } )};
+        let chunk : &[u8] = unsafe { mem::transmute(raw::Slice { data: p, len: (size * nmemb) as usize } )};
         builder.body.push_all(chunk.as_slice());
     }
 
@@ -209,7 +209,7 @@ pub extern "C" fn curl_write_fn(p: *mut u8, size: size_t, nmemb: size_t, resp: *
 pub extern "C" fn curl_header_fn(p: *mut u8, size: size_t, nmemb: size_t, resp: &mut ResponseBuilder) -> size_t {
     // TODO: Skip the first call (it seems to be the status line)
 
-    let vec : &[u8] = unsafe { mem::transmute(raw::Slice { data: p, len: (size * nmemb) as uint } )};
+    let vec : &[u8] = unsafe { mem::transmute(raw::Slice { data: p, len: (size * nmemb) as usize } )};
 
     match header::parse(vec.as_slice()) {
         Some((name, val)) => {
@@ -223,13 +223,13 @@ pub extern "C" fn curl_header_fn(p: *mut u8, size: size_t, nmemb: size_t, resp: 
 
 pub extern "C" fn curl_progress_fn(cb: *mut Box<ProgressCb>, dltotal: c_double, dlnow: c_double, ultotal: c_double, ulnow: c_double) -> c_int {
     #[inline]
-    fn to_uint(v: c_double) -> uint {
-        if v > 0.0 { v as uint } else { 0 }
+    fn to_usize(v: c_double) -> usize {
+        if v > 0.0 { v as usize } else { 0 }
     }
 
     if !cb.is_null() {
         let cb: &mut ProgressCb = unsafe { &mut **cb };
-        (*cb)(to_uint(dltotal), to_uint(dlnow), to_uint(ultotal), to_uint(ulnow));
+        (*cb)(to_usize(dltotal), to_usize(dlnow), to_usize(ultotal), to_usize(ulnow));
     }
 
     0

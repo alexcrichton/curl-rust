@@ -235,13 +235,19 @@ pub trait OptVal {
     fn with_c_repr<F>(self, f: F) where F: FnOnce(*const c_void);
 }
 
-impl OptVal for int {
+impl OptVal for isize {
     fn with_c_repr<F>(self, f: F) where F: FnOnce(*const c_void) {
         f(self as *const c_void)
     }
 }
 
-impl OptVal for uint {
+impl OptVal for i32 {
+    fn with_c_repr<F>(self, f: F) where F: FnOnce(*const c_void) {
+        (self as isize).with_c_repr(f)
+    }
+}
+
+impl OptVal for usize {
     fn with_c_repr<F>(self, f: F) where F: FnOnce(*const c_void) {
         f(self as *const c_void)
     }
@@ -249,7 +255,7 @@ impl OptVal for uint {
 
 impl OptVal for bool {
     fn with_c_repr<F>(self, f: F) where F: FnOnce(*const c_void) {
-        f(self as uint as *const c_void)
+        f(self as usize as *const c_void)
     }
 }
 

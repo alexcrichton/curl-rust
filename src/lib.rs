@@ -1,4 +1,4 @@
-#![crate_name = "curl"]
+#![allow(unstable)]
 
 extern crate libc;
 extern crate url;

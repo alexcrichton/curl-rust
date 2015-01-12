@@ -103,7 +103,7 @@ pub struct ErrCode(pub ffi::CURLcode);
 
 impl ErrCode {
     pub fn is_success(self) -> bool {
-       self.code() as int == OK as int
+       self.code() as i32 == OK as i32
     }
 
     pub fn code(self) -> ffi::CURLcode { let ErrCode(c) = self; c }

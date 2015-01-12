@@ -12,7 +12,7 @@ use {ProgressCb,ErrCode};
 use self::Method::{Get, Head, Post, Put, Delete};
 use self::BodyType::{Fixed, Chunked};
 
-static DEFAULT_TIMEOUT_MS: uint = 30_000;
+const DEFAULT_TIMEOUT_MS: usize = 30_000;
 
 pub struct Handle {
     easy: Easy,
@@ -41,18 +41,18 @@ impl Handle {
         fn configure(handle: Handle) -> Handle { handle }
     }
 
-    pub fn timeout(mut self, ms: uint) -> Handle {
+    pub fn timeout(mut self, ms: usize) -> Handle {
         self.easy.setopt(opt::TIMEOUT_MS, ms).unwrap();
         self
     }
 
-    pub fn connect_timeout(mut self, ms: uint) -> Handle {
+    pub fn connect_timeout(mut self, ms: usize) -> Handle {
         self.easy.setopt(opt::CONNECTTIMEOUT_MS, ms).unwrap();
         self
     }
 
     pub fn verbose(mut self) -> Handle {
-        self.easy.setopt(opt::VERBOSE, 1u).unwrap();
+        self.easy.setopt(opt::VERBOSE, 1).unwrap();
         self
     }
 
@@ -135,7 +135,7 @@ pub struct Request<'a, 'b> {
 }
 
 enum BodyType {
-    Fixed(uint),
+    Fixed(usize),
     Chunked,
 }
 
@@ -180,7 +180,7 @@ impl<'a, 'b> Request<'a, 'b> {
         self
     }
 
-    pub fn content_length(mut self, len: uint) -> Request<'a, 'b> {
+    pub fn content_length(mut self, len: usize) -> Request<'a, 'b> {
         self.body_type = Some(Fixed(len));
         self
     }
@@ -213,7 +213,7 @@ impl<'a, 'b> Request<'a, 'b> {
     }
 
     pub fn progress<F>(mut self, cb: F) -> Request<'a, 'b>
-        where F: FnMut(uint, uint, uint, uint) + 'b
+        where F: FnMut(usize, usize, usize, usize) + 'b
     {
         self.progress = Some(Box::new(cb) as Box<ProgressCb<'b>>);
         self
@@ -241,7 +241,7 @@ impl<'a, 'b> Request<'a, 'b> {
         } = self;
 
         if follow {
-            try!(handle.easy.setopt(opt::FOLLOWLOCATION, 1i));
+            try!(handle.easy.setopt(opt::FOLLOWLOCATION, 1));
         }
 
         match err {
@@ -250,16 +250,16 @@ impl<'a, 'b> Request<'a, 'b> {
         }
 
         // Clear custom headers set from the previous request
-        try!(handle.easy.setopt(opt::HTTPHEADER, 0u));
+        try!(handle.easy.setopt(opt::HTTPHEADER, 0));
 
         match method {
-            Get => try!(handle.easy.setopt(opt::HTTPGET, 1i)),
-            Head => try!(handle.easy.setopt(opt::NOBODY, 1i)),
-            Post => try!(handle.easy.setopt(opt::POST, 1i)),
-            Put => try!(handle.easy.setopt(opt::UPLOAD, 1i)),
+            Get => try!(handle.easy.setopt(opt::HTTPGET, 1)),
+            Head => try!(handle.easy.setopt(opt::NOBODY, 1)),
+            Post => try!(handle.easy.setopt(opt::POST, 1)),
+            Put => try!(handle.easy.setopt(opt::UPLOAD, 1)),
             Delete => {
                 if body.is_some() {
-                    try!(handle.easy.setopt(opt::UPLOAD, 1i));
+                    try!(handle.easy.setopt(opt::UPLOAD, 1));
                 }
 
                 try!(handle.easy.setopt(opt::CUSTOMREQUEST, "DELETE"));

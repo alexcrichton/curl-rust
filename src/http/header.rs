@@ -149,7 +149,7 @@ static TOKEN: &'static [u8] = &[
 
 #[inline]
 fn is_token(c: u8) -> bool {
-    c < 128 && TOKEN[c as uint] > 0
+    c < 128 && TOKEN[c as usize] > 0
 }
 
 #[inline]

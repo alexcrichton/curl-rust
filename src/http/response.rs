@@ -42,7 +42,7 @@ impl Response {
     }
 }
 
-impl fmt::String for Response {
+impl fmt::Display for Response {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         try!(write!(fmt, "Response {{{}, ", self.code));
 

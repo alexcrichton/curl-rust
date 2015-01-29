@@ -1,4 +1,4 @@
-use std::io::{BufReader,IoResult,Reader};
+use std::old_io::{BufReader,IoResult,Reader};
 
 use self::Body::{FixedBody, ChunkedBody};
 

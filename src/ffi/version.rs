@@ -170,7 +170,7 @@ impl<'a> Iterator for Protocols<'a> {
     }
 }
 
-impl<'a> fmt::Show for Protocols<'a> {
+impl<'a> fmt::Display for Protocols<'a> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         let mut i = self.clone();
 

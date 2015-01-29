@@ -69,7 +69,7 @@ pub fn test_get_tracking_progress() {
   let res = handle()
     .get(server::url("/"))
     .progress(|_, dlnow, _, _| {
-      cnt = cnt + 1u;
+      cnt = cnt + 1;
       dl = dlnow
     })
     .exec().unwrap();

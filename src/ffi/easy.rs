@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use std::sync::{Once, ONCE_INIT};
-use std::{io, mem, raw};
+use std::{old_io, mem, raw};
 use std::collections::HashMap;
 use libc::{c_int,c_long,c_double,size_t};
 use super::{consts,err,info,opt};
@@ -189,7 +189,7 @@ pub extern "C" fn curl_read_fn(p: *mut u8, size: size_t, nmemb: size_t, body: *m
         Ok(len) => len as size_t,
         Err(e) => {
             match e.kind {
-                io::EndOfFile => 0 as size_t,
+                old_io::EndOfFile => 0 as size_t,
                 _ => consts::CURL_READFUNC_ABORT as size_t
             }
         }

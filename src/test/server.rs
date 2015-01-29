@@ -1,8 +1,8 @@
 use std::collections::HashSet;
-use std::io::net::ip::Port;
-use std::io::net::tcp::{TcpListener,TcpStream};
-use std::io::timer;
-use std::io::{Acceptor, Listener};
+use std::old_io::net::ip::Port;
+use std::old_io::net::tcp::{TcpListener,TcpStream};
+use std::old_io::timer;
+use std::old_io::{Acceptor, Listener};
 use std::iter::repeat;
 use std::str;
 use std::sync::mpsc::{channel, Sender, Receiver};
@@ -31,7 +31,7 @@ pub fn url(path: &str) -> String {
     format!("http://localhost:{}{}", port(), path)
 }
 
-fn port() -> uint {
+fn port() -> usize {
     HANDLE.with(|h| {
         h.port()
     })
@@ -55,7 +55,7 @@ struct Handle {
 pub enum Op {
     SendBytes(&'static [u8]),
     ReceiveBytes(&'static [u8]),
-    Wait(uint),
+    Wait(usize),
     Shutdown
 }
 
@@ -88,12 +88,12 @@ impl OpSequence {
         self.ops.len() == 1 && self.ops[0] == Shutdown
     }
 
-    pub fn apply(&self, sock: &mut TcpStream, port: uint) -> Result<(), String> {
+    pub fn apply(&self, sock: &mut TcpStream, port: usize) -> Result<(), String> {
         for op in self.ops.iter() {
             match op {
                 &SendBytes(b) => {
                     let b = insert_port(b, port);
-                    match sock.write(b.as_slice()) {
+                    match sock.write_all(b.as_slice()) {
                         Ok(_) => {}
                         Err(e) => return Err(e.desc.to_string())
                     }
@@ -104,7 +104,7 @@ impl OpSequence {
                     let mut act = repeat(0u8).take(rem).collect::<Vec<_>>();
 
                     while rem > 0 {
-                        match sock.read(act.slice_from_mut(b.len() - rem)) {
+                        match sock.read(&mut act[b.len() - rem..]) {
                             Ok(i) => rem = rem - i,
                             Err(e) => {
                                 debug!("aborting due to error; error={}; remaining={}; bytes=\n{}",
@@ -131,7 +131,7 @@ impl OpSequence {
 
         return Ok(());
 
-        fn insert_port(bytes: &'static [u8], port: uint) -> Vec<u8> {
+        fn insert_port(bytes: &'static [u8], port: usize) -> Vec<u8> {
             let s = str::from_utf8(bytes).unwrap();
             let p = port.to_string();
             s.replace("{PORT}", p.as_slice()).into_bytes()
@@ -160,7 +160,7 @@ impl OpSequence {
                 taken = req.len();
             }
 
-            (start.unwrap(), headers, req.slice_from(taken))
+            (start.unwrap(), headers, &req[taken..])
         }
     }
 }
@@ -197,8 +197,8 @@ impl Handle {
         self.tx.send((ops, resp)).unwrap();
     }
 
-    fn port(&self) -> uint {
-        self.port as uint
+    fn port(&self) -> usize {
+        self.port as usize
     }
 }
 
@@ -250,7 +250,7 @@ fn start_server() -> Handle {
 
             sock.set_timeout(Some(100));
 
-            resp_tx.send(ops.apply(&mut sock, port as uint)).unwrap();
+            resp_tx.send(ops.apply(&mut sock, port as usize)).unwrap();
         }
     });
 

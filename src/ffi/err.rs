@@ -109,13 +109,13 @@ impl ErrCode {
     pub fn code(self) -> ffi::CURLcode { let ErrCode(c) = self; c }
 }
 
-impl fmt::Show for ErrCode {
+impl fmt::Debug for ErrCode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fmt::String::fmt(self, f)
+        fmt::Display::fmt(self, f)
     }
 }
 
-impl fmt::String for ErrCode {
+impl fmt::Display for ErrCode {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         let s = unsafe {
             c_str_to_bytes(mem::copy_lifetime(self, &ffi::curl_easy_strerror(self.code())))

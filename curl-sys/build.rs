@@ -1,9 +1,11 @@
+#![feature(io, os, path, collections, core)]
+
 extern crate "pkg-config" as pkg_config;
 
 use std::os;
-use std::io::{self, fs, Command};
-use std::io::process::InheritFd;
-use std::io::fs::PathExtensions;
+use std::old_io::{self, fs, Command};
+use std::old_io::process::InheritFd;
+use std::old_io::fs::PathExtensions;
 
 fn main() {
     let target = os::getenv("TARGET").unwrap();
@@ -36,7 +38,7 @@ fn main() {
     let src = os::getcwd().unwrap();
     let dst = Path::new(os::getenv("OUT_DIR").unwrap());
 
-    let _ = fs::mkdir(&dst.join("build"), io::USER_DIR);
+    let _ = fs::mkdir(&dst.join("build"), old_io::USER_DIR);
 
     let mut config_opts = Vec::new();
     if windows {
@@ -96,7 +98,7 @@ fn main() {
 
     // Don't run `make install` because apparently it's a little buggy on mingw
     // for windows.
-    fs::mkdir_recursive(&dst.join("lib/pkgconfig"), io::USER_DIR).unwrap();
+    fs::mkdir_recursive(&dst.join("lib/pkgconfig"), old_io::USER_DIR).unwrap();
 
     // Which one does windows generate? Who knows!
     let p1 = dst.join("build/lib/.libs/libcurl.a");

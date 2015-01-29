@@ -97,12 +97,12 @@ pub fn parse<'a>(buf: &'a [u8]) -> Option<(&'a str, &'a str)> {
         i += 1;
     }
 
-    let name = match str::from_utf8(buf.slice(name_begin, name_end)) {
+    let name = match str::from_utf8(&buf[name_begin..name_end]) {
         Ok(v) => v,
         Err(..) => return None
     };
 
-    let val = match str::from_utf8(buf.slice(val_begin, val_end)) {
+    let val = match str::from_utf8(&buf[val_begin..val_end]) {
         Ok(v) => v,
         Err(..) => return None
     };

@@ -1,4 +1,4 @@
-#![feature(libc, core)]
+#![feature(libc)]
 #![allow(non_camel_case_types, raw_pointer_derive)]
 
 extern crate libc;
@@ -90,7 +90,7 @@ pub const CURL_VERSION_NTLM_WB:      c_int = (1 << 15);
 pub const CURL_VERSION_HTTP2:        c_int = (1 << 16);
 
 #[repr(C)]
-#[derive(Copy, Show)]
+#[derive(Copy, Debug)]
 pub enum CURLcode {
     CURLE_OK = 0,
     CURLE_UNSUPPORTED_PROTOCOL,    /* 1 */

@@ -20,18 +20,18 @@ log = "0.2"
 
 # Unix platforms use OpenSSL for now to provide SSL functionality
 [target.i686-apple-darwin.dependencies]
-openssl-sys = "0.3.0"
+openssl-sys = "0.4.0"
 [target.x86_64-apple-darwin.dependencies]
-openssl-sys = "0.3.0"
+openssl-sys = "0.4.0"
 [target.i686-unknown-linux-gnu.dependencies]
-openssl-sys = "0.3.0"
+openssl-sys = "0.4.0"
 [target.x86_64-unknown-linux-gnu.dependencies]
-openssl-sys = "0.3.0"
+openssl-sys = "0.4.0"
 [target.arm-unknown-linux-gnueabihf.dependencies]
-openssl-sys = "0.3.0"
+openssl-sys = "0.4.0"
 [target.aarch64-unknown-linux-gnu.dependencies]
-openssl-sys = "0.3.0"
+openssl-sys = "0.4.0"
 [target.i686-unknown-freebsd.dependencies]
-openssl-sys = "0.3.0"
+openssl-sys = "0.4.0"
 [target.x86_64-unknown-freebsd.dependencies]
-openssl-sys = "0.3.0"
+openssl-sys = "0.4.0"

@@ -1,6 +1,7 @@
 #![allow(non_camel_case_types)]
 #![allow(dead_code)]
 
+use std::marker;
 use std::ffi::c_str_to_bytes;
 use std::{fmt, mem, ptr, str};
 use libc::{c_char, c_int};
@@ -111,7 +112,10 @@ impl Version {
     }
 
     pub fn protocols<'a>(&'a self) -> Protocols<'a> {
-        Protocols { curr: unsafe { (*self.inner).protocols } }
+        Protocols {
+            curr: unsafe { (*self.inner).protocols },
+            _marker: marker::PhantomData
+        }
     }
 
     pub fn ares_version<'a>(&'a self) -> Option<&'a str> {
@@ -151,7 +155,8 @@ impl Version {
 #[derive(Copy, Clone)]
 #[allow(raw_pointer_derive)] // TODO: Implement this by hand
 pub struct Protocols<'a> {
-    curr: *const *const c_char
+    curr: *const *const c_char,
+    _marker: marker::PhantomData<&'a str>,
 }
 
 impl<'a> Iterator for Protocols<'a> {

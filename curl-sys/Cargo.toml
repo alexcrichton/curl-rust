@@ -1,6 +1,6 @@
 [package]
 name = "curl-sys"
-version = "0.1.10"
+version = "0.1.11"
 authors = ["Carl Lerche <me@carllerche.com"]
 links = "curl"
 build = "build.rs"
@@ -9,7 +9,7 @@ repository = "https://github.com/carllerche/curl-rust"
 description = "Native bindings to the libcurl library"
 
 [build-dependencies]
-pkg-config = "0.1.0"
+pkg-config = "0.3"
 
 [lib]
 name = "curl-sys"

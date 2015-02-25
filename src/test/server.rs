@@ -6,7 +6,7 @@ use std::old_io::{Acceptor, Listener};
 use std::iter::repeat;
 use std::str;
 use std::sync::mpsc::{channel, Sender, Receiver};
-use std::thread::Thread;
+use std::thread;
 use std::time::Duration;
 
 use self::Op::{SendBytes, ReceiveBytes, Wait, Shutdown};
@@ -51,7 +51,7 @@ struct Handle {
  * - Wait for a certain amount of time
  * - Shutdown the server (allows a clean exit at the end of the tests)
  */
-#[derive(Clone,PartialEq,Show)]
+#[derive(Clone,PartialEq,Debug)]
 pub enum Op {
     SendBytes(&'static [u8]),
     ReceiveBytes(&'static [u8]),
@@ -61,7 +61,7 @@ pub enum Op {
 
 /* An ordered sequence of operations for the HTTP server to perform
 */
-#[derive(Show)]
+#[derive(Debug)]
 pub struct OpSequence {
     ops: Vec<Op>
 }
@@ -230,7 +230,7 @@ fn start_server() -> Handle {
     let port = listener.socket_name().unwrap().port;
     let mut srv = listener.listen().unwrap();
 
-    Thread::spawn(move || {
+    thread::spawn(move || {
         loop {
             let (ops, resp_tx): (OpSequence, Sender<Result<(),String>>) =
                     ops_rx.recv().unwrap();

@@ -260,14 +260,14 @@ impl OptVal for bool {
 
 impl<'a> OptVal for &'a str {
     fn with_c_repr<F>(self, f: F) where F: FnOnce(*const c_void) {
-        let s = CString::from_slice(self.as_bytes());
+        let s = CString::new(self).unwrap();
         f(s.as_ptr() as *const c_void)
     }
 }
 
 impl<'a> OptVal for &'a Path {
     fn with_c_repr<F>(self, f: F) where F: FnOnce(*const c_void) {
-        let s = CString::from_slice(self.as_vec());
+        let s = CString::new(self.as_vec()).unwrap();
         f(s.as_ptr() as *const c_void)
     }
 }

@@ -1,14 +1,15 @@
-#![feature(old_io, os, old_path, core)]
+#![feature(io, env, path, core, process, fs, old_path)]
 
 extern crate "pkg-config" as pkg_config;
 
-use std::os;
-use std::old_io::{self, fs, Command};
-use std::old_io::process::InheritFd;
-use std::old_io::fs::PathExtensions;
+use std::env;
+use std::io::prelude::*;
+use std::fs;
+use std::path::PathBuf;
+use std::process::Command;
 
 fn main() {
-    let target = os::getenv("TARGET").unwrap();
+    let target = env::var("TARGET").unwrap();
 
     // OSX ships libcurl by default, so we just use that version
     // unconditionally.
@@ -18,11 +19,11 @@ fn main() {
 
     // Next, fall back and try to use pkg-config if its available.
     match pkg_config::find_library("libcurl") {
-        Ok(()) => return,
+        Ok(..) => return,
         Err(..) => {}
     }
 
-    let mut cflags = os::getenv("CFLAGS").unwrap_or(String::new());
+    let mut cflags = env::var("CFLAGS").unwrap_or(String::new());
     let windows = target.contains("windows");
     cflags.push_str(" -ffunction-sections -fdata-sections");
 
@@ -35,10 +36,10 @@ fn main() {
         cflags.push_str(" -fPIC");
     }
 
-    let src = os::getcwd().unwrap();
-    let dst = Path::new(os::getenv("OUT_DIR").unwrap());
+    let src = env::current_dir().unwrap();
+    let dst = PathBuf::new(&env::var_os("OUT_DIR").unwrap());
 
-    let _ = fs::mkdir(&dst.join("build"), old_io::USER_DIR);
+    let _ = fs::create_dir(&dst.join("build"));
 
     let mut config_opts = Vec::new();
     if windows {
@@ -47,11 +48,9 @@ fn main() {
         config_opts.push("--without-ca-bundle".to_string());
         config_opts.push("--without-ca-path".to_string());
 
-        match os::getenv("DEP_OPENSSL_ROOT") {
-            Some(s) => {
-                config_opts.push(format!("--with-ssl={}", s));
-            }
-            None => {}
+        match env::var("DEP_OPENSSL_ROOT") {
+            Ok(s) => config_opts.push(format!("--with-ssl={}", s)),
+            Err(..) => {}
         }
     }
     config_opts.push("--enable-static=yes".to_string());
@@ -84,21 +83,21 @@ fn main() {
     // Also apparently the buildbots choke unless we manually set LD, who knows
     // why?!
     run(Command::new("sh")
-                .env("CFLAGS", cflags)
-                .env("LD", which("ld").unwrap())
-                .cwd(&dst.join("build"))
+                .env("CFLAGS", &cflags)
+                .env("LD", &which("ld").unwrap())
+                .current_dir(&dst.join("build"))
                 .arg("-c")
-                .arg(format!("{} {}", src.join("curl/configure").display(),
-                             config_opts.connect(" "))
-                            .replace("C:\\", "/c/")
-                            .replace("\\", "/")));
+                .arg(&format!("{} {}", src.join("curl/configure").display(),
+                              config_opts.connect(" "))
+                             .replace("C:\\", "/c/")
+                             .replace("\\", "/")));
     run(Command::new(make())
-                .arg(format!("-j{}", os::getenv("NUM_JOBS").unwrap()))
-                .cwd(&dst.join("build")));
+                .arg(&format!("-j{}", env::var("NUM_JOBS").unwrap()))
+                .current_dir(&dst.join("build")));
 
     // Don't run `make install` because apparently it's a little buggy on mingw
     // for windows.
-    fs::mkdir_recursive(&dst.join("lib/pkgconfig"), old_io::USER_DIR).unwrap();
+    fs::create_dir(&dst.join("lib/pkgconfig")).unwrap();
 
     // Which one does windows generate? Who knows!
     let p1 = dst.join("build/lib/.libs/libcurl.a");
@@ -121,20 +120,18 @@ fn main() {
 
 fn run(cmd: &mut Command) {
     println!("running: {:?}", cmd);
-    assert!(cmd.stdout(InheritFd(1))
-               .stderr(InheritFd(2))
-               .status()
+    assert!(cmd.status()
                .unwrap()
                .success());
-
 }
 
 fn make() -> &'static str {
     if cfg!(target_os = "freebsd") {"gmake"} else {"make"}
 }
 
-fn which(cmd: &str) -> Option<Path> {
-    let cmd = format!("{}{}", cmd, os::consts::EXE_SUFFIX);
-    let paths = os::split_paths(os::getenv("PATH").unwrap());
-    paths.iter().map(|p| p.join(&cmd)).find(|p| p.exists())
+fn which(cmd: &str) -> Option<PathBuf> {
+    let cmd = format!("{}{}", cmd, env::consts::EXE_SUFFIX);
+    let paths = env::var_os("PATH").unwrap();
+    env::split_paths(&paths).map(|p| PathBuf::new(p.as_str().unwrap()))
+        .map(|p| p.join(&cmd)).find(|p| p.exists())
 }

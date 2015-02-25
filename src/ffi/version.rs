@@ -2,8 +2,8 @@
 #![allow(dead_code)]
 
 use std::marker;
-use std::ffi::c_str_to_bytes;
-use std::{fmt, mem, ptr, str};
+use std::ffi::CStr;
+use std::{fmt, ptr, str};
 use libc::{c_char, c_int};
 
 use curl_ffi as ffi;
@@ -200,8 +200,7 @@ fn as_str<'a>(p: *const c_char) -> Option<&'a str> {
     }
 
     unsafe {
-        let tmp : &'a str = "";
-        str::from_utf8(c_str_to_bytes(mem::copy_lifetime(tmp, &p))).ok()
+        str::from_utf8(CStr::from_ptr(p).to_bytes()).ok()
     }
 }
 
@@ -213,6 +212,6 @@ pub fn version_info() -> Version {
 
 pub fn version() -> &'static str {
     unsafe {
-        str::from_utf8(c_str_to_bytes(mem::copy_lifetime("", &ffi::curl_version()))).unwrap()
+        str::from_utf8(CStr::from_ptr(ffi::curl_version()).to_bytes()).unwrap()
     }
 }

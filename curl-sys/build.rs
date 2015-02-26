@@ -1,4 +1,4 @@
-#![feature(io, env, path, core, process, fs, old_path)]
+#![feature(io, env, path, core, process, fs)]
 
 extern crate "pkg-config" as pkg_config;
 
@@ -132,6 +132,5 @@ fn make() -> &'static str {
 fn which(cmd: &str) -> Option<PathBuf> {
     let cmd = format!("{}{}", cmd, env::consts::EXE_SUFFIX);
     let paths = env::var_os("PATH").unwrap();
-    env::split_paths(&paths).map(|p| PathBuf::new(p.as_str().unwrap()))
-        .map(|p| p.join(&cmd)).find(|p| p.exists())
+    env::split_paths(&paths).map(|p| p.join(&cmd)).find(|p| p.exists())
 }

@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use std::ffi::CString;
+use std::path::Path;
 use libc::{c_void};
 
 use curl_ffi as ffi;
@@ -266,8 +267,16 @@ impl<'a> OptVal for &'a str {
 }
 
 impl<'a> OptVal for &'a Path {
+    #[cfg(unix)]
     fn with_c_repr<F>(self, f: F) where F: FnOnce(*const c_void) {
-        let s = CString::new(self.as_vec()).unwrap();
+        use std::ffi::AsOsStr;
+        use std::os::unix::prelude::*;
+        let s = CString::new(self.as_os_str().as_bytes()).unwrap();
+        f(s.as_ptr() as *const c_void)
+    }
+    #[cfg(windows)]
+    fn with_c_repr<F>(self, f: F) where F: FnOnce(*const c_void) {
+        let s = CString::new(self.to_str().unwrap()).unwrap();
         f(s.as_ptr() as *const c_void)
     }
 }

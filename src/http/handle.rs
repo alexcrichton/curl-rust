@@ -1,4 +1,5 @@
 use std::collections::hash_map::{HashMap, Entry};
+use std::path::Path;
 
 use url::Url;
 
@@ -28,11 +29,17 @@ impl Handle {
         fn configure(handle: Handle) -> Handle {
             let probe = ::openssl::probe::probe();
             let handle = match probe.cert_file {
-                Some(ref path) => handle.ssl_ca_info(path),
+                Some(ref path) => {
+                    let path = Path::new(path.as_str().unwrap());
+                    handle.ssl_ca_info(path)
+                }
                 None => handle,
             };
             match probe.cert_dir {
-                Some(ref path) => handle.ssl_ca_path(path),
+                Some(ref path) => {
+                    let path = Path::new(path.as_str().unwrap());
+                    handle.ssl_ca_path(path)
+                }
                 None => handle,
             }
         }

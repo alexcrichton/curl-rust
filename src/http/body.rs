@@ -1,10 +1,11 @@
-use std::old_io::{BufReader,IoResult,Reader};
+use std::io::prelude::*;
+use std::io;
 
 use self::Body::{FixedBody, ChunkedBody};
 
 pub enum Body<'a> {
-    FixedBody(BufReader<'a>, usize),
-    ChunkedBody(&'a mut (Reader+'a))
+    FixedBody(&'a [u8], usize),
+    ChunkedBody(&'a mut (Read+'a))
 }
 
 impl<'a> Body<'a> {
@@ -15,9 +16,9 @@ impl<'a> Body<'a> {
         }
     }
 
-    pub fn read(&mut self, buf: &mut [u8]) -> IoResult<usize> {
+    pub fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         match self {
-            &mut FixedBody(ref mut r,_) => r.read(buf),
+            &mut FixedBody(ref mut r, _) => Read::read(r, buf),
             &mut ChunkedBody(ref mut r) => r.read(buf)
         }
     }
@@ -35,7 +36,7 @@ impl<'a> ToBody<'a> for &'a str {
 
 impl<'a> ToBody<'a> for &'a [u8] {
     fn to_body(self) -> Body<'a> {
-        FixedBody(BufReader::new(self), self.len())
+        FixedBody(self, self.len())
     }
 }
 
@@ -45,7 +46,7 @@ impl<'a> ToBody<'a> for &'a String {
     }
 }
 
-impl<'a, R: 'a+Reader> ToBody<'a> for &'a mut R {
+impl<'a, R: Read + 'a> ToBody<'a> for &'a mut R {
     fn to_body(self) -> Body<'a> {
         ChunkedBody(self)
     }

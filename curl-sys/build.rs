@@ -8,6 +8,13 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 
+macro_rules! t {
+    ($e:expr) => (match $e {
+        Ok(t) => t,
+        Err(e) => panic!("{} return the error {}", stringify!($e), e),
+    })
+}
+
 fn main() {
     let target = env::var("TARGET").unwrap();
 
@@ -97,18 +104,18 @@ fn main() {
 
     // Don't run `make install` because apparently it's a little buggy on mingw
     // for windows.
-    fs::create_dir(&dst.join("lib/pkgconfig")).unwrap();
+    let _ = fs::create_dir(&dst.join("lib/pkgconfig"));
 
     // Which one does windows generate? Who knows!
     let p1 = dst.join("build/lib/.libs/libcurl.a");
     let p2 = dst.join("build/lib/.libs/libcurl.lib");
     if p1.exists() {
-        fs::rename(&p1, &dst.join("lib/libcurl.a")).unwrap();
+        t!(fs::rename(&p1, &dst.join("lib/libcurl.a")));
     } else {
-        fs::rename(&p2, &dst.join("lib/libcurl.a")).unwrap();
+        t!(fs::rename(&p2, &dst.join("lib/libcurl.a")));
     }
-    fs::rename(&dst.join("build/libcurl.pc"),
-               &dst.join("lib/pkgconfig/libcurl.pc")).unwrap();
+    t!(fs::rename(&dst.join("build/libcurl.pc"),
+                  &dst.join("lib/pkgconfig/libcurl.pc")));
 
     if windows {
         println!("cargo:rustc-flags=-l ws2_32");
@@ -120,9 +127,7 @@ fn main() {
 
 fn run(cmd: &mut Command) {
     println!("running: {:?}", cmd);
-    assert!(cmd.status()
-               .unwrap()
-               .success());
+    assert!(t!(cmd.status()).success());
 }
 
 fn make() -> &'static str {

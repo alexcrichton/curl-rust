@@ -104,7 +104,7 @@ fn main() {
 
     // Don't run `make install` because apparently it's a little buggy on mingw
     // for windows.
-    let _ = fs::create_dir(&dst.join("lib/pkgconfig"));
+    let _ = fs::create_dir_all(&dst.join("lib/pkgconfig"));
 
     // Which one does windows generate? Who knows!
     let p1 = dst.join("build/lib/.libs/libcurl.a");

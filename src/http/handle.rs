@@ -309,11 +309,11 @@ impl<'a, 'b> Request<'a, 'b> {
             let mut buf = Vec::new();
 
             for (k, v) in headers.iter() {
-                buf.push_all(k.as_bytes());
-                buf.push_all(b": ");
+                buf.extend(k.bytes());
+                buf.extend(": ".bytes());
 
                 for v in v.iter() {
-                    buf.push_all(v.as_bytes());
+                    buf.extend(v.bytes());
                     buf.push(0);
                     ffi_headers.push_bytes(buf.as_slice());
                     buf.truncate(k.len() + 2);

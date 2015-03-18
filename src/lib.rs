@@ -1,4 +1,4 @@
-#![feature(core, collections, std_misc)]
+#![feature(core, std_misc)]
 #![cfg_attr(test, feature(old_io))]
 
 extern crate libc;

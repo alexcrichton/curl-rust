@@ -1,8 +1,9 @@
 #![allow(dead_code)]
 
 use std::sync::{Once, ONCE_INIT};
-use std::{mem, raw};
+use std::mem;
 use std::collections::HashMap;
+use std::slice;
 use libc::{self, c_int, c_long, c_double, size_t};
 use super::{consts, err, info, opt};
 use super::err::ErrCode;
@@ -181,13 +182,14 @@ impl ResponseBuilder {
  * ===== Callbacks =====
  */
 
-pub extern "C" fn curl_read_fn(p: *mut u8, size: size_t, nmemb: size_t, body: *mut Body) -> size_t {
+extern fn curl_read_fn(p: *mut u8, size: size_t, nmemb: size_t,
+                       body: *mut Body) -> size_t {
     if body.is_null() {
         return 0;
     }
 
-    let dst : &mut [u8] = unsafe { mem::transmute(raw::Slice { data: p, len: (size * nmemb) as usize } )};
-    let body: &mut Body = unsafe { mem::transmute(body) };
+    let dst = unsafe { slice::from_raw_parts_mut(p, (size * nmemb) as usize) };
+    let body = unsafe { &mut *body };
 
     match body.read(dst.as_mut_slice()) {
         Ok(len) => len as size_t,
@@ -195,20 +197,24 @@ pub extern "C" fn curl_read_fn(p: *mut u8, size: size_t, nmemb: size_t, body: *m
     }
 }
 
-pub extern "C" fn curl_write_fn(p: *mut u8, size: size_t, nmemb: size_t, resp: *mut ResponseBuilder) -> size_t {
+extern fn curl_write_fn(p: *mut u8, size: size_t, nmemb: size_t,
+                        resp: *mut ResponseBuilder) -> size_t {
     if !resp.is_null() {
         let builder: &mut ResponseBuilder = unsafe { mem::transmute(resp) };
-        let chunk : &[u8] = unsafe { mem::transmute(raw::Slice { data: p, len: (size * nmemb) as usize } )};
-        builder.body.push_all(chunk.as_slice());
+        let chunk = unsafe { slice::from_raw_parts(p as *const u8,
+                                                   (size * nmemb) as usize) };
+        builder.body.extend(chunk.iter().map(|x| *x));
     }
 
     size * nmemb
 }
 
-pub extern "C" fn curl_header_fn(p: *mut u8, size: size_t, nmemb: size_t, resp: &mut ResponseBuilder) -> size_t {
+extern fn curl_header_fn(p: *mut u8, size: size_t, nmemb: size_t,
+                         resp: &mut ResponseBuilder) -> size_t {
     // TODO: Skip the first call (it seems to be the status line)
 
-    let vec : &[u8] = unsafe { mem::transmute(raw::Slice { data: p, len: (size * nmemb) as usize } )};
+    let vec = unsafe { slice::from_raw_parts(p as *const u8,
+                                             (size * nmemb) as usize) };
 
     match header::parse(vec.as_slice()) {
         Some((name, val)) => {

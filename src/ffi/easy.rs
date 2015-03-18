@@ -3,11 +3,11 @@
 use std::sync::{Once, ONCE_INIT};
 use std::{mem, raw};
 use std::collections::HashMap;
-use libc::{c_int,c_long,c_double,size_t};
-use super::{consts,err,info,opt};
+use libc::{self, c_int, c_long, c_double, size_t};
+use super::{consts, err, info, opt};
 use super::err::ErrCode;
 use http::body::Body;
-use http::{header,Response};
+use http::{header, Response};
 
 use curl_ffi as ffi;
 
@@ -115,9 +115,13 @@ impl Easy {
 #[inline]
 fn global_init() {
     // Schedule curl to be cleaned up after we're done with this whole process
-    static mut INIT: Once = ONCE_INIT;
-    unsafe {
-        INIT.call_once(|| ::std::rt::at_exit(|| ffi::curl_global_cleanup()))
+    static INIT: Once = ONCE_INIT;
+    INIT.call_once(|| unsafe {
+        assert_eq!(libc::atexit(cleanup), 0);
+    });
+
+    extern fn cleanup() {
+        unsafe { ffi::curl_global_cleanup() }
     }
 }
 

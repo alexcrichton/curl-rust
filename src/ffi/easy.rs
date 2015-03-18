@@ -154,8 +154,8 @@ impl ResponseBuilder {
 
     fn add_header(&mut self, name: &str, val: &str) {
         // TODO: Reduce allocations
-        use std::ascii::OwnedAsciiExt;
-        let name = name.to_string().into_ascii_lowercase();
+        use std::ascii::AsciiExt;
+        let name = name.to_ascii_lowercase();
 
         let inserted = match self.hdrs.get_mut(&name) {
             Some(vals) => {

@@ -42,7 +42,7 @@ impl<'a> ToBody<'a> for &'a [u8] {
 
 impl<'a> ToBody<'a> for &'a String {
     fn to_body(self) -> Body<'a> {
-        self.as_slice().to_body()
+        self[..].to_body()
     }
 }
 

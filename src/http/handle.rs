@@ -202,7 +202,7 @@ impl<'a, 'b> Request<'a, 'b> {
     }
 
     pub fn get_header(&self, name: &str) -> Option<&[String]> {
-        self.headers.get(name).map(|a| a.as_slice())
+        self.headers.get(name).map(|a| &a[..])
     }
 
     pub fn headers<'c, 'd, I: Iterator<Item=(&'c str, &'d str)>>(mut self, hdrs: I) -> Request<'a, 'b> {
@@ -284,7 +284,7 @@ impl<'a, 'b> Request<'a, 'b> {
                             _ => {}
                         }
                         append_header(&mut headers, "Content-Length",
-                                      len.to_string().as_slice());
+                                      &len.to_string());
                     }
                     Chunked => {
                         append_header(&mut headers, "Transfer-Encoding",
@@ -315,7 +315,7 @@ impl<'a, 'b> Request<'a, 'b> {
                 for v in v.iter() {
                     buf.extend(v.bytes());
                     buf.push(0);
-                    ffi_headers.push_bytes(buf.as_slice());
+                    ffi_headers.push_bytes(&buf);
                     buf.truncate(k.len() + 2);
                 }
 
@@ -358,7 +358,7 @@ impl<'a> ToUrl for &'a Url {
 
 impl ToUrl for String {
     fn with_url_str<F>(self, f: F) where F: FnOnce(&str) {
-        self.as_slice().with_url_str(f);
+        self[..].with_url_str(f);
     }
 }
 
@@ -370,6 +370,6 @@ mod tests {
     fn get_header() {
         let mut h = Handle::new();
         let r = h.get("/foo").header("foo", "bar");
-        assert_eq!(r.get_header("foo"), Some(["bar".to_string()].as_slice()));
+        assert_eq!(r.get_header("foo"), Some(&["bar".to_string()][..]));
     }
 }

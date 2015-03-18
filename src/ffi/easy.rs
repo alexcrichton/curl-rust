@@ -216,7 +216,7 @@ extern fn curl_header_fn(p: *mut u8, size: size_t, nmemb: size_t,
     let vec = unsafe { slice::from_raw_parts(p as *const u8,
                                              (size * nmemb) as usize) };
 
-    match header::parse(vec.as_slice()) {
+    match header::parse(&vec) {
         Some((name, val)) => {
             resp.add_header(name, val);
         }

@@ -68,7 +68,7 @@ pub fn test_post_binary_with_reader() {
                 Hello\r\n\r\n")
     );
 
-    let mut body = b"Foo Bar Baz";
+    let mut body = "Foo Bar Baz".as_bytes();
     let res = http::handle()
         .post(server::url("/"), &mut body)
         .exec().unwrap();
@@ -94,7 +94,7 @@ pub fn test_post_binary_with_reader_and_content_length() {
                 Hello\r\n\r\n")
     );
 
-    let mut body = b"Foo Bar Baz";
+    let mut body = "Foo Bar Baz".as_bytes();
     let res = http::handle()
         .post(server::url("/"), &mut body)
         .content_length(11)

@@ -1,12 +1,12 @@
-#![feature(core, std_misc)]
-#![cfg_attr(test, feature(old_io))]
+#![feature(std_misc)]
+#![cfg_attr(test, feature(thread_sleep))]
 
 extern crate libc;
 extern crate url;
 #[cfg(test)] #[macro_use] extern crate log;
 
-extern crate "curl-sys" as curl_ffi;
-#[cfg(unix)] extern crate "openssl-sys" as openssl;
+extern crate curl_sys as curl_ffi;
+#[cfg(unix)] extern crate openssl_sys as openssl;
 
 pub use ffi::easy::ProgressCb;
 pub use ffi::err::ErrCode;

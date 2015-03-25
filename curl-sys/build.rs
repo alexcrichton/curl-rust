@@ -1,4 +1,6 @@
-extern crate "pkg-config" as pkg_config;
+#![feature(convert)]
+
+extern crate pkg_config;
 
 use std::env;
 use std::fs;
@@ -41,7 +43,7 @@ fn main() {
     }
 
     let src = env::current_dir().unwrap();
-    let dst = PathBuf::new(&env::var_os("OUT_DIR").unwrap());
+    let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
 
     let _ = fs::create_dir(&dst.join("build"));
 

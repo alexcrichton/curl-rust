@@ -1,8 +1,8 @@
 #![allow(non_camel_case_types, raw_pointer_derive)]
 
 extern crate libc;
-extern crate "libz-sys" as libz;
-#[cfg(unix)] extern crate "openssl-sys" as openssl;
+extern crate libz_sys;
+#[cfg(unix)] extern crate openssl_sys;
 
 use libc::{c_void, c_int, c_char, c_uint, c_long};
 

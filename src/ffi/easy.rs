@@ -191,7 +191,7 @@ extern fn curl_read_fn(p: *mut u8, size: size_t, nmemb: size_t,
     let dst = unsafe { slice::from_raw_parts_mut(p, (size * nmemb) as usize) };
     let body = unsafe { &mut *body };
 
-    match body.read(dst.as_mut_slice()) {
+    match body.read(dst) {
         Ok(len) => len as size_t,
         Err(_) => consts::CURL_READFUNC_ABORT as size_t,
     }

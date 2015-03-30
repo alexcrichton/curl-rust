@@ -119,7 +119,8 @@ fn main() {
     if windows {
         println!("cargo:rustc-flags=-l ws2_32");
     }
-    println!("cargo:rustc-flags=-L {}/lib -l curl:static", dst.display());
+    println!("cargo:rustc-link-search={}/lib", dst.display());
+    println!("cargo:rustc-link-lib=static=curl");
     println!("cargo:root={}", dst.display());
     println!("cargo:include={}/include", dst.display());
 }

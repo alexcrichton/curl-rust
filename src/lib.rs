@@ -1,5 +1,5 @@
-#![feature(std_misc)]
-#![cfg_attr(test, feature(thread_sleep))]
+#![feature(convert)]
+#![cfg_attr(test, feature(thread_sleep, std_misc))]
 
 extern crate libc;
 extern crate url;

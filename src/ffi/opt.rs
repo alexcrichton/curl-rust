@@ -269,9 +269,10 @@ impl<'a> OptVal for &'a str {
 impl<'a> OptVal for &'a Path {
     #[cfg(unix)]
     fn with_c_repr<F>(self, f: F) where F: FnOnce(*const c_void) {
-        use std::ffi::AsOsStr;
+        use std::ffi::OsStr;
         use std::os::unix::prelude::*;
-        let s = CString::new(self.as_os_str().as_bytes()).unwrap();
+        let s: &OsStr = self.as_ref();
+        let s = CString::new(s.as_bytes()).unwrap();
         f(s.as_ptr() as *const c_void)
     }
     #[cfg(windows)]

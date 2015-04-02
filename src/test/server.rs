@@ -5,7 +5,6 @@ use std::net::{TcpStream, TcpListener};
 use std::str;
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::thread;
-use std::time::Duration;
 
 use self::Op::{SendBytes, ReceiveBytes, Wait, Shutdown};
 
@@ -126,7 +125,7 @@ impl OpSequence {
                                 to_debug_str(&b), to_debug_str(&act)));
                     }
                 }
-                &Wait(ms) => thread::sleep(Duration::milliseconds(ms as i64)),
+                &Wait(ms) => thread::sleep_ms(ms as u32),
                 &Shutdown => {
                     return Err("Shutdown must be sent on its own".to_string())
                 }

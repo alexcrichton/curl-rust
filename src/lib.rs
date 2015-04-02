@@ -1,6 +1,3 @@
-#![feature(convert)]
-#![cfg_attr(test, feature(thread_sleep, std_misc))]
-
 extern crate libc;
 extern crate url;
 #[cfg(test)] #[macro_use] extern crate log;

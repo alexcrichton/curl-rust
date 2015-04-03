@@ -110,7 +110,7 @@ impl Handle {
     }
 }
 
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub enum Method {
     Options,
     Get,

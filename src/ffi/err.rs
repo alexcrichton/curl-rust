@@ -97,7 +97,7 @@ pub use curl_ffi::CURLcode::CURLE_CHUNK_FAILED as CHUNK_FAILED;
 pub use curl_ffi::CURLcode::CURLE_NO_CONNECTION_AVAILABLE as NO_CONNECTION_AVAILABLE;
 pub use curl_ffi::CURLcode::CURLE_LAST as LAST;
 
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub struct ErrCode(pub ffi::CURLcode);
 
 impl ErrCode {

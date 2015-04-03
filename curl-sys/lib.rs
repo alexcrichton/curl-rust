@@ -12,7 +12,7 @@ pub type curl_slist = c_void;
 pub type CURLoption = c_int;
 
 #[repr(C)]
-#[derive(Copy)]
+#[derive(Clone, Copy)]
 pub enum CURLversion {
     CURL_VERSION_FIRST,
     CURL_VERSION_SECOND,
@@ -49,6 +49,10 @@ pub struct curl_version_info_data {
     /* These field were added in CURL_VERSION_FOURTH */
     pub iconv_ver_num: c_int,
     pub libssh_version: *const c_char,
+}
+
+impl Clone for curl_version_info_data {
+    fn clone(&self) -> Self { *self }
 }
 
 pub const CURL_READFUNC_ABORT: c_int = 0x10000000;
@@ -89,7 +93,7 @@ pub const CURL_VERSION_NTLM_WB:      c_int = (1 << 15);
 pub const CURL_VERSION_HTTP2:        c_int = (1 << 16);
 
 #[repr(C)]
-#[derive(Copy, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum CURLcode {
     CURLE_OK = 0,
     CURLE_UNSUPPORTED_PROTOCOL,    /* 1 */

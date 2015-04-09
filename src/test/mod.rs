@@ -28,5 +28,6 @@ mod head;
 mod post;
 mod proxy;
 mod put;
+mod patch;
 mod delete;
 mod keep_alive;

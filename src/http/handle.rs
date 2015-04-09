@@ -10,7 +10,7 @@ use http::Response;
 use http::body::{Body,ToBody};
 use {ProgressCb,ErrCode};
 
-use self::Method::{Get, Head, Post, Put, Delete};
+use self::Method::{Get, Head, Post, Put, Patch, Delete};
 use self::BodyType::{Fixed, Chunked};
 
 const DEFAULT_TIMEOUT_MS: usize = 30_000;
@@ -105,6 +105,10 @@ impl Handle {
         Request::new(self, Put).uri(uri).body(body)
     }
 
+    pub fn patch<'a, 'b, U: ToUrl, B: ToBody<'b>>(&'a mut self, uri: U, body: B) -> Request<'a, 'b> {
+        Request::new(self, Patch).uri(uri).body(body)
+    }
+
     pub fn delete<'a, 'b, U: ToUrl>(&'a mut self, uri: U) -> Request<'a, 'b> {
         Request::new(self, Delete).uri(uri)
     }
@@ -117,6 +121,7 @@ pub enum Method {
     Head,
     Post,
     Put,
+    Patch,
     Delete,
     Trace,
     Connect
@@ -258,6 +263,7 @@ impl<'a, 'b> Request<'a, 'b> {
             Head => try!(handle.easy.setopt(opt::NOBODY, 1)),
             Post => try!(handle.easy.setopt(opt::POST, 1)),
             Put => try!(handle.easy.setopt(opt::UPLOAD, 1)),
+            Patch => try!(handle.easy.setopt(opt::UPLOAD, 1)),
             Delete => {
                 if body.is_some() {
                     try!(handle.easy.setopt(opt::UPLOAD, 1));
@@ -280,7 +286,7 @@ impl<'a, 'b> Request<'a, 'b> {
                     Fixed(len) => {
                         match method {
                             Post => try!(handle.easy.setopt(opt::POSTFIELDSIZE, len)),
-                            Put | Delete  => try!(handle.easy.setopt(opt::INFILESIZE, len)),
+                            Put | Patch | Delete  => try!(handle.easy.setopt(opt::INFILESIZE, len)),
                             _ => {}
                         }
                         append_header(&mut headers, "Content-Length",

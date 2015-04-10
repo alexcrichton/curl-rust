@@ -55,7 +55,6 @@ pub use curl_ffi::CURLOPT_NETRC as NETRC;
 pub use curl_ffi::CURLOPT_FOLLOWLOCATION as FOLLOWLOCATION;
 pub use curl_ffi::CURLOPT_TRANSFERTEXT as TRANSFERTEXT;
 pub use curl_ffi::CURLOPT_PUT as PUT;
-pub use curl_ffi::CURLOPT_PATCH as PATCH;
 pub use curl_ffi::CURLOPT_PROGRESSFUNCTION as PROGRESSFUNCTION;
 pub use curl_ffi::CURLOPT_PROGRESSDATA as PROGRESSDATA;
 pub use curl_ffi::CURLOPT_AUTOREFERER as AUTOREFERER;

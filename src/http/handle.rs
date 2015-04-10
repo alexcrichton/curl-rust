@@ -263,7 +263,10 @@ impl<'a, 'b> Request<'a, 'b> {
             Head => try!(handle.easy.setopt(opt::NOBODY, 1)),
             Post => try!(handle.easy.setopt(opt::POST, 1)),
             Put => try!(handle.easy.setopt(opt::UPLOAD, 1)),
-            Patch => try!(handle.easy.setopt(opt::UPLOAD, 1)),
+            Patch => {
+                try!(handle.easy.setopt(opt::CUSTOMREQUEST, "PATCH"));
+                try!(handle.easy.setopt(opt::UPLOAD, 1));
+            },
             Delete => {
                 if body.is_some() {
                     try!(handle.easy.setopt(opt::UPLOAD, 1));

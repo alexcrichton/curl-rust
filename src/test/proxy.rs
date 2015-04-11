@@ -4,7 +4,7 @@ use super::server;
 #[test]
 pub fn test_proxy() {
     let srv = server!(
-        recv!(b"POST http://www.google.com HTTP/1.1\r\n\
+        recv!(b"POST http://www.google.com/ HTTP/1.1\r\n\
                 Host: www.google.com\r\n\
                 Accept: */*\r\n\
                 Proxy-Connection: Keep-Alive\r\n\
@@ -18,7 +18,7 @@ pub fn test_proxy() {
 
     let res = http::handle()
         .proxy(server::url("/"))
-        .post("http://www.google.com", "Foo Bar Baz")
+        .post("http://www.google.com/", "Foo Bar Baz")
         .exec().unwrap();
 
     srv.assert();

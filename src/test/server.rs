@@ -208,9 +208,8 @@ impl Handle {
 
 impl Drop for Handle {
     fn drop(&mut self) {
-        let (tx, rx) = channel();
+        let (tx, _) = channel();
         self.send(OpSequence::new(Shutdown), tx);
-        rx.recv().unwrap().unwrap();
     }
 }
 
@@ -239,7 +238,6 @@ fn start_server() -> Handle {
                     ops_rx.recv().unwrap();
 
             if ops.is_shutdown() {
-                resp_tx.send(Ok(())).unwrap();
                 return;
             }
 

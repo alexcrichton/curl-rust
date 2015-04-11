@@ -1,8 +1,10 @@
-use http;
+use curl::http;
 use super::server;
 
 #[test]
 pub fn test_proxy() {
+    ::env_logger::init().unwrap();
+
     let srv = server!(
         recv!(b"POST http://www.google.com/ HTTP/1.1\r\n\
                 Host: www.google.com\r\n\

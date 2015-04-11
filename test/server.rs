@@ -112,8 +112,9 @@ impl OpSequence {
                             }
                         }
                     }
-                    debug!("server received bytes; bytes=\n{}",
-                           to_debug_str(&act));
+
+                    debug!("server received bytes; rem={}; bytes=\n{}\n~~~~~~~~~~~~~~",
+                           rem, to_debug_str(&act));
 
                     let req1 = parse_request(&b);
                     let req2 = parse_request(&act);

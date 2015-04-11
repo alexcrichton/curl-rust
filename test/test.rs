@@ -1,4 +1,8 @@
-mod server;
+extern crate curl;
+extern crate env_logger;
+
+#[macro_use]
+extern crate log;
 
 macro_rules! server {
     ($($ops:expr),+) => (server::setup(ops!($($ops),+)));
@@ -23,11 +27,12 @@ macro_rules! wait {
     ($dur:expr) => (server::Op::Wait($dur));
 }
 
-mod get;
-mod head;
-mod post;
-mod proxy;
-mod put;
-mod patch;
-mod delete;
-mod keep_alive;
+mod server;
+mod test_delete;
+mod test_get;
+mod test_head;
+mod test_keep_alive;
+mod test_patch;
+mod test_post;
+mod test_proxy;
+mod test_put;

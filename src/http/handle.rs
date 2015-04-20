@@ -52,6 +52,21 @@ impl Handle {
         self
     }
 
+    pub fn ssl_verifypeer(mut self, value: bool) -> Handle {
+        self.easy.setopt(opt::SSL_VERIFYPEER, value).unwrap();
+        self
+    }
+
+    pub fn follow_location(mut self, value: isize) -> Handle {
+        self.easy.setopt(opt::FOLLOWLOCATION, value).unwrap();
+        self
+    }
+
+    pub fn userpwd(mut self, userpwd: &str) -> Handle {
+        self.easy.setopt(opt::USERPWD, userpwd).unwrap();
+        self
+    }
+
     pub fn verbose(mut self) -> Handle {
         self.easy.setopt(opt::VERBOSE, 1).unwrap();
         self

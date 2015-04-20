@@ -1,7 +1,6 @@
-use std::ffi::c_str_to_bytes;
+use std::ffi::CStr;
 use std::error;
 use std::fmt;
-use std::mem;
 use std::str;
 
 use curl_ffi as ffi;
@@ -98,7 +97,7 @@ pub use curl_ffi::CURLcode::CURLE_CHUNK_FAILED as CHUNK_FAILED;
 pub use curl_ffi::CURLcode::CURLE_NO_CONNECTION_AVAILABLE as NO_CONNECTION_AVAILABLE;
 pub use curl_ffi::CURLcode::CURLE_LAST as LAST;
 
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub struct ErrCode(pub ffi::CURLcode);
 
 impl ErrCode {
@@ -118,7 +117,7 @@ impl fmt::Debug for ErrCode {
 impl fmt::Display for ErrCode {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         let s = unsafe {
-            c_str_to_bytes(mem::copy_lifetime(self, &ffi::curl_easy_strerror(self.code())))
+            CStr::from_ptr(ffi::curl_easy_strerror(self.code())).to_bytes()
         };
 
         match str::from_utf8(s) {
@@ -132,7 +131,7 @@ impl error::Error for ErrCode {
     fn description(&self) -> &str {
         let code = self.code();
         let s = unsafe {
-            c_str_to_bytes(mem::copy_lifetime(self, &(ffi::curl_easy_strerror(code) as *const _)))
+            CStr::from_ptr(ffi::curl_easy_strerror(code) as *const _).to_bytes()
         };
         str::from_utf8(s).unwrap()
     }

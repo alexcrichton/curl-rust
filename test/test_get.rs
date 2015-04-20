@@ -1,4 +1,4 @@
-use http::handle;
+use curl::http::handle;
 use super::server;
 
 #[test]

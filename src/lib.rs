@@ -1,11 +1,13 @@
-#![feature(core, collections, io, std_misc, path, libc)]
-
 extern crate libc;
 extern crate url;
-#[cfg(test)] #[macro_use] extern crate log;
 
-extern crate "curl-sys" as curl_ffi;
-#[cfg(unix)] extern crate "openssl-sys" as openssl;
+#[macro_use]
+extern crate log;
+
+extern crate curl_sys as curl_ffi;
+
+#[cfg(unix)]
+extern crate openssl_sys as openssl;
 
 pub use ffi::easy::ProgressCb;
 pub use ffi::err::ErrCode;
@@ -20,6 +22,3 @@ pub use ffi::version::{
 
 mod ffi;
 pub mod http;
-
-#[cfg(test)]
-mod test;

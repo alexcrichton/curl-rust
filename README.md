@@ -15,7 +15,7 @@ pub fn main() {
     .get("http://www.example.com")
     .exec().unwrap();
 
-  println!("code={}; headers={}; body={}",
+  println!("code={}; headers={:?}; body={:?}",
     resp.get_code(), resp.get_headers(), resp.get_body());
 }
 ```

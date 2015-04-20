@@ -1,13 +1,14 @@
 #![allow(dead_code)]
 
 use std::sync::{Once, ONCE_INIT};
-use std::{old_io, mem, raw};
+use std::mem;
 use std::collections::HashMap;
-use libc::{c_int,c_long,c_double,size_t};
-use super::{consts,err,info,opt};
+use std::slice;
+use libc::{self, c_int, c_long, c_double, size_t};
+use super::{consts, err, info, opt};
 use super::err::ErrCode;
 use http::body::Body;
-use http::{header,Response};
+use http::{header, Response};
 
 use curl_ffi as ffi;
 
@@ -115,9 +116,13 @@ impl Easy {
 #[inline]
 fn global_init() {
     // Schedule curl to be cleaned up after we're done with this whole process
-    static mut INIT: Once = ONCE_INIT;
-    unsafe {
-        INIT.call_once(|| ::std::rt::at_exit(|| ffi::curl_global_cleanup()))
+    static INIT: Once = ONCE_INIT;
+    INIT.call_once(|| unsafe {
+        assert_eq!(libc::atexit(cleanup), 0);
+    });
+
+    extern fn cleanup() {
+        unsafe { ffi::curl_global_cleanup() }
     }
 }
 
@@ -150,8 +155,8 @@ impl ResponseBuilder {
 
     fn add_header(&mut self, name: &str, val: &str) {
         // TODO: Reduce allocations
-        use std::ascii::OwnedAsciiExt;
-        let name = name.to_string().into_ascii_lowercase();
+        use std::ascii::AsciiExt;
+        let name = name.to_ascii_lowercase();
 
         let inserted = match self.hdrs.get_mut(&name) {
             Some(vals) => {
@@ -177,41 +182,41 @@ impl ResponseBuilder {
  * ===== Callbacks =====
  */
 
-pub extern "C" fn curl_read_fn(p: *mut u8, size: size_t, nmemb: size_t, body: *mut Body) -> size_t {
+extern fn curl_read_fn(p: *mut u8, size: size_t, nmemb: size_t,
+                       body: *mut Body) -> size_t {
     if body.is_null() {
         return 0;
     }
 
-    let dst : &mut [u8] = unsafe { mem::transmute(raw::Slice { data: p, len: (size * nmemb) as usize } )};
-    let body: &mut Body = unsafe { mem::transmute(body) };
+    let dst = unsafe { slice::from_raw_parts_mut(p, (size * nmemb) as usize) };
+    let body = unsafe { &mut *body };
 
-    match body.read(dst.as_mut_slice()) {
+    match body.read(dst) {
         Ok(len) => len as size_t,
-        Err(e) => {
-            match e.kind {
-                old_io::EndOfFile => 0 as size_t,
-                _ => consts::CURL_READFUNC_ABORT as size_t
-            }
-        }
+        Err(_) => consts::CURL_READFUNC_ABORT as size_t,
     }
 }
 
-pub extern "C" fn curl_write_fn(p: *mut u8, size: size_t, nmemb: size_t, resp: *mut ResponseBuilder) -> size_t {
+extern fn curl_write_fn(p: *mut u8, size: size_t, nmemb: size_t,
+                        resp: *mut ResponseBuilder) -> size_t {
     if !resp.is_null() {
         let builder: &mut ResponseBuilder = unsafe { mem::transmute(resp) };
-        let chunk : &[u8] = unsafe { mem::transmute(raw::Slice { data: p, len: (size * nmemb) as usize } )};
-        builder.body.push_all(chunk.as_slice());
+        let chunk = unsafe { slice::from_raw_parts(p as *const u8,
+                                                   (size * nmemb) as usize) };
+        builder.body.extend(chunk.iter().map(|x| *x));
     }
 
     size * nmemb
 }
 
-pub extern "C" fn curl_header_fn(p: *mut u8, size: size_t, nmemb: size_t, resp: &mut ResponseBuilder) -> size_t {
+extern fn curl_header_fn(p: *mut u8, size: size_t, nmemb: size_t,
+                         resp: &mut ResponseBuilder) -> size_t {
     // TODO: Skip the first call (it seems to be the status line)
 
-    let vec : &[u8] = unsafe { mem::transmute(raw::Slice { data: p, len: (size * nmemb) as usize } )};
+    let vec = unsafe { slice::from_raw_parts(p as *const u8,
+                                             (size * nmemb) as usize) };
 
-    match header::parse(vec.as_slice()) {
+    match header::parse(&vec) {
         Some((name, val)) => {
             resp.add_header(name, val);
         }

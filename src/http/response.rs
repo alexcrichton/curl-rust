@@ -29,12 +29,12 @@ impl Response {
     pub fn get_header<'a>(&'a self, name: &str) -> &'a [String] {
         self.hdrs
             .get(name)
-            .map(|v| v.as_slice())
+            .map(|v| &v[..])
             .unwrap_or(&[])
     }
 
     pub fn get_body<'a>(&'a self) -> &'a [u8] {
-        self.body.as_slice()
+        &self.body
     }
 
     pub fn move_body(self) -> Vec<u8> {
@@ -50,7 +50,7 @@ impl fmt::Display for Response {
             try!(write!(fmt, "{}: {}, ", name, val.connect(", ")));
         }
 
-        match str::from_utf8(self.body.as_slice()) {
+        match str::from_utf8(&self.body) {
             Ok(b) => try!(write!(fmt, "{}", b)),
             Err(..) => try!(write!(fmt, "bytes[{}]", self.body.len()))
         }

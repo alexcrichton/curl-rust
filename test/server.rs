@@ -1,13 +1,10 @@
 use std::collections::HashSet;
-use std::old_io::net::ip::Port;
-use std::old_io::net::tcp::{TcpListener,TcpStream};
-use std::old_io::timer;
-use std::old_io::{Acceptor, Listener};
+use std::io::prelude::*;
 use std::iter::repeat;
+use std::net::{TcpStream, TcpListener};
 use std::str;
 use std::sync::mpsc::{channel, Sender, Receiver};
-use std::thread::Thread;
-use std::time::Duration;
+use std::thread;
 
 use self::Op::{SendBytes, ReceiveBytes, Wait, Shutdown};
 
@@ -41,7 +38,7 @@ fn port() -> usize {
  * happens over channels.
  */
 struct Handle {
-    port: Port,
+    port: u16,
     tx: Sender<(OpSequence, Sender<Result<(),String>>)>
 }
 
@@ -51,7 +48,7 @@ struct Handle {
  * - Wait for a certain amount of time
  * - Shutdown the server (allows a clean exit at the end of the tests)
  */
-#[derive(Clone,PartialEq,Show)]
+#[derive(Clone,PartialEq,Debug)]
 pub enum Op {
     SendBytes(&'static [u8]),
     ReceiveBytes(&'static [u8]),
@@ -61,7 +58,7 @@ pub enum Op {
 
 /* An ordered sequence of operations for the HTTP server to perform
 */
-#[derive(Show)]
+#[derive(Debug)]
 pub struct OpSequence {
     ops: Vec<Op>
 }
@@ -80,7 +77,7 @@ impl OpSequence {
 
     pub fn concat(op: Op, seq: OpSequence) -> OpSequence {
         let mut ops = vec!(op);
-        ops.push_all(seq.ops.as_slice());
+        ops.extend(seq.ops.iter().cloned());
         OpSequence { ops: ops }
     }
 
@@ -88,14 +85,15 @@ impl OpSequence {
         self.ops.len() == 1 && self.ops[0] == Shutdown
     }
 
-    pub fn apply(&self, sock: &mut TcpStream, port: usize) -> Result<(), String> {
+    pub fn apply(&self, sock: &mut TcpStream, port: usize)
+                 -> Result<(), String> {
         for op in self.ops.iter() {
             match op {
                 &SendBytes(b) => {
                     let b = insert_port(b, port);
-                    match sock.write_all(b.as_slice()) {
+                    match sock.write_all(&b) {
                         Ok(_) => {}
-                        Err(e) => return Err(e.desc.to_string())
+                        Err(e) => return Err(e.to_string())
                     }
                 }
                 &ReceiveBytes(b) => {
@@ -107,25 +105,31 @@ impl OpSequence {
                         match sock.read(&mut act[b.len() - rem..]) {
                             Ok(i) => rem = rem - i,
                             Err(e) => {
-                                debug!("aborting due to error; error={}; remaining={}; bytes=\n{}",
-                                       e.desc.to_string(), rem, to_debug_str(act.as_slice()));
-                                return Err(e.desc.to_string())
+                                debug!("aborting due to error; error={}; \
+                                        remaining={}; bytes=\n{}", e, rem,
+                                       to_debug_str(&act));
+                                return Err(e.to_string())
                             }
                         }
                     }
-                    debug!("server received bytes; bytes=\n{}", to_debug_str(act.as_slice()));
 
-                    let req1 = parse_request(b.as_slice());
-                    let req2 = parse_request(act.as_slice());
+                    debug!("server received bytes; rem={}; bytes=\n{}\n~~~~~~~~~~~~~~",
+                           rem, to_debug_str(&act));
+
+                    let req1 = parse_request(&b);
+                    let req2 = parse_request(&act);
 
                     if req1 != req2 {
                         return Err(format!(
-                                "received unexpected byte sequence.\n\nExpected:\n{}\n\nReceived:\n{}",
-                                to_debug_str(b.as_slice()), to_debug_str(act.as_slice())));
+                                "received unexpected byte sequence.\n\n\
+                                 Expected:\n{}\n\nReceived:\n{}",
+                                to_debug_str(&b), to_debug_str(&act)));
                     }
                 }
-                &Wait(ms) => { timer::sleep(Duration::milliseconds(ms as i64)) }
-                &Shutdown => return Err("Shutdown must be sent on its own".to_string())
+                &Wait(ms) => thread::sleep_ms(ms as u32),
+                &Shutdown => {
+                    return Err("Shutdown must be sent on its own".to_string())
+                }
             }
         }
 
@@ -134,7 +138,7 @@ impl OpSequence {
         fn insert_port(bytes: &'static [u8], port: usize) -> Vec<u8> {
             let s = str::from_utf8(bytes).unwrap();
             let p = port.to_string();
-            s.replace("{PORT}", p.as_slice()).into_bytes()
+            s.replace("{PORT}", &p).into_bytes()
         }
 
         fn parse_request<'a>(req: &'a [u8]) -> (&'a [u8],
@@ -189,7 +193,8 @@ fn to_debug_str(bytes: &[u8]) -> String {
 }
 
 impl Handle {
-    fn new(tx: Sender<(OpSequence, Sender<Result<(),String>>)>, port: Port) -> Handle {
+    fn new(tx: Sender<(OpSequence, Sender<Result<(),String>>)>, port: u16)
+           -> Handle {
         Handle { tx: tx, port: port }
     }
 
@@ -204,9 +209,8 @@ impl Handle {
 
 impl Drop for Handle {
     fn drop(&mut self) {
-        let (tx, rx) = channel();
+        let (tx, _) = channel();
         self.send(OpSequence::new(Shutdown), tx);
-        rx.recv().unwrap().unwrap();
     }
 }
 
@@ -226,29 +230,25 @@ impl OpSequenceResult {
 fn start_server() -> Handle {
     let (ops_tx, ops_rx) = channel();
 
-    let mut listener = TcpListener::bind("127.0.0.1:0").unwrap();
-    let port = listener.socket_name().unwrap().port;
-    let mut srv = listener.listen().unwrap();
+    let srv = TcpListener::bind("127.0.0.1:0").unwrap();
+    let port = srv.local_addr().unwrap().port();
 
-    Thread::spawn(move || {
+    thread::spawn(move || {
         loop {
             let (ops, resp_tx): (OpSequence, Sender<Result<(),String>>) =
                     ops_rx.recv().unwrap();
 
             if ops.is_shutdown() {
-                resp_tx.send(Ok(())).unwrap();
                 return;
             }
 
             let mut sock = match srv.accept() {
-                Ok(s) => s,
+                Ok(s) => s.0,
                 Err(e) => {
                     resp_tx.send(Err(format!("server accept err: {}", e))).unwrap();
                     return;
                 }
             };
-
-            sock.set_timeout(Some(100));
 
             resp_tx.send(ops.apply(&mut sock, port as usize)).unwrap();
         }

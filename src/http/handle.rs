@@ -1,4 +1,5 @@
 use std::collections::hash_map::{HashMap, Entry};
+use std::path::Path;
 
 use url::Url;
 
@@ -9,7 +10,7 @@ use http::Response;
 use http::body::{Body,ToBody};
 use {ProgressCb,ErrCode};
 
-use self::Method::{Get, Head, Post, Put, Delete};
+use self::Method::{Get, Head, Post, Put, Patch, Delete};
 use self::BodyType::{Fixed, Chunked};
 
 const DEFAULT_TIMEOUT_MS: usize = 30_000;
@@ -119,18 +120,23 @@ impl Handle {
         Request::new(self, Put).uri(uri).body(body)
     }
 
+    pub fn patch<'a, 'b, U: ToUrl, B: ToBody<'b>>(&'a mut self, uri: U, body: B) -> Request<'a, 'b> {
+        Request::new(self, Patch).uri(uri).body(body)
+    }
+
     pub fn delete<'a, 'b, U: ToUrl>(&'a mut self, uri: U) -> Request<'a, 'b> {
         Request::new(self, Delete).uri(uri)
     }
 }
 
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub enum Method {
     Options,
     Get,
     Head,
     Post,
     Put,
+    Patch,
     Delete,
     Trace,
     Connect
@@ -216,10 +222,10 @@ impl<'a, 'b> Request<'a, 'b> {
     }
 
     pub fn get_header(&self, name: &str) -> Option<&[String]> {
-        self.headers.get(name).map(|a| a.as_slice())
+        self.headers.get(name).map(|a| &a[..])
     }
 
-    pub fn headers<'c, 'd, I: Iterator<Item=(&'c str, &'d str)>>(mut self, mut hdrs: I) -> Request<'a, 'b> {
+    pub fn headers<'c, 'd, I: Iterator<Item=(&'c str, &'d str)>>(mut self, hdrs: I) -> Request<'a, 'b> {
         for (name, val) in hdrs {
             append_header(&mut self.headers, name, val);
         }
@@ -272,6 +278,10 @@ impl<'a, 'b> Request<'a, 'b> {
             Head => try!(handle.easy.setopt(opt::NOBODY, 1)),
             Post => try!(handle.easy.setopt(opt::POST, 1)),
             Put => try!(handle.easy.setopt(opt::UPLOAD, 1)),
+            Patch => {
+                try!(handle.easy.setopt(opt::CUSTOMREQUEST, "PATCH"));
+                try!(handle.easy.setopt(opt::UPLOAD, 1));
+            },
             Delete => {
                 if body.is_some() {
                     try!(handle.easy.setopt(opt::UPLOAD, 1));
@@ -294,11 +304,11 @@ impl<'a, 'b> Request<'a, 'b> {
                     Fixed(len) => {
                         match method {
                             Post => try!(handle.easy.setopt(opt::POSTFIELDSIZE, len)),
-                            Put | Delete  => try!(handle.easy.setopt(opt::INFILESIZE, len)),
+                            Put | Patch | Delete  => try!(handle.easy.setopt(opt::INFILESIZE, len)),
                             _ => {}
                         }
                         append_header(&mut headers, "Content-Length",
-                                      len.to_string().as_slice());
+                                      &len.to_string());
                     }
                     Chunked => {
                         append_header(&mut headers, "Transfer-Encoding",
@@ -323,13 +333,13 @@ impl<'a, 'b> Request<'a, 'b> {
             let mut buf = Vec::new();
 
             for (k, v) in headers.iter() {
-                buf.push_all(k.as_bytes());
-                buf.push_all(b": ");
+                buf.extend(k.bytes());
+                buf.extend(": ".bytes());
 
                 for v in v.iter() {
-                    buf.push_all(v.as_bytes());
+                    buf.extend(v.bytes());
                     buf.push(0);
-                    ffi_headers.push_bytes(buf.as_slice());
+                    ffi_headers.push_bytes(&buf);
                     buf.truncate(k.len() + 2);
                 }
 
@@ -372,7 +382,7 @@ impl<'a> ToUrl for &'a Url {
 
 impl ToUrl for String {
     fn with_url_str<F>(self, f: F) where F: FnOnce(&str) {
-        self.as_slice().with_url_str(f);
+        self[..].with_url_str(f);
     }
 }
 
@@ -384,6 +394,6 @@ mod tests {
     fn get_header() {
         let mut h = Handle::new();
         let r = h.get("/foo").header("foo", "bar");
-        assert_eq!(r.get_header("foo"), Some(["bar".to_string()].as_slice()));
+        assert_eq!(r.get_header("foo"), Some(&["bar".to_string()][..]));
     }
 }

@@ -1,8 +1,9 @@
 #![allow(non_camel_case_types)]
 #![allow(dead_code)]
 
-use std::ffi::c_str_to_bytes;
-use std::{fmt, mem, ptr, str};
+use std::marker;
+use std::ffi::CStr;
+use std::{fmt, ptr, str};
 use libc::{c_char, c_int};
 
 use curl_ffi as ffi;
@@ -111,7 +112,10 @@ impl Version {
     }
 
     pub fn protocols<'a>(&'a self) -> Protocols<'a> {
-        Protocols { curr: unsafe { (*self.inner).protocols } }
+        Protocols {
+            curr: unsafe { (*self.inner).protocols },
+            _marker: marker::PhantomData
+        }
     }
 
     pub fn ares_version<'a>(&'a self) -> Option<&'a str> {
@@ -151,7 +155,8 @@ impl Version {
 #[derive(Copy, Clone)]
 #[allow(raw_pointer_derive)] // TODO: Implement this by hand
 pub struct Protocols<'a> {
-    curr: *const *const c_char
+    curr: *const *const c_char,
+    _marker: marker::PhantomData<&'a str>,
 }
 
 impl<'a> Iterator for Protocols<'a> {
@@ -195,8 +200,7 @@ fn as_str<'a>(p: *const c_char) -> Option<&'a str> {
     }
 
     unsafe {
-        let tmp : &'a str = "";
-        str::from_utf8(c_str_to_bytes(mem::copy_lifetime(tmp, &p))).ok()
+        str::from_utf8(CStr::from_ptr(p).to_bytes()).ok()
     }
 }
 
@@ -208,6 +212,6 @@ pub fn version_info() -> Version {
 
 pub fn version() -> &'static str {
     unsafe {
-        str::from_utf8(c_str_to_bytes(mem::copy_lifetime("", &ffi::curl_version()))).unwrap()
+        str::from_utf8(CStr::from_ptr(ffi::curl_version()).to_bytes()).unwrap()
     }
 }

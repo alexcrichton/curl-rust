@@ -1,5 +1,4 @@
-use std::old_io::MemReader;
-use http;
+use curl::http;
 use super::server;
 
 #[test]
@@ -69,7 +68,7 @@ pub fn test_post_binary_with_reader() {
                 Hello\r\n\r\n")
     );
 
-    let mut body = MemReader::new(b"Foo Bar Baz".to_vec());
+    let mut body = "Foo Bar Baz".as_bytes();
     let res = http::handle()
         .post(server::url("/"), &mut body)
         .exec().unwrap();
@@ -95,7 +94,7 @@ pub fn test_post_binary_with_reader_and_content_length() {
                 Hello\r\n\r\n")
     );
 
-    let mut body = MemReader::new(b"Foo Bar Baz".to_vec());
+    let mut body = "Foo Bar Baz".as_bytes();
     let res = http::handle()
         .post(server::url("/"), &mut body)
         .content_length(11)

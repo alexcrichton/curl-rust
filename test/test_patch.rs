@@ -1,10 +1,10 @@
-use http;
+use curl::http;
 use super::server;
 
 #[test]
-pub fn test_put_binary_with_slice() {
+pub fn test_patch_binary_with_slice() {
     let srv = server!(
-        recv!(b"PUT / HTTP/1.1\r\n\
+        recv!(b"PATCH / HTTP/1.1\r\n\
                 Host: localhost:{PORT}\r\n\
                 Accept: */*\r\n\
                 Content-Type: application/octet-stream\r\n\
@@ -17,7 +17,7 @@ pub fn test_put_binary_with_slice() {
     );
 
     let res = http::handle()
-        .put(server::url("/"), "Foo Bar Baz")
+        .patch(server::url("/"), "Foo Bar Baz")
         .exec().unwrap();
 
     srv.assert();
@@ -27,9 +27,9 @@ pub fn test_put_binary_with_slice() {
 }
 
 #[test]
-pub fn test_put_binary_with_content_type() {
+pub fn test_patch_binary_with_content_type() {
     let srv = server!(
-        recv!(b"PUT / HTTP/1.1\r\n\
+        recv!(b"PATCH / HTTP/1.1\r\n\
                 Host: localhost:{PORT}\r\n\
                 Accept: */*\r\n\
                 Content-Type: application/foobar\r\n\
@@ -42,7 +42,7 @@ pub fn test_put_binary_with_content_type() {
     );
 
     let res = http::handle()
-        .put(server::url("/"), "Foo Bar Baz")
+        .patch(server::url("/"), "Foo Bar Baz")
         .content_type("application/foobar")
         .exec().unwrap();
 

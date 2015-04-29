@@ -52,6 +52,28 @@ impl Handle {
         self
     }
 
+    /// Set the time in seconds that the transfer speed should be below
+    /// the `low_speed_limit` rate of bytes per second for the library to
+    /// consider it too slow and abort.
+    ///
+    /// The default for this option is 0 which means that this option is
+    /// disabled.
+    pub fn low_speed_timeout(mut self, seconds: usize) -> Handle {
+        self.easy.setopt(opt::LOW_SPEED_TIME, seconds).unwrap();
+        self
+    }
+
+    /// Set the average transfer speed in bytes per second that the
+    /// transfer should be below during `low_speed_timeout` seconds for
+    /// libcurl to consider it to be too slow and abort.
+    ///
+    /// The default for this option is 0 which means that this option is
+    /// disabled.
+    pub fn low_speed_limit(mut self, bytes_per_second: usize) -> Handle {
+        self.easy.setopt(opt::LOW_SPEED_LIMIT, bytes_per_second).unwrap();
+        self
+    }
+
     pub fn verbose(mut self) -> Handle {
         self.easy.setopt(opt::VERBOSE, 1).unwrap();
         self

@@ -14,6 +14,9 @@ macro_rules! t {
 
 fn main() {
     let target = env::var("TARGET").unwrap();
+    let src = env::current_dir().unwrap();
+    let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
+    let windows = target.contains("windows");
 
     // OSX ships libcurl by default, so we just use that version
     // unconditionally.
@@ -27,8 +30,20 @@ fn main() {
         Err(..) => {}
     }
 
+    println!("cargo:rustc-link-search={}/lib", dst.display());
+    println!("cargo:rustc-link-lib=static=curl");
+    println!("cargo:root={}", dst.display());
+    println!("cargo:include={}/include", dst.display());
+    if windows {
+        println!("cargo:rustc-flags=-l ws2_32");
+    }
+
+    // MSVC builds are just totally different
+    if target.contains("msvc") {
+        return build_msvc();
+    }
+
     let mut cflags = env::var("CFLAGS").unwrap_or(String::new());
-    let windows = target.contains("windows");
     cflags.push_str(" -ffunction-sections -fdata-sections");
 
     if target.contains("i686") {
@@ -39,9 +54,6 @@ fn main() {
     if !target.contains("i686") {
         cflags.push_str(" -fPIC");
     }
-
-    let src = env::current_dir().unwrap();
-    let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
 
     let _ = fs::create_dir(&dst.join("build"));
 
@@ -113,14 +125,6 @@ fn main() {
     }
     t!(fs::copy(&dst.join("build/libcurl.pc"),
                   &dst.join("lib/pkgconfig/libcurl.pc")));
-
-    if windows {
-        println!("cargo:rustc-flags=-l ws2_32");
-    }
-    println!("cargo:rustc-link-search={}/lib", dst.display());
-    println!("cargo:rustc-link-lib=static=curl");
-    println!("cargo:root={}", dst.display());
-    println!("cargo:include={}/include", dst.display());
 }
 
 fn run(cmd: &mut Command) {
@@ -138,4 +142,35 @@ fn which(cmd: &str) -> Option<PathBuf> {
     env::split_paths(&paths).map(|p| p.join(&cmd)).find(|p| {
         fs::metadata(p).is_ok()
     })
+}
+
+fn build_msvc() {
+    let mut cmd = Command::new("nmake");
+    let src = env::current_dir().unwrap();
+    let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
+
+    cmd.current_dir(src.join("curl/winbuild"));
+    cmd.arg("/f").arg("Makefile.vc")
+       .arg("mode=static")
+       .arg("MACHINE=x64")
+       .arg("ENABLE_IDN=no")
+       .arg("DEBUG=no")
+       .arg("GEN_PDB=no")
+       .arg("ENABLE_WINSSL=yes");
+    run(&mut cmd);
+
+    let libs = src.join("curl/builds/libcurl-vc-x64-release-static-\
+                                             ipv6-sspi-winssl");
+
+    t!(fs::create_dir_all(dst.join("include/curl")));
+    t!(fs::create_dir_all(dst.join("lib")));
+    t!(fs::copy(libs.join("lib/libcurl_a.lib"), dst.join("lib/curl.lib")));
+    for f in t!(fs::read_dir(libs.join("include/curl"))) {
+        let path = t!(f).path();
+        let dst = dst.join("include/curl").join(path.file_name().unwrap());
+        t!(fs::copy(path, dst));
+    }
+    t!(fs::remove_dir_all(src.join("curl/builds")));
+    println!("cargo:rustc-link-lib=wldap32");
+    println!("cargo:rustc-link-lib=advapi32");
 }

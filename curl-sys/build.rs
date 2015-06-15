@@ -1,6 +1,7 @@
 extern crate pkg_config;
 
 use std::env;
+use std::ffi::OsString;
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
@@ -149,21 +150,37 @@ fn build_msvc() {
     let src = env::current_dir().unwrap();
     let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
 
-    cmd.current_dir(src.join("curl/winbuild"));
-    cmd.arg("/f").arg("Makefile.vc")
-       .arg("mode=static")
-       .arg("MACHINE=x64")
-       .arg("ENABLE_IDN=no")
-       .arg("DEBUG=no")
-       .arg("GEN_PDB=no")
-       .arg("ENABLE_WINSSL=yes");
-    run(&mut cmd);
-
-    let libs = src.join("curl/builds/libcurl-vc-x64-release-static-\
-                                             ipv6-sspi-winssl");
-
     t!(fs::create_dir_all(dst.join("include/curl")));
     t!(fs::create_dir_all(dst.join("lib")));
+
+    cmd.current_dir(src.join("curl/winbuild"));
+    cmd.arg("/f").arg("Makefile.vc")
+       .arg("MODE=static")
+       .arg("MACHINE=x64")
+       .arg("ENABLE_IDN=yes")
+       .arg("DEBUG=no")
+       .arg("GEN_PDB=no")
+       .arg("ENABLE_WINSSL=yes")
+       .arg("ENABLE_SSPI=yes");
+    if let Some(inc) = env::var_os("DEP_Z_ROOT") {
+        let inc = PathBuf::from(inc);
+        let mut s = OsString::from("WITH_DEVEL=");
+        s.push(&inc);
+        cmd.arg("WITH_ZLIB=static").arg(s);
+
+        // the build system for curl expects this library to be called
+        // zlib_a.lib, so make sure it's named correctly (where libz-sys just
+        // produces zlib.lib)
+        let _ = fs::remove_file(&inc.join("lib/zlib_a.lib"));
+        t!(fs::hard_link(inc.join("lib/zlib.lib"), inc.join("lib/zlib_a.lib")));
+    }
+    run(&mut cmd);
+
+    let libs = src.join("curl/builds/libcurl-vc-x64-release-\
+                                             static-zlib-\
+                                             static-\
+                                             ipv6-sspi-winssl");
+
     t!(fs::copy(libs.join("lib/libcurl_a.lib"), dst.join("lib/curl.lib")));
     for f in t!(fs::read_dir(libs.join("include/curl"))) {
         let path = t!(f).path();
@@ -173,4 +190,5 @@ fn build_msvc() {
     t!(fs::remove_dir_all(src.join("curl/builds")));
     println!("cargo:rustc-link-lib=wldap32");
     println!("cargo:rustc-link-lib=advapi32");
+    println!("cargo:rustc-link-lib=normaliz");
 }

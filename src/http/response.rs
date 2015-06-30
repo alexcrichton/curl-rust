@@ -3,6 +3,7 @@ use std::collections::HashMap;
 
 pub type Headers = HashMap<String, Vec<String>>;
 
+#[derive(Debug)]
 pub struct Response {
     code: u32,
     hdrs: Headers,

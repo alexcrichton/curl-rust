@@ -38,3 +38,5 @@ openssl-sys = "0.6.0"
 openssl-sys = "0.6.0"
 [target.x86_64-unknown-bitrig.dependencies]
 openssl-sys = "0.6.0"
+[target.x86_64-unknown-openbsd.dependencies]
+openssl-sys = "0.6.0"

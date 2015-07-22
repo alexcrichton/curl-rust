@@ -1,4 +1,5 @@
 extern crate pkg_config;
+extern crate gcc;
 
 use std::env;
 use std::ffi::OsString;
@@ -41,7 +42,7 @@ fn main() {
 
     // MSVC builds are just totally different
     if target.contains("msvc") {
-        return build_msvc();
+        return build_msvc(&target);
     }
 
     let mut cflags = env::var("CFLAGS").unwrap_or(String::new());
@@ -145,10 +146,18 @@ fn which(cmd: &str) -> Option<PathBuf> {
     })
 }
 
-fn build_msvc() {
-    let mut cmd = Command::new("nmake");
+fn build_msvc(target: &str) {
+    let cmd = gcc::windows_registry::find(target, "nmake.exe");
+    let mut cmd = cmd.unwrap_or(Command::new("nmake.exe"));
     let src = env::current_dir().unwrap();
     let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
+    let machine = if target.starts_with("x86_64") {
+        "x64"
+    } else if target.starts_with("i686") {
+        "x86"
+    } else {
+        panic!("unknown msvc target: {}", target);
+    };
 
     t!(fs::create_dir_all(dst.join("include/curl")));
     t!(fs::create_dir_all(dst.join("lib")));
@@ -156,12 +165,13 @@ fn build_msvc() {
     cmd.current_dir(src.join("curl/winbuild"));
     cmd.arg("/f").arg("Makefile.vc")
        .arg("MODE=static")
-       .arg("MACHINE=x64")
        .arg("ENABLE_IDN=yes")
        .arg("DEBUG=no")
        .arg("GEN_PDB=no")
        .arg("ENABLE_WINSSL=yes")
-       .arg("ENABLE_SSPI=yes");
+       .arg("ENABLE_SSPI=yes")
+       .arg(format!("MACHINE={}", machine));
+
     if let Some(inc) = env::var_os("DEP_Z_ROOT") {
         let inc = PathBuf::from(inc);
         let mut s = OsString::from("WITH_DEVEL=");
@@ -176,10 +186,9 @@ fn build_msvc() {
     }
     run(&mut cmd);
 
-    let libs = src.join("curl/builds/libcurl-vc-x64-release-\
-                                             static-zlib-\
-                                             static-\
-                                             ipv6-sspi-winssl");
+    let name = format!("libcurl-vc-{}-release-static-zlib-static-\
+                        ipv6-sspi-winssl", machine);
+    let libs = src.join("curl/builds").join(name);
 
     t!(fs::copy(libs.join("lib/libcurl_a.lib"), dst.join("lib/curl.lib")));
     for f in t!(fs::read_dir(libs.join("include/curl"))) {

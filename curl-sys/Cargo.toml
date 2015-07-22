@@ -10,6 +10,7 @@ description = "Native bindings to the libcurl library"
 
 [build-dependencies]
 pkg-config = "0.3"
+gcc = "0.3"
 
 [lib]
 name = "curl_sys"

@@ -3,6 +3,9 @@
 libcurl bindings for Rust. **This project is in active development and
 could (will probably) break API compatibility at any time**.
 
+[![Build Status](https://travis-ci.org/carllerche/curl-rust.svg?branch=master)](https://travis-ci.org/carllerche/curl-rust)
+[![crates.io](http://meritbadge.herokuapp.com/mio)](https://crates.io/crates/curl)
+
 ## Quick Start
 
 ```rust

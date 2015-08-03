@@ -312,10 +312,11 @@ impl<'a, 'b> Request<'a, 'b> {
                         match method {
                             Post => try!(handle.easy.setopt(opt::POSTFIELDSIZE, len)),
                             Put | Patch | Delete  => try!(handle.easy.setopt(opt::INFILESIZE, len)),
-                            _ => {}
+                            _ => {
+                                append_header(&mut headers, "Content-Length",
+                                              &len.to_string());
+                            }
                         }
-                        append_header(&mut headers, "Content-Length",
-                                      &len.to_string());
                     }
                     Chunked => {
                         append_header(&mut headers, "Transfer-Encoding",

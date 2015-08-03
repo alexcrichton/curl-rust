@@ -1,0 +1,10 @@
+language: rust
+sudo: false
+rust:
+  - 1.1.0
+
+os:
+  - linux
+
+script:
+  - cargo test

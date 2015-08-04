@@ -94,6 +94,11 @@ impl Handle {
         self
     }
 
+    pub fn userpwd(mut self, userpwd: &str) -> Handle {
+        self.easy.setopt(opt::USERPWD, userpwd).unwrap();
+        self
+    }
+
     pub fn proxy<U: ToUrl>(mut self, proxy: U) -> Handle {
         proxy.with_url_str(|s| {
             self.easy.setopt(opt::PROXY, s).unwrap();

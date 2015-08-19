@@ -6,110 +6,58 @@ use std::collections::HashMap;
 use std::slice;
 use libc::{self, c_int, c_long, c_double, size_t};
 use super::{consts, err, info, opt};
-use super::err::ErrCode;
+use super::multi_err::*;
 use http::body::Body;
 use http::{header, Response};
+use super::easy::Easy;
 
 use curl_ffi as ffi;
 
 pub type ProgressCb<'a> = FnMut(usize, usize, usize, usize) + 'a;
 
-pub struct Easy {
-    pub curl: *mut ffi::CURL
+pub struct Multi {
+    curl: *mut ffi::CURLM
 }
 
-impl Easy {
-    pub fn new() -> Easy {
+impl Multi {
+    pub fn new() -> Multi {
         // Ensure that curl is globally initialized
         global_init();
 
         let handle = unsafe {
-            let p = ffi::curl_easy_init();
-            ffi::curl_easy_setopt(p, opt::NOPROGRESS, 0);
+            let p = ffi::curl_multi_init();
+            /* setup the generic multi interface options we want */
+//            ffi::curl_multi_setopt(p, p, opt::SOCKETDATA, &p);
+//            ffi::curl_multi_setopt(p, CURLMOPT_TIMERFUNCTION, curl_progress_fn);
+//            ffi::curl_multi_setopt(p, CURLMOPT_TIMERDATA, &p);
+
+//            ffi::curl_multi_setopt(p, opt::NOPROGRESS, 0);
             p
         };
 
-        Easy { curl: handle }
+        Multi { curl: handle }
     }
 
-    #[inline]
-    pub fn setopt<T: opt::OptVal>(&mut self, option: opt::Opt, val: T) -> Result<(), err::ErrCode> {
-        // TODO: Prevent setting callback related options
-        let mut res = err::ErrCode(err::OK);
+    pub fn add_connection(&mut self, easy: Easy) -> Result<(), ErrCodeM> {
+        let mut res = ErrCodeM(OK);
 
-        unsafe {
-            val.with_c_repr(|repr| {
-                res = err::ErrCode(ffi::curl_easy_setopt(self.curl, option, repr));
-            })
-        }
+        unsafe { res = ErrCodeM(ffi::curl_multi_add_handle(self.curl, easy.curl)); }
 
         if res.is_success() { Ok(()) } else { Err(res) }
     }
 
-    pub fn perform(&mut self,
-                   body: Option<&mut Body>,
-                   progress: Option<Box<ProgressCb>>)
-                   -> Result<Response, err::ErrCode> {
-        let mut builder = ResponseBuilder::new();
+    #[inline]
+    pub fn setopt<T: opt::OptVal>(&mut self, option: opt::Opt, val: T) -> Result<(), ErrCodeM> {
+        // TODO: Prevent setting callback related options
+        let mut res = ErrCodeM(OK);
 
         unsafe {
-            let resp_p: usize = mem::transmute(&builder);
-            let body_p: usize = match body {
-                Some(b) => mem::transmute(b),
-                None => 0
-            };
-
-            let progress_p: usize = match progress.as_ref() {
-                Some(cb) => mem::transmute(cb),
-                None => 0
-            };
-
-            // Set callback options
-            ffi::curl_easy_setopt(self.curl, opt::READFUNCTION, curl_read_fn);
-            ffi::curl_easy_setopt(self.curl, opt::READDATA, body_p);
-
-            ffi::curl_easy_setopt(self.curl, opt::WRITEFUNCTION, curl_write_fn);
-            ffi::curl_easy_setopt(self.curl, opt::WRITEDATA, resp_p);
-
-            ffi::curl_easy_setopt(self.curl, opt::HEADERFUNCTION, curl_header_fn);
-            ffi::curl_easy_setopt(self.curl, opt::HEADERDATA, resp_p);
-
-            ffi::curl_easy_setopt(self.curl, opt::PROGRESSFUNCTION, curl_progress_fn);
-            ffi::curl_easy_setopt(self.curl, opt::PROGRESSDATA, progress_p);
+            val.with_c_repr(|repr| {
+                res = ErrCodeM(ffi::curl_multi_setopt(self.curl, option, repr));
+            })
         }
 
-        let err = err::ErrCode(unsafe { ffi::curl_easy_perform(self.curl) });
-
-        // If the request failed, abort here
-        if !err.is_success() {
-            return Err(err);
-        }
-
-        // Try to get the response code
-        builder.code = try!(self.get_response_code());
-
-        Ok(builder.build())
-    }
-
-    pub fn get_response_code(&self) -> Result<u32, err::ErrCode> {
-        Ok(try!(self.get_info_long(info::RESPONSE_CODE)) as u32)
-    }
-
-    pub fn get_total_time(&self) -> Result<usize, err::ErrCode> {
-        Ok(try!(self.get_info_long(info::TOTAL_TIME)) as usize)
-    }
-
-    fn get_info_long(&self, key: info::Key) -> Result<c_long, err::ErrCode> {
-        let v: c_long = 0;
-        let res = err::ErrCode(unsafe {
-            ffi::curl_easy_getinfo(self.curl as *const _, key, &v)
-        });
-
-        if !res.is_success() {
-            return Err(res);
-        }
-
-        Ok(v)
+        if res.is_success() { Ok(()) } else { Err(res) }
     }
 }
 
@@ -122,13 +70,14 @@ fn global_init() {
     });
 
     extern fn cleanup() {
+        // TODO perhaps this and easy could check the cURL code.
         unsafe { ffi::curl_global_cleanup() }
     }
 }
 
-impl Drop for Easy {
+impl Drop for Multi {
     fn drop(&mut self) {
-        unsafe { ffi::curl_easy_cleanup(self.curl) }
+        unsafe { ffi::curl_multi_cleanup(self.curl) }
     }
 }
 
@@ -138,15 +87,15 @@ impl Drop for Easy {
  *
  */
 
-struct ResponseBuilder {
+struct ResponseBuilderM {
     code: u32,
     hdrs: HashMap<String,Vec<String>>,
     body: Vec<u8>
 }
 
-impl ResponseBuilder {
-    fn new() -> ResponseBuilder {
-        ResponseBuilder {
+impl ResponseBuilderM {
+    fn new() -> ResponseBuilderM {
+        ResponseBuilderM {
             code: 0,
             hdrs: HashMap::new(),
             body: Vec::new()
@@ -172,7 +121,7 @@ impl ResponseBuilder {
     }
 
     fn build(self) -> Response {
-        let ResponseBuilder { code, hdrs, body } = self;
+        let ResponseBuilderM { code, hdrs, body } = self;
         Response::new(code, hdrs, body)
     }
 }
@@ -198,9 +147,9 @@ extern fn curl_read_fn(p: *mut u8, size: size_t, nmemb: size_t,
 }
 
 extern fn curl_write_fn(p: *mut u8, size: size_t, nmemb: size_t,
-                        resp: *mut ResponseBuilder) -> size_t {
+                        resp: *mut ResponseBuilderM) -> size_t {
     if !resp.is_null() {
-        let builder: &mut ResponseBuilder = unsafe { mem::transmute(resp) };
+        let builder: &mut ResponseBuilderM = unsafe { mem::transmute(resp) };
         let chunk = unsafe { slice::from_raw_parts(p as *const u8,
                                                    (size * nmemb) as usize) };
         builder.body.extend(chunk.iter().map(|x| *x));
@@ -210,7 +159,7 @@ extern fn curl_write_fn(p: *mut u8, size: size_t, nmemb: size_t,
 }
 
 extern fn curl_header_fn(p: *mut u8, size: size_t, nmemb: size_t,
-                         resp: &mut ResponseBuilder) -> size_t {
+                         resp: &mut ResponseBuilderM) -> size_t {
     // TODO: Skip the first call (it seems to be the status line)
 
     let vec = unsafe { slice::from_raw_parts(p as *const u8,

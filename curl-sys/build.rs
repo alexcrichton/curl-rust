@@ -61,13 +61,7 @@ fn main() {
 
     let mut config_opts = Vec::new();
     if target.len() > 0 {
-        if windows && target.contains("x86_64") {
-            config_opts.push("--host x86_64-w64-mingw32".to_string());
-        } else if windows && target.contains("i686") {
-            config_opts.push("--host i686-w64-mingw32".to_string());
-        } else {
-            config_opts.push("--host ".to_string() + &target);
-        }
+        config_opts.push(format!("--host {}", target.replace("pc-windows-gnu", "w64-mingw32")));
     }
     if windows {
         config_opts.push("--with-winssl".to_string());

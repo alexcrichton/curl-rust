@@ -23,7 +23,7 @@ pub fn test_put_binary_with_slice() {
     srv.assert();
 
     assert!(res.get_code() == 200);
-    assert!(res.get_body() == "Hello".as_bytes());
+    assert!(res.get_body().clone().unwrap() == "Hello".as_bytes());
 }
 
 #[test]
@@ -49,5 +49,5 @@ pub fn test_put_binary_with_content_type() {
     srv.assert();
 
     assert!(res.get_code() == 200);
-    assert!(res.get_body() == "Hello".as_bytes());
+    assert!(res.get_body().clone().unwrap() == "Hello".as_bytes());
 }

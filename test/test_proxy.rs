@@ -26,5 +26,5 @@ pub fn test_proxy() {
     srv.assert();
 
     assert!(res.get_code() == 200);
-    assert!(res.get_body() == "Hello".as_bytes());
+    assert!(res.get_body().clone().unwrap() == "Hello".as_bytes());
 }

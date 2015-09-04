@@ -48,6 +48,7 @@ impl Easy {
 
     pub fn perform(&mut self,
                    body: Option<&mut Body>,
+                   allow_null_body: bool,
                    progress: Option<Box<ProgressCb>>)
                    -> Result<Response, err::ErrCode> {
         let mut builder = ResponseBuilder::new();
@@ -82,13 +83,14 @@ impl Easy {
 
         // If the request failed, abort here
         if !err.is_success() {
+            println!("err {}", err);
             return Err(err);
         }
 
         // Try to get the response code
         builder.code = try!(self.get_response_code());
 
-        Ok(builder.build())
+        Ok(builder.build(allow_null_body))
     }
 
     pub fn get_response_code(&self) -> Result<u32, err::ErrCode> {
@@ -138,10 +140,11 @@ impl Drop for Easy {
  *
  */
 
+#[derive(Debug)]
 struct ResponseBuilder {
     code: u32,
     hdrs: HashMap<String,Vec<String>>,
-    body: Vec<u8>
+    body: Option<Vec<u8>>
 }
 
 impl ResponseBuilder {
@@ -149,7 +152,7 @@ impl ResponseBuilder {
         ResponseBuilder {
             code: 0,
             hdrs: HashMap::new(),
-            body: Vec::new()
+            body: None
         }
     }
 
@@ -171,9 +174,9 @@ impl ResponseBuilder {
         }
     }
 
-    fn build(self) -> Response {
+    fn build(self, allow_null_body: bool) -> Response {
         let ResponseBuilder { code, hdrs, body } = self;
-        Response::new(code, hdrs, body)
+        Response::new(code, hdrs, body, allow_null_body)
     }
 }
 
@@ -203,7 +206,17 @@ extern fn curl_write_fn(p: *mut u8, size: size_t, nmemb: size_t,
         let builder: &mut ResponseBuilder = unsafe { mem::transmute(resp) };
         let chunk = unsafe { slice::from_raw_parts(p as *const u8,
                                                    (size * nmemb) as usize) };
-        builder.body.extend(chunk.iter().map(|x| *x));
+        match builder.body {
+            Some(ref mut body) => {
+                body.extend(chunk.iter().map(|x| *x));
+            }
+            None => {
+                let mut new_body = Vec::new();
+                new_body.extend(chunk.iter().map(|x| *x));
+                builder.body = Some(new_body);
+            }
+        }
+
     }
 
     size * nmemb

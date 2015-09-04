@@ -21,7 +21,7 @@ pub fn test_delete_with_no_body() {
     let res = res.unwrap();
 
     assert!(res.get_code() == 200);
-    assert!(res.get_body() == "Hello".as_bytes());
+    assert!(res.get_body().clone().unwrap() == "Hello".as_bytes());
 }
 
 #[test]
@@ -48,5 +48,5 @@ pub fn test_delete_binary_with_slice() {
     let res = res.unwrap();
 
     assert!(res.get_code() == 200);
-    assert!(res.get_body() == "Hello".as_bytes());
+    assert!(res.get_body().clone().unwrap() == "Hello".as_bytes());
 }

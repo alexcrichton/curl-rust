@@ -288,6 +288,7 @@ impl<'a, 'b> Request<'a, 'b> {
             ..
         } = self;
 
+        let mut allow_null_body = false;
         if follow {
             try!(handle.easy.setopt(opt::FOLLOWLOCATION, 1));
         }
@@ -302,7 +303,10 @@ impl<'a, 'b> Request<'a, 'b> {
 
         match method {
             Get => try!(handle.easy.setopt(opt::HTTPGET, 1)),
-            Head => try!(handle.easy.setopt(opt::NOBODY, 1)),
+            Head => {
+                allow_null_body = true;
+                try!(handle.easy.setopt(opt::NOBODY, 1));
+            }
             Post => try!(handle.easy.setopt(opt::POST, 1)),
             Put => try!(handle.easy.setopt(opt::UPLOAD, 1)),
             Patch => {
@@ -377,7 +381,7 @@ impl<'a, 'b> Request<'a, 'b> {
             try!(handle.easy.setopt(opt::HTTPHEADER, &ffi_headers));
         }
 
-        handle.easy.perform(body.as_mut(), progress)
+        handle.easy.perform(body.as_mut(), allow_null_body, progress)
     }
 }
 

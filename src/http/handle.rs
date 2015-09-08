@@ -3,9 +3,10 @@ use std::path::Path;
 
 use url::Url;
 
-use ffi;
-use ffi::opt;
 use ffi::easy::Easy;
+use ffi::err;
+use ffi::opt;
+use ffi;
 use http::Response;
 use http::body::{Body,ToBody};
 use {ProgressCb,ErrCode};
@@ -26,15 +27,23 @@ impl Handle {
             .connect_timeout(DEFAULT_TIMEOUT_MS));
 
         #[cfg(unix)]
-        fn configure(handle: Handle) -> Handle {
+        fn configure(mut handle: Handle) -> Handle {
             let probe = ::openssl::probe::probe();
-            let handle = match probe.cert_file {
-                Some(ref path) => handle.ssl_ca_info(path),
-                None => handle,
-            };
-            match probe.cert_dir {
-                Some(ref path) => handle.ssl_ca_path(path),
-                None => handle,
+            if let Some(ref path) = probe.cert_file {
+                set_path(&mut handle, opt::CAINFO, path);
+            }
+            if let Some(ref path) = probe.cert_dir {
+                set_path(&mut handle, opt::CAPATH, path);
+            }
+            return handle;
+
+            fn set_path(handle: &mut Handle, opt: opt::Opt, path: &Path) {
+                if let Err(e) = handle.easy.setopt(opt, path) {
+                    if let err::NOT_BUILT_IN = e.code() {
+                        return
+                    }
+                    panic!("failed to set {:?}: {}", opt, e)
+                }
             }
         }
 

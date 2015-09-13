@@ -16,27 +16,27 @@ name = "curl_sys"
 path = "lib.rs"
 
 [dependencies]
-libz-sys = "0.1.0"
+libz-sys = "0.1"
 libc = "0.1"
 
 # Unix platforms use OpenSSL for now to provide SSL functionality
 [target.i686-apple-darwin.dependencies]
-openssl-sys = "0.6.0"
+openssl-sys = "0.6"
 [target.x86_64-apple-darwin.dependencies]
-openssl-sys = "0.6.0"
+openssl-sys = "0.6"
 [target.i686-unknown-linux-gnu.dependencies]
-openssl-sys = "0.6.0"
+openssl-sys = "0.6"
 [target.x86_64-unknown-linux-gnu.dependencies]
-openssl-sys = "0.6.0"
+openssl-sys = "0.6"
 [target.arm-unknown-linux-gnueabihf.dependencies]
-openssl-sys = "0.6.0"
+openssl-sys = "0.6"
 [target.aarch64-unknown-linux-gnu.dependencies]
-openssl-sys = "0.6.0"
+openssl-sys = "0.6"
 [target.i686-unknown-freebsd.dependencies]
-openssl-sys = "0.6.0"
+openssl-sys = "0.6"
 [target.x86_64-unknown-freebsd.dependencies]
-openssl-sys = "0.6.0"
+openssl-sys = "0.6"
 [target.x86_64-unknown-bitrig.dependencies]
-openssl-sys = "0.6.0"
+openssl-sys = "0.6"
 [target.x86_64-unknown-dragonfly.dependencies]
-openssl-sys = "0.6.0"
+openssl-sys = "0.6"

@@ -44,6 +44,7 @@ impl Response {
 }
 
 impl fmt::Display for Response {
+    #[allow(deprecated)] // needed for `connect()`, since Rust 1.1 is supported
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         try!(write!(fmt, "Response {{{}, ", self.code));
 

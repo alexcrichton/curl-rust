@@ -14,6 +14,7 @@ macro_rules! t {
     })
 }
 
+#[allow(deprecated)] // needed for `connect()`, since Rust 1.1 is supported
 fn main() {
     let target = env::var("TARGET").unwrap();
     let src = env::current_dir().unwrap();

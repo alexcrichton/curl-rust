@@ -61,6 +61,7 @@ fn main() {
     let _ = fs::create_dir(&dst.join("build"));
 
     let mut config_opts = Vec::new();
+    config_opts.push(format!("--host {}", target.replace("pc-windows-gnu", "w64-mingw32")));
     if windows {
         config_opts.push("--with-winssl".to_string());
     } else {

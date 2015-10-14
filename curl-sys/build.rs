@@ -4,6 +4,7 @@ extern crate gcc;
 use std::env;
 use std::ffi::OsString;
 use std::fs;
+use std::io::{stderr, Write};
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -30,7 +31,8 @@ fn main() {
     // Next, fall back and try to use pkg-config if its available.
     match pkg_config::find_library("libcurl") {
         Ok(..) => return,
-        Err(..) => {}
+        Err(e) => writeln!(&mut stderr(), "Couldn't find libcurl from \
+                           pkgconfig ({:?}), compiling it from source...", e).unwrap(),
     }
 
     println!("cargo:rustc-link-search={}/lib", dst.display());

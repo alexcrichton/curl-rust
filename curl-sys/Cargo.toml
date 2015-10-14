@@ -27,9 +27,13 @@ openssl-sys = "0.6.0"
 openssl-sys = "0.6.0"
 [target.i686-unknown-linux-gnu.dependencies]
 openssl-sys = "0.6.0"
+[target.i686-linux-android.dependencies]
+openssl-sys = "0.6.0"
 [target.x86_64-unknown-linux-gnu.dependencies]
 openssl-sys = "0.6.0"
 [target.arm-unknown-linux-gnueabihf.dependencies]
+openssl-sys = "0.6.0"
+[target.arm-linux-androideabi.dependencies]
 openssl-sys = "0.6.0"
 [target.aarch64-unknown-linux-gnu.dependencies]
 openssl-sys = "0.6.0"

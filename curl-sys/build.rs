@@ -46,53 +46,51 @@ fn main() {
         return build_msvc(&target);
     }
 
-    let mut cflags = env::var("CFLAGS").unwrap_or(String::new());
-    cflags.push_str(" -ffunction-sections -fdata-sections");
-
-    if target.contains("i686") {
-        cflags.push_str(" -m32");
-    } else if target.contains("x86_64") {
-        cflags.push_str(" -m64");
-    }
-    if !target.contains("i686") {
-        cflags.push_str(" -fPIC");
-    }
+    let cfg = gcc::Config::new();
+    let compiler = cfg.get_compiler();
 
     let _ = fs::create_dir(&dst.join("build"));
 
-    let mut config_opts = Vec::new();
+    let mut cmd = Command::new("sh");
+    cmd.env("CC", compiler.path())
+       .env("CFLAGS", compiler.args().iter().map(|s| s.to_str().unwrap())
+                              .collect::<Vec<_>>().join(" "))
+       .env("LD", &which("ld").unwrap())
+       .current_dir(&dst.join("build"))
+       .arg(src.join("curl/configure").to_str().unwrap()
+               .replace("C:\\", "/c/")
+               .replace("\\", "/"));
     if windows {
-        config_opts.push("--with-winssl".to_string());
+        cmd.arg("--with-winssl");
     } else {
-        config_opts.push("--without-ca-bundle".to_string());
-        config_opts.push("--without-ca-path".to_string());
+        cmd.arg("--without-ca-bundle");
+        cmd.arg("--without-ca-path");
 
-        match env::var("DEP_OPENSSL_ROOT") {
-            Ok(s) => config_opts.push(format!("--with-ssl={}", s)),
-            Err(..) => {}
+        if let Ok(s) = env::var("DEP_OPENSSL_ROOT") {
+            cmd.arg(format!("--with-ssl={}", s));
         }
     }
-    config_opts.push("--enable-static=yes".to_string());
-    config_opts.push("--enable-shared=no".to_string());
-    config_opts.push("--enable-optimize".to_string());
-    config_opts.push(format!("--prefix={}", dst.display()));
+    cmd.arg("--enable-static=yes");
+    cmd.arg("--enable-shared=no");
+    cmd.arg("--enable-optimize");
+    cmd.arg(format!("--prefix={}", dst.display()));
 
-    config_opts.push("--without-librtmp".to_string());
-    config_opts.push("--without-libidn".to_string());
-    config_opts.push("--without-libssh2".to_string());
-    config_opts.push("--without-nghttp2".to_string());
-    config_opts.push("--disable-ldap".to_string());
-    config_opts.push("--disable-ldaps".to_string());
-    config_opts.push("--disable-ftp".to_string());
-    config_opts.push("--disable-rtsp".to_string());
-    config_opts.push("--disable-dict".to_string());
-    config_opts.push("--disable-telnet".to_string());
-    config_opts.push("--disable-tftp".to_string());
-    config_opts.push("--disable-pop3".to_string());
-    config_opts.push("--disable-imap".to_string());
-    config_opts.push("--disable-smtp".to_string());
-    config_opts.push("--disable-gopher".to_string());
-    config_opts.push("--disable-manual".to_string());
+    cmd.arg("--without-librtmp");
+    cmd.arg("--without-libidn");
+    cmd.arg("--without-libssh2");
+    cmd.arg("--without-nghttp2");
+    cmd.arg("--disable-ldap");
+    cmd.arg("--disable-ldaps");
+    cmd.arg("--disable-ftp");
+    cmd.arg("--disable-rtsp");
+    cmd.arg("--disable-dict");
+    cmd.arg("--disable-telnet");
+    cmd.arg("--disable-tftp");
+    cmd.arg("--disable-pop3");
+    cmd.arg("--disable-imap");
+    cmd.arg("--disable-smtp");
+    cmd.arg("--disable-gopher");
+    cmd.arg("--disable-manual");
 
     // Can't run ./configure directly on msys2 b/c we're handing in
     // Windows-style paths (those starting with C:\), but it chokes on those.
@@ -101,15 +99,7 @@ fn main() {
     //
     // Also apparently the buildbots choke unless we manually set LD, who knows
     // why?!
-    run(Command::new("sh")
-                .env("CFLAGS", &cflags)
-                .env("LD", &which("ld").unwrap())
-                .current_dir(&dst.join("build"))
-                .arg("-c")
-                .arg(&format!("{} {}", src.join("curl/configure").display(),
-                              config_opts.connect(" "))
-                             .replace("C:\\", "/c/")
-                             .replace("\\", "/")));
+    run(&mut cmd);
     run(Command::new(make())
                 .arg(&format!("-j{}", env::var("NUM_JOBS").unwrap()))
                 .current_dir(&dst.join("build")));

@@ -52,9 +52,13 @@ fn main() {
     let _ = fs::create_dir(&dst.join("build"));
 
     let mut cmd = Command::new("sh");
+    let mut cflags = OsString::new();
+    for arg in compiler.args() {
+        cflags.push(arg);
+        cflags.push(" ");
+    }
     cmd.env("CC", compiler.path())
-       .env("CFLAGS", compiler.args().iter().map(|s| s.to_str().unwrap())
-                              .collect::<Vec<_>>().join(" "))
+       .env("CFLAGS", cflags)
        .env("LD", &which("ld").unwrap())
        .current_dir(&dst.join("build"))
        .arg(src.join("curl/configure").to_str().unwrap()

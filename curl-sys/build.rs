@@ -30,7 +30,8 @@ fn main() {
     // Next, fall back and try to use pkg-config if its available.
     match pkg_config::find_library("libcurl") {
         Ok(..) => return,
-        Err(..) => {}
+        Err(e) => println!("Couldn't find libcurl from \
+                           pkgconfig ({:?}), compiling it from source...", e),
     }
 
     println!("cargo:rustc-link-search={}/lib", dst.display());

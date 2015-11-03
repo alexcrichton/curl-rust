@@ -10,7 +10,7 @@ description = "Rust bindings to libcurl for making HTTP requests"
 [dependencies]
 url = "0.2.0"
 log = "0.3.0"
-libc = "0.1"
+libc = "0.2"
 curl-sys = { path = "curl-sys", version = "0.1.0" }
 
 [dev-dependencies]

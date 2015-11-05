@@ -1,8 +1,10 @@
 #![allow(non_camel_case_types, raw_pointer_derive)]
 
 extern crate libc;
-#[cfg(not(target_env = "msvc"))] extern crate libz_sys;
-#[cfg(unix)] extern crate openssl_sys;
+#[cfg(not(target_env = "msvc"))]
+extern crate libz_sys;
+#[cfg(all(unix, not(target_os = "macos")))]
+extern crate openssl_sys;
 
 use libc::{c_void, c_int, c_char, c_uint, c_long};
 

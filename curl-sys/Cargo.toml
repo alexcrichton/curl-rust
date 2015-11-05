@@ -21,10 +21,6 @@ libz-sys = "0.1.0"
 libc = "0.2"
 
 # Unix platforms use OpenSSL for now to provide SSL functionality
-[target.i686-apple-darwin.dependencies]
-openssl-sys = "0.6.0"
-[target.x86_64-apple-darwin.dependencies]
-openssl-sys = "0.6.0"
 [target.i686-unknown-linux-gnu.dependencies]
 openssl-sys = "0.6.0"
 [target.i686-linux-android.dependencies]

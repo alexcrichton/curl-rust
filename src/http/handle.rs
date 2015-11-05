@@ -26,7 +26,7 @@ impl Handle {
             .timeout(DEFAULT_TIMEOUT_MS)
             .connect_timeout(DEFAULT_TIMEOUT_MS));
 
-        #[cfg(unix)]
+        #[cfg(all(unix, not(target_os = "macos")))]
         fn configure(mut handle: Handle) -> Handle {
             let probe = ::openssl::probe::probe();
             if let Some(ref path) = probe.cert_file {
@@ -47,7 +47,7 @@ impl Handle {
             }
         }
 
-        #[cfg(not(unix))]
+        #[cfg(any(not(unix), target_os = "macos"))]
         fn configure(handle: Handle) -> Handle { handle }
     }
 

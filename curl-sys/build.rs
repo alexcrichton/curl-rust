@@ -17,6 +17,7 @@ macro_rules! t {
 #[allow(deprecated)] // needed for `connect()`, since Rust 1.1 is supported
 fn main() {
     let target = env::var("TARGET").unwrap();
+    let host = env::var("HOST").unwrap();
     let src = env::current_dir().unwrap();
     let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
     let windows = target.contains("windows");
@@ -79,6 +80,11 @@ fn main() {
     cmd.arg("--enable-shared=no");
     cmd.arg("--enable-optimize");
     cmd.arg(format!("--prefix={}", dst.display()));
+
+    if target != host {
+        cmd.arg(format!("--host={}", host));
+        cmd.arg(format!("--target={}", target));
+    }
 
     cmd.arg("--without-librtmp");
     cmd.arg("--without-libidn");

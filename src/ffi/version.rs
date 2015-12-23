@@ -200,7 +200,7 @@ fn as_str<'a>(p: *const c_char) -> Option<&'a str> {
     }
 
     unsafe {
-        str::from_utf8(CStr::from_ptr(p).to_bytes()).ok()
+        str::from_utf8(CStr::from_ptr(p as *const _).to_bytes()).ok()
     }
 }
 
@@ -212,6 +212,7 @@ pub fn version_info() -> Version {
 
 pub fn version() -> &'static str {
     unsafe {
-        str::from_utf8(CStr::from_ptr(ffi::curl_version()).to_bytes()).unwrap()
+        let version = ffi::curl_version();
+        str::from_utf8(CStr::from_ptr(version as *const _).to_bytes()).unwrap()
     }
 }

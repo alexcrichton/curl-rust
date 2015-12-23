@@ -117,7 +117,8 @@ impl fmt::Debug for ErrCode {
 impl fmt::Display for ErrCode {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         let s = unsafe {
-            CStr::from_ptr(ffi::curl_easy_strerror(self.code())).to_bytes()
+            let ptr = ffi::curl_easy_strerror(self.code());
+            CStr::from_ptr(ptr as *const _).to_bytes()
         };
 
         match str::from_utf8(s) {

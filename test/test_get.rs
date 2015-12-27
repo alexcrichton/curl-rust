@@ -20,9 +20,34 @@ pub fn test_simple_get() {
   srv.assert();
 
   assert!(res.get_code() == 200, "code is {}", res.get_code());
-  assert!(res.get_body() == "Hello".as_bytes());
+  assert!(res.get_body().clone().unwrap() == "Hello".as_bytes());
   assert!(res.get_headers().len() == 1);
   assert!(res.get_header("content-length") == ["5".to_string()]);
+}
+
+#[test]
+pub fn test_simple_get_with_empty_body() {
+  let srv = server!(
+    recv!(
+      b"GET / HTTP/1.1\r\n\
+        Host: localhost:{PORT}\r\n\
+        Accept: */*\r\n\r\n"), // Send the data
+    send!(
+      b"HTTP/1.1 200 OK\r\n\
+        Content-Length: 0\r\n\r\n\
+        \r\n")); // Sends
+
+  let res = handle()
+    .get(server::url("/"))
+    .exec().unwrap();
+
+  srv.assert();
+
+  println!("asdf:{:?}", res.get_body());
+  assert!(res.get_code() == 200, "code is {}", res.get_code());
+  assert!(res.get_body().clone().unwrap() == "".as_bytes());
+  assert!(res.get_headers().len() == 1);
+  assert!(res.get_header("content-length") == ["0".to_string()]);
 }
 
 #[test]
@@ -46,7 +71,7 @@ pub fn test_get_with_custom_headers() {
   srv.assert();
 
   assert!(res.get_code() == 200);
-  assert!(res.get_body() == "Hello".as_bytes());
+  assert!(res.get_body().clone().unwrap() == "Hello".as_bytes());
   assert!(res.get_headers().len() == 1);
   assert!(res.get_header("content-length") == ["5".to_string()]);
 }
@@ -110,5 +135,5 @@ pub fn follows_redirects() {
   srv2.assert();
 
   assert!(res.get_code() == 200);
-  assert_eq!(res.get_body(), b"response!");
+  assert_eq!(res.get_body().clone().unwrap(), b"response!");
 }

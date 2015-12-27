@@ -25,10 +25,10 @@ pub fn test_get_requests() {
     srv.assert();
 
     assert!(res1.get_code() == 200);
-    assert!(res1.get_body() == "Hello".as_bytes());
+    assert!(res1.get_body().clone().unwrap() == "Hello".as_bytes());
 
     assert!(res2.get_code() == 200);
-    assert!(res2.get_body() == "World".as_bytes());
+    assert!(res2.get_body().clone().unwrap() == "World".as_bytes());
 }
 
 #[test]
@@ -52,17 +52,17 @@ pub fn test_post_get_requests() {
                 NEXT\r\n\r\n")
     );
 
-    let mut handle = handle().timeout(1000);
+    let mut handle = handle().timeout(5000);
     let res1 = handle.post(server::url("/"), "Hello").exec().unwrap();
     let res2 = handle.get(server::url("/next")).exec().unwrap();
 
     srv.assert();
 
     assert!(res1.get_code() == 200);
-    assert!(res1.get_body() == "World".as_bytes(), "actual={}",
-            String::from_utf8_lossy(res1.get_body()));
+    assert!(res1.get_body().clone().unwrap() == "World".as_bytes(), "actual={}",
+            String::from_utf8_lossy(&res1.get_body().clone().unwrap()));
 
     assert!(res2.get_code() == 200);
-    assert!(res2.get_body() == "NEXT".as_bytes(), "actual={}",
-            String::from_utf8_lossy(res2.get_body()));
+    assert!(res2.get_body().clone().unwrap() == "NEXT".as_bytes(), "actual={}",
+            String::from_utf8_lossy(&res2.get_body().clone().unwrap()));
 }

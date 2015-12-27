@@ -2,16 +2,20 @@ use std::{fmt,str};
 use std::collections::HashMap;
 
 pub type Headers = HashMap<String, Vec<String>>;
+pub type ResponseBody = Option<Vec<u8>>;
 
 #[derive(Debug)]
 pub struct Response {
     code: u32,
     hdrs: Headers,
-    body: Vec<u8>
+    body: ResponseBody
 }
 
 impl Response {
-    pub fn new(code: u32, hdrs: Headers, body: Vec<u8>) -> Response {
+    pub fn new(code: u32, hdrs: Headers, mut body: ResponseBody, allow_null_body: bool) -> Response {
+        if !allow_null_body && body.is_none(){
+            body = Some(Vec::new())
+        }
         Response {
             code: code,
             hdrs: hdrs,
@@ -34,11 +38,11 @@ impl Response {
             .unwrap_or(&[])
     }
 
-    pub fn get_body<'a>(&'a self) -> &'a [u8] {
+    pub fn get_body<'a>(&'a self) -> &ResponseBody {
         &self.body
     }
 
-    pub fn move_body(self) -> Vec<u8> {
+    pub fn move_body(self) -> ResponseBody {
         self.body
     }
 }
@@ -52,9 +56,12 @@ impl fmt::Display for Response {
             try!(write!(fmt, "{}: {}, ", name, val.connect(", ")));
         }
 
-        match str::from_utf8(&self.body) {
-            Ok(b) => try!(write!(fmt, "{}", b)),
-            Err(..) => try!(write!(fmt, "bytes[{}]", self.body.len()))
+        match self.body {
+            Some(ref body) => match str::from_utf8(&body) {
+                Ok(b) => try!(write!(fmt, "{}", b)),
+                Err(..) => try!(write!(fmt, "bytes[{}]", body.len()))
+            },
+            None => try!(write!(fmt, "NoBody")),
         }
 
         try!(write!(fmt, "]"));

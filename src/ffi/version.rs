@@ -153,7 +153,6 @@ impl Version {
 }
 
 #[derive(Copy, Clone)]
-#[allow(raw_pointer_derive)] // TODO: Implement this by hand
 pub struct Protocols<'a> {
     curr: *const *const c_char,
     _marker: marker::PhantomData<&'a str>,

@@ -1,4 +1,4 @@
-#![allow(non_camel_case_types, raw_pointer_derive)]
+#![allow(non_camel_case_types)]
 
 extern crate libc;
 #[cfg(not(target_env = "msvc"))]

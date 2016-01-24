@@ -386,6 +386,19 @@ impl<'a, 'b> Request<'a, 'b> {
             try!(handle.easy.setopt(opt::HTTPHEADER, &ffi_headers));
         }
 
+        // According to libcurl's thread safety docs [1]:
+        //
+        // > When using multiple threads you should set the CURLOPT_NOSIGNAL
+        // > option to 1L for all handles
+        //
+        // This library is likely to be used in a multithreaded situation, so
+        // set this option as such. The implication of this is that timeouts are
+        // not honored during the DNS lookup phase, but using c-ares can fix
+        // that and it seems a small price to pay for thread safety!
+        //
+        // [1]: http://curl.haxx.se/libcurl/c/threadsafe.html
+        try!(handle.easy.setopt(opt::NOSIGNAL, 1));
+
         handle.easy.perform(body.as_mut(), progress)
     }
 }

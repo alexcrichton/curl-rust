@@ -6,7 +6,6 @@ use std::collections::HashMap;
 use std::slice;
 use libc::{self, c_int, c_long, c_double, size_t};
 use super::{consts, err, info, opt};
-use super::err::ErrCode;
 use http::body::Body;
 use http::{header, Response};
 
@@ -65,16 +64,22 @@ impl Easy {
             };
 
             // Set callback options
-            ffi::curl_easy_setopt(self.curl, opt::READFUNCTION, curl_read_fn);
+            //
+            // Use explicit `as` casts to work around rust-lang/rust#32201
+            ffi::curl_easy_setopt(self.curl, opt::READFUNCTION,
+                                  curl_read_fn as extern fn(_, _, _, _) -> _);
             ffi::curl_easy_setopt(self.curl, opt::READDATA, body_p);
 
-            ffi::curl_easy_setopt(self.curl, opt::WRITEFUNCTION, curl_write_fn);
+            ffi::curl_easy_setopt(self.curl, opt::WRITEFUNCTION,
+                                  curl_write_fn as extern fn(_, _, _, _) -> _);
             ffi::curl_easy_setopt(self.curl, opt::WRITEDATA, resp_p);
 
-            ffi::curl_easy_setopt(self.curl, opt::HEADERFUNCTION, curl_header_fn);
+            ffi::curl_easy_setopt(self.curl, opt::HEADERFUNCTION,
+                                  curl_header_fn as extern fn(_, _, _, _) -> _);
             ffi::curl_easy_setopt(self.curl, opt::HEADERDATA, resp_p);
 
-            ffi::curl_easy_setopt(self.curl, opt::PROGRESSFUNCTION, curl_progress_fn);
+            ffi::curl_easy_setopt(self.curl, opt::PROGRESSFUNCTION,
+                                  curl_progress_fn as extern fn(_, _, _, _, _) -> _);
             ffi::curl_easy_setopt(self.curl, opt::PROGRESSDATA, progress_p);
         }
 

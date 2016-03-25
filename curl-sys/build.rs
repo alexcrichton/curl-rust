@@ -72,7 +72,13 @@ fn main() {
         cmd.arg("--without-ca-bundle");
         cmd.arg("--without-ca-path");
 
-        if let Ok(s) = env::var("DEP_OPENSSL_ROOT") {
+        // DEP_OPENSSL_ROOT was what cargo used to use via overrides, and
+        // OPENSSL_ROOT_DIR is also used by libssh2 which cargo uses and can be
+        // set by various build scripts.
+        let openssl_root = env::var("DEP_OPENSSL_ROOT").or_else(|_| {
+            env::var("OPENSSL_ROOT_DIR")
+        });
+        if let Ok(s) = openssl_root {
             cmd.arg(format!("--with-ssl={}", s));
         }
     }

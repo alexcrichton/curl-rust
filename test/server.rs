@@ -5,6 +5,7 @@ use std::net::{TcpStream, TcpListener};
 use std::str;
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::thread;
+use std::time::Duration;
 
 use self::Op::{SendBytes, ReceiveBytes, Wait, Shutdown};
 
@@ -52,6 +53,7 @@ struct Handle {
 pub enum Op {
     SendBytes(&'static [u8]),
     ReceiveBytes(&'static [u8]),
+    #[allow(dead_code)]
     Wait(usize),
     Shutdown
 }
@@ -126,7 +128,7 @@ impl OpSequence {
                                 to_debug_str(&b), to_debug_str(&act)));
                     }
                 }
-                &Wait(ms) => thread::sleep_ms(ms as u32),
+                &Wait(ms) => thread::sleep(Duration::from_millis(ms as u64)),
                 &Shutdown => {
                     return Err("Shutdown must be sent on its own".to_string())
                 }

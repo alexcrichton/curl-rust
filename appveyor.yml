@@ -17,5 +17,5 @@ install:
 build: false
 
 test_script:
-  - cargo test
+  - cargo test -p curl-sys
   - cargo run --manifest-path systest/Cargo.toml

@@ -8,10 +8,10 @@ before_script:
   - pip install 'travis-cargo<0.2' --user && export PATH=$HOME/.local/bin:$PATH
 script:
   - export CARGO_TARGET_DIR=`pwd`/target
-  - cargo test
+  - cargo test -p curl-sys
   - cargo run --manifest-path systest/Cargo.toml
-  - cargo doc --no-deps
-  - cargo doc --no-deps --manifest-path=curl-sys/Cargo.toml
+  #- cargo doc --no-deps
+  - cargo doc --no-deps -p curl-sys
 after_success:
   - travis-cargo --only nightly doc-upload
 notifications:

@@ -26,6 +26,7 @@ pub enum CURL {}
 
 #[cfg(unix)]
 pub type curl_socket_t = libc::c_int;
+#[cfg(unix)]
 pub const CURL_SOCKET_BAD: curl_socket_t = -1;
 #[cfg(all(windows, target_pointer_width = "32"))]
 pub type curl_socket_t = libc::c_uint;
@@ -162,18 +163,19 @@ pub type curl_sockopt_callback = extern fn(*mut c_void,
                                            curl_socket_t,
                                            curlsocktype) -> c_int;
 
-#[repr(C)]
-pub struct curl_sockaddr {
-    pub family: c_int,
-    pub socktype: c_int,
-    pub protocol: c_int,
-    pub addrlen: c_uint,
-    pub addr: libc::sockaddr,
-}
-
-pub type curl_opensocket_callback = extern fn(*mut c_void,
-                                              curlsocktype,
-                                              *mut curl_sockaddr) -> curl_socket_t;
+// TODO: sort out libc::sockaddr on windows
+// #[repr(C)]
+// pub struct curl_sockaddr {
+//     pub family: c_int,
+//     pub socktype: c_int,
+//     pub protocol: c_int,
+//     pub addrlen: c_uint,
+//     pub addr: libc::sockaddr,
+// }
+//
+// pub type curl_opensocket_callback = extern fn(*mut c_void,
+//                                               curlsocktype,
+//                                               *mut curl_sockaddr) -> curl_socket_t;
 
 pub type curlioerr = __enum_ty;
 pub const CURLIOE_OK: curlioerr = 0;
@@ -951,11 +953,12 @@ extern {
                                  curl_handle: *mut CURL) -> CURLMcode;
     pub fn curl_multi_remove_handle(multi_handle: *mut CURLM,
                                     curl_handle: *mut CURL) -> CURLMcode;
-    pub fn curl_multi_fdset(multi_handle: *mut CURLM,
-                            read_fd_set: *mut libc::fd_set,
-                            write_fd_set: *mut libc::fd_set,
-                            exc_fd_set: *mut libc::fd_set,
-                            max_fd: *mut c_int) -> CURLMcode;
+    // TODO: sort out libc::fd_set on Windows
+    // pub fn curl_multi_fdset(multi_handle: *mut CURLM,
+    //                         read_fd_set: *mut libc::fd_set,
+    //                         write_fd_set: *mut libc::fd_set,
+    //                         exc_fd_set: *mut libc::fd_set,
+    //                         max_fd: *mut c_int) -> CURLMcode;
     pub fn curl_multi_wait(multi_handle: *mut CURLM,
                            extra_fds: *mut curl_waitfd,
                            extra_nfds: c_uint,

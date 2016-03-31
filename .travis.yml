@@ -9,7 +9,7 @@ before_script:
 script:
   - export CARGO_TARGET_DIR=`pwd`/target
   - cargo test -p curl-sys
-  - cargo run --manifest-path systest/Cargo.toml
+  - CURL_NO_PKG_CONFIG=1 cargo run --manifest-path systest/Cargo.toml
   #- cargo doc --no-deps
   - cargo doc --no-deps -p curl-sys
 after_success:

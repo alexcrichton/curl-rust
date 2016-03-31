@@ -205,7 +205,7 @@ fn as_str<'a>(p: *const c_char) -> Option<&'a str> {
 
 pub fn version_info() -> Version {
     Version {
-        inner: unsafe { ffi::curl_version_info(ffi::CURL_VERSION_NOW) },
+        inner: unsafe { ffi::curl_version_info(ffi::CURLVERSION_FOURTH) },
     }
 }
 

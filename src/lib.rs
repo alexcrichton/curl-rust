@@ -1,9 +1,6 @@
 extern crate libc;
 extern crate url;
 
-#[macro_use]
-extern crate log;
-
 extern crate curl_sys as curl_ffi;
 
 #[cfg(all(unix, not(target_os = "macos")))]

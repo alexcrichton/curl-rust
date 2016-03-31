@@ -2,14 +2,14 @@
 
 name = "curl"
 version = "0.2.18"
-authors = ["Carl Lerche <me@carllerche.com>"]
+authors = ["Carl Lerche <me@carllerche.com>",
+           "Alex Crichton <alex@alexcrichton.com>"]
 license = "MIT"
 repository = "https://github.com/carllerche/curl-rust"
 description = "Rust bindings to libcurl for making HTTP requests"
 
 [dependencies]
 url = "0.5.0"
-log = "0.3.0"
 libc = "0.2"
 curl-sys = { path = "curl-sys", version = "0.1.0" }
 
@@ -19,40 +19,9 @@ env_logger = "0.3.0"
 # Unix platforms use OpenSSL for now to provide SSL functionality
 [target."cfg(all(unix, not(target_os = \"macos\")))".dependencies]
 openssl-sys = "0.7.0"
-
 [target.i686-unknown-linux-gnu.dependencies]
 openssl-sys = "0.7.0"
-[target.i586-unknown-linux-gnu.dependencies]
-openssl-sys = "0.7.0"
-[target.i686-linux-android.dependencies]
-openssl-sys = "0.7.0"
 [target.x86_64-unknown-linux-gnu.dependencies]
-openssl-sys = "0.7.0"
-[target.x86_64-unknown-linux-musl.dependencies]
-openssl-sys = "0.7.0"
-[target.arm-unknown-linux-gnueabihf.dependencies]
-openssl-sys = "0.7.0"
-[target.armv7-unknown-linux-gnueabihf.dependencies]
-openssl-sys = "0.7.0"
-[target.arm-linux-androideabi.dependencies]
-openssl-sys = "0.7.0"
-[target.aarch64-unknown-linux-gnu.dependencies]
-openssl-sys = "0.7.0"
-[target.powerpc-unknown-linux-gnu.dependencies]
-openssl-sys = "0.7.0"
-[target.powerpc64-unknown-linux-gnu.dependencies]
-openssl-sys = "0.7.0"
-[target.powerpc64le-unknown-linux-gnu.dependencies]
-openssl-sys = "0.7.0"
-[target.i686-unknown-freebsd.dependencies]
-openssl-sys = "0.7.0"
-[target.x86_64-unknown-freebsd.dependencies]
-openssl-sys = "0.7.0"
-[target.x86_64-unknown-bitrig.dependencies]
-openssl-sys = "0.7.0"
-[target.x86_64-unknown-openbsd.dependencies]
-openssl-sys = "0.7.0"
-[target.x86_64-unknown-dragonfly.dependencies]
 openssl-sys = "0.7.0"
 
 [[test]]

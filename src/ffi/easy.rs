@@ -107,7 +107,7 @@ impl Easy {
     fn get_info_long(&self, key: info::Key) -> Result<c_long, err::ErrCode> {
         let v: c_long = 0;
         let res = err::ErrCode(unsafe {
-            ffi::curl_easy_getinfo(self.curl as *const _, key, &v)
+            ffi::curl_easy_getinfo(self.curl, key, &v)
         });
 
         if !res.is_success() {

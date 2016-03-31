@@ -22,7 +22,9 @@ impl List {
     pub fn push_bytes(&mut self, val: &[u8]) {
         assert!(val[val.len() - 1] == 0);
         self.len += 1;
-        self.head = unsafe { ffi::curl_slist_append(self.head, val.as_ptr()) };
+        self.head = unsafe {
+            ffi::curl_slist_append(self.head, val.as_ptr() as *mut _)
+        };
     }
 
     pub fn len(&self) -> usize {

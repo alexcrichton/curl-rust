@@ -1,21 +1,29 @@
-extern crate libc;
-extern crate url;
+//! TODO: dox
 
-extern crate curl_sys as curl_ffi;
+#![deny(missing_docs)]
 
-#[cfg(all(unix, not(target_os = "macos")))]
-extern crate openssl_sys as openssl;
+// extern crate libc;
+// extern crate url;
 
-pub use ffi::easy::ProgressCb;
-pub use ffi::err::ErrCode;
+extern crate curl_sys;
 
-// Version accessors
-pub use ffi::version::{
-    Version,
-    version,
-    version_info,
-    Protocols
-};
+// #[cfg(all(unix, not(target_os = "macos")))]
+// extern crate openssl_sys as openssl;
+//
+// pub use ffi::easy::ProgressCb;
+// pub use ffi::err::ErrCode;
+//
+// pub use error::Error;
+//
+// // Version accessors
+// pub use ffi::version::{
+//     Version,
+//     version,
+//     version_info,
+//     Protocols
+// };
 
-mod ffi;
-pub mod http;
+pub use error::{Error, ShareError, MultiError};
+mod error;
+// mod ffi;
+// pub mod http;

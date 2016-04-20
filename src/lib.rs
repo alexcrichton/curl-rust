@@ -15,6 +15,9 @@ mod error;
 pub use version::{Version, Protocols};
 mod version;
 
+mod panic;
+pub mod easy;
+
 /// Initializes the underlying libcurl library.
 ///
 /// It's not required to call this before the library is used, but it's

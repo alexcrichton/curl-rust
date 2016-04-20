@@ -1,4 +1,4 @@
-#![allow(non_camel_case_types)]
+#![allow(bad_style)]
 
 extern crate libc;
 #[cfg(not(target_env = "msvc"))]
@@ -593,9 +593,23 @@ pub const CURL_IPRESOLVE_WHATEVER: c_int = 0;
 pub const CURL_IPRESOLVE_V4: c_int = 1;
 pub const CURL_IPRESOLVE_V6: c_int = 2;
 
+pub const CURL_SSLVERSION_DEFAULT: __enum_ty = 0;
+pub const CURL_SSLVERSION_TLSv1: __enum_ty = 1;
+pub const CURL_SSLVERSION_SSLv2: __enum_ty = 2;
+pub const CURL_SSLVERSION_SSLv3: __enum_ty = 3;
+pub const CURL_SSLVERSION_TLSv1_0: __enum_ty = 4;
+pub const CURL_SSLVERSION_TLSv1_1: __enum_ty = 5;
+pub const CURL_SSLVERSION_TLSv1_2: __enum_ty = 6;
+
 pub const CURLOPT_READDATA: CURLoption = CURLOPT_INFILE;
 pub const CURLOPT_WRITEDATA: CURLoption = CURLOPT_FILE;
 pub const CURLOPT_HEADERDATA: CURLoption = CURLOPT_WRITEHEADER;
+
+pub type curl_TimeCond = __enum_ty;
+pub const CURL_TIMECOND_NONE: curl_TimeCond = 0;
+pub const CURL_TIMECOND_IFMODSINCE: curl_TimeCond = 1;
+pub const CURL_TIMECOND_IFUNMODSINCE: curl_TimeCond = 2;
+pub const CURL_TIMECOND_LASTMOD: curl_TimeCond = 3;
 
 pub type CURLformoption = __enum_ty;
 pub const CURLFORM_NOTHING: CURLformoption = 0;

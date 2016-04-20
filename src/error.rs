@@ -1,5 +1,5 @@
 use std::error;
-use std::ffi::CStr;
+use std::ffi::{self, CStr};
 use std::fmt;
 use std::str;
 use std::io;
@@ -9,7 +9,7 @@ use curl_sys;
 /// An error returned from various "easy" operations.
 ///
 /// This structure wraps a `CURLcode`.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct Error {
     code: curl_sys::CURLcode,
 }
@@ -287,6 +287,14 @@ impl fmt::Display for Error {
     }
 }
 
+impl fmt::Debug for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Error {{ description: {:?}, code: {} }}",
+               error::Error::description(self),
+               self.code)
+    }
+}
+
 impl error::Error for Error {
     fn description(&self) -> &str {
         unsafe {
@@ -300,7 +308,7 @@ impl error::Error for Error {
 /// An error returned from "share" operations.
 ///
 /// This structure wraps a `CURLSHcode`.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct ShareError {
     code: curl_sys::CURLSHcode,
 }
@@ -348,6 +356,14 @@ impl fmt::Display for ShareError {
     }
 }
 
+impl fmt::Debug for ShareError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "ShareError {{ description: {:?}, code: {} }}",
+               error::Error::description(self),
+               self.code)
+    }
+}
+
 impl error::Error for ShareError {
     fn description(&self) -> &str {
         unsafe {
@@ -361,7 +377,7 @@ impl error::Error for ShareError {
 /// An error from "multi" operations.
 ///
 /// THis structure wraps a `CURLMcode`.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct MultiError {
     code: curl_sys::CURLMcode,
 }
@@ -419,6 +435,14 @@ impl fmt::Display for MultiError {
     }
 }
 
+impl fmt::Debug for MultiError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "MultiError {{ description: {:?}, code: {} }}",
+               error::Error::description(self),
+               self.code)
+    }
+}
+
 impl error::Error for MultiError {
     fn description(&self) -> &str {
         unsafe {
@@ -426,6 +450,12 @@ impl error::Error for MultiError {
             assert!(!s.is_null());
             str::from_utf8(CStr::from_ptr(s).to_bytes()).unwrap()
         }
+    }
+}
+
+impl From<ffi::NulError> for Error {
+    fn from(_: ffi::NulError) -> Error {
+        Error { code: curl_sys::CURLE_CONV_FAILED }
     }
 }
 

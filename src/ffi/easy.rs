@@ -11,10 +11,16 @@ use http::{header, Response};
 
 use curl_ffi as ffi;
 
+pub type HeaderCb<'a> = FnMut(&str, &str) + 'a;
 pub type ProgressCb<'a> = FnMut(usize, usize, usize, usize) + 'a;
 
 pub struct Easy {
     curl: *mut ffi::CURL
+}
+
+struct HeaderCbData {
+    resp_p: usize,
+    cb_p: usize
 }
 
 impl Easy {
@@ -47,6 +53,7 @@ impl Easy {
 
     pub fn perform(&mut self,
                    body: Option<&mut Body>,
+                   header: Option<Box<HeaderCb>>,
                    progress: Option<Box<ProgressCb>>)
                    -> Result<Response, err::ErrCode> {
         let mut builder = ResponseBuilder::new();
@@ -58,10 +65,20 @@ impl Easy {
                 None => 0
             };
 
+            let header_p: usize = match header.as_ref() {
+                Some(cb) => mem::transmute(cb),
+                None => 0
+            };
             let progress_p: usize = match progress.as_ref() {
                 Some(cb) => mem::transmute(cb),
                 None => 0
             };
+
+            let header_data = HeaderCbData {
+                resp_p: resp_p,
+                cb_p: header_p
+            };
+            let header_data_p: usize = mem::transmute(&header_data);
 
             // Set callback options
             //
@@ -76,7 +93,7 @@ impl Easy {
 
             ffi::curl_easy_setopt(self.curl, opt::HEADERFUNCTION,
                                   curl_header_fn as extern fn(_, _, _, _) -> _);
-            ffi::curl_easy_setopt(self.curl, opt::HEADERDATA, resp_p);
+            ffi::curl_easy_setopt(self.curl, opt::HEADERDATA, header_data_p);
 
             ffi::curl_easy_setopt(self.curl, opt::PROGRESSFUNCTION,
                                   curl_progress_fn as extern fn(_, _, _, _, _) -> _);
@@ -215,15 +232,22 @@ extern fn curl_write_fn(p: *mut u8, size: size_t, nmemb: size_t,
 }
 
 extern fn curl_header_fn(p: *mut u8, size: size_t, nmemb: size_t,
-                         resp: &mut ResponseBuilder) -> size_t {
+                         header_data: &mut HeaderCbData) -> size_t {
     // TODO: Skip the first call (it seems to be the status line)
 
     let vec = unsafe { slice::from_raw_parts(p as *const u8,
                                              (size * nmemb) as usize) };
+    let resp: &mut ResponseBuilder = unsafe { mem::transmute(header_data.resp_p) };
+    let cb: *mut Box<HeaderCb> = unsafe { mem::transmute(header_data.cb_p) };
 
     match header::parse(&vec) {
         Some((name, val)) => {
             resp.add_header(name, val);
+
+            if !cb.is_null() {
+                let cb: &mut HeaderCb = unsafe { &mut **cb };
+                (*cb)(name, val);
+            }
         }
         None => {}
     }

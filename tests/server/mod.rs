@@ -26,7 +26,7 @@ fn run(listener: &TcpListener, rx: &Receiver<Message>) {
                 while let Some(i) = expected.find("\n") {
                     let line = &expected[..i + 1];
                     expected = &expected[i + 1..];
-                    if line == "\r" {
+                    if line == "\r" || line == "" {
                         break
                     }
                     expected_headers.insert(line);

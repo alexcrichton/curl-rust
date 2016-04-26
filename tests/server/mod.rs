@@ -1,5 +1,5 @@
 use std::collections::HashSet;
-use std::net::{TcpListener, SocketAddr};
+use std::net::{TcpListener, SocketAddr, TcpStream};
 use std::io::prelude::*;
 use std::thread;
 use std::sync::mpsc::{Sender, Receiver, channel};
@@ -102,6 +102,7 @@ impl Server {
 
 impl Drop for Server {
     fn drop(&mut self) {
+        drop(TcpStream::connect(&self.addr));
         drop(self.messages.take());
         let res = self.thread.take().unwrap().join();
         if !thread::panicking() {

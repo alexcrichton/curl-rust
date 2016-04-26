@@ -35,10 +35,10 @@ impl Error {
         self.code == curl_sys::CURLE_URL_MALFORMAT
     }
 
-    /// Returns whether this error corresponds to CURLE_NOT_BUILT_IN.
-    pub fn is_not_built_in(&self) -> bool {
-        self.code == curl_sys::CURLE_NOT_BUILT_IN
-    }
+    // /// Returns whether this error corresponds to CURLE_NOT_BUILT_IN.
+    // pub fn is_not_built_in(&self) -> bool {
+    //     self.code == curl_sys::CURLE_NOT_BUILT_IN
+    // }
 
     /// Returns whether this error corresponds to CURLE_COULDNT_RESOLVE_PROXY.
     pub fn is_couldnt_resolve_proxy(&self) -> bool {
@@ -270,10 +270,10 @@ impl Error {
         self.code == curl_sys::CURLE_CHUNK_FAILED
     }
 
-    /// Returns whether this error corresponds to CURLE_NO_CONNECTION_AVAILABLE.
-    pub fn is_no_connection_available(&self) -> bool {
-        self.code == curl_sys::CURLE_NO_CONNECTION_AVAILABLE
-    }
+    // /// Returns whether this error corresponds to CURLE_NO_CONNECTION_AVAILABLE.
+    // pub fn is_no_connection_available(&self) -> bool {
+    //     self.code == curl_sys::CURLE_NO_CONNECTION_AVAILABLE
+    // }
 
     /// Returns the value of the underlying error corresponding to libcurl.
     pub fn code(&self) -> curl_sys::CURLcode {
@@ -339,10 +339,10 @@ impl ShareError {
         self.code == curl_sys::CURLSHE_NOMEM
     }
 
-    /// Returns whether this error corresponds to CURLSHE_NOT_BUILT_IN.
-    pub fn is_not_built_in(&self) -> bool {
-        self.code == curl_sys::CURLSHE_NOT_BUILT_IN
-    }
+    // /// Returns whether this error corresponds to CURLSHE_NOT_BUILT_IN.
+    // pub fn is_not_built_in(&self) -> bool {
+    //     self.code == curl_sys::CURLSHE_NOT_BUILT_IN
+    // }
 
     /// Returns the value of the underlying error corresponding to libcurl.
     pub fn code(&self) -> curl_sys::CURLSHcode {
@@ -418,10 +418,10 @@ impl MultiError {
         self.code == curl_sys::CURLM_UNKNOWN_OPTION
     }
 
-    /// Returns whether this error corresponds to CURLM_ADDED_ALREADY.
-    pub fn is_added_already(&self) -> bool {
-        self.code == curl_sys::CURLM_ADDED_ALREADY
-    }
+    // /// Returns whether this error corresponds to CURLM_ADDED_ALREADY.
+    // pub fn is_added_already(&self) -> bool {
+    //     self.code == curl_sys::CURLM_ADDED_ALREADY
+    // }
 
     /// Returns the value of the underlying error corresponding to libcurl.
     pub fn code(&self) -> curl_sys::CURLMcode {

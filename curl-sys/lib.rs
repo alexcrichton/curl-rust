@@ -65,11 +65,11 @@ pub type curl_progress_callback = extern fn(*mut c_void,
                                             c_double,
                                             c_double,
                                             c_double) -> c_int;
-pub type curl_xferinfo_callback = extern fn(*mut c_void,
-                                            curl_off_t,
-                                            curl_off_t,
-                                            curl_off_t,
-                                            curl_off_t) -> c_int;
+// pub type curl_xferinfo_callback = extern fn(*mut c_void,
+//                                             curl_off_t,
+//                                             curl_off_t,
+//                                             curl_off_t,
+//                                             curl_off_t) -> c_int;
 
 pub const CURL_WRITEFUNC_PAUSE: size_t = 0x10000001;
 
@@ -153,15 +153,15 @@ pub type curl_read_callback = extern fn(*mut c_char,
                                         size_t,
                                         *mut c_void) -> size_t;
 
-pub type curlsocktype = __enum_ty;
-pub const CURLSOCKTYPE_IPCXN: curlsocktype = 0;
-pub const CURLSOCKTYPE_ACCEPT: curlsocktype = 1;
-pub const CURL_SOCKOPT_OK: c_int = 0;
-pub const CURL_SOCKOPT_ERROR: c_int = 1;
-pub const CURL_SOCKOPT_ALREADY_CONNECTED: c_int = 2;
-pub type curl_sockopt_callback = extern fn(*mut c_void,
-                                           curl_socket_t,
-                                           curlsocktype) -> c_int;
+// pub type curlsocktype = __enum_ty;
+// pub const CURLSOCKTYPE_IPCXN: curlsocktype = 0;
+// pub const CURLSOCKTYPE_ACCEPT: curlsocktype = 1;
+// pub const CURL_SOCKOPT_OK: c_int = 0;
+// pub const CURL_SOCKOPT_ERROR: c_int = 1;
+// pub const CURL_SOCKOPT_ALREADY_CONNECTED: c_int = 2;
+// pub type curl_sockopt_callback = extern fn(*mut c_void,
+//                                            curl_socket_t,
+//                                            curlsocktype) -> c_int;
 
 // TODO: sort out libc::sockaddr on windows
 // #[repr(C)]
@@ -213,15 +213,15 @@ pub const CURLE_OK: CURLcode = 0;
 pub const CURLE_UNSUPPORTED_PROTOCOL: CURLcode = 1;
 pub const CURLE_FAILED_INIT: CURLcode = 2;
 pub const CURLE_URL_MALFORMAT: CURLcode = 3;
-pub const CURLE_NOT_BUILT_IN: CURLcode = 4;
+// pub const CURLE_NOT_BUILT_IN: CURLcode = 4;
 pub const CURLE_COULDNT_RESOLVE_PROXY: CURLcode = 5;
 pub const CURLE_COULDNT_RESOLVE_HOST: CURLcode = 6;
 pub const CURLE_COULDNT_CONNECT: CURLcode = 7;
 pub const CURLE_FTP_WEIRD_SERVER_REPLY: CURLcode = 8;
 pub const CURLE_REMOTE_ACCESS_DENIED: CURLcode = 9;
-pub const CURLE_FTP_ACCEPT_FAILED: CURLcode = 10;
+// pub const CURLE_FTP_ACCEPT_FAILED: CURLcode = 10;
 pub const CURLE_FTP_WEIRD_PASS_REPLY: CURLcode = 11;
-pub const CURLE_FTP_ACCEPT_TIMEOUT: CURLcode = 12;
+// pub const CURLE_FTP_ACCEPT_TIMEOUT: CURLcode = 12;
 pub const CURLE_FTP_WEIRD_PASV_REPLY: CURLcode = 13;
 pub const CURLE_FTP_WEIRD_227_FORMAT: CURLcode = 14;
 pub const CURLE_FTP_CANT_GET_HOST: CURLcode = 15;
@@ -298,7 +298,7 @@ pub const CURLE_RTSP_CSEQ_ERROR: CURLcode = 85;
 pub const CURLE_RTSP_SESSION_ERROR: CURLcode = 86;
 pub const CURLE_FTP_BAD_FILE_LIST: CURLcode = 87;
 pub const CURLE_CHUNK_FAILED: CURLcode = 88;
-pub const CURLE_NO_CONNECTION_AVAILABLE: CURLcode = 89;
+// pub const CURLE_NO_CONNECTION_AVAILABLE: CURLcode = 89;
 
 pub type curl_conv_callback = extern fn(*mut c_char, size_t) -> CURLcode;
 pub type curl_ssl_ctx_callback = extern fn(*mut CURL,
@@ -320,7 +320,7 @@ pub const CURLAUTH_GSSNEGOTIATE: c_ulong = 1 << 2;
 pub const CURLAUTH_NTLM: c_ulong = 1 << 3;
 pub const CURLAUTH_DIGEST_IE: c_ulong =  1 << 4;
 pub const CURLAUTH_NTLM_WB: c_ulong = 1 << 5;
-pub const CURLAUTH_ONLY: c_ulong = 1 << 31;
+// pub const CURLAUTH_ONLY: c_ulong = 1 << 31;
 pub const CURLAUTH_ANY: c_ulong = !CURLAUTH_DIGEST_IE;
 pub const CURLAUTH_ANYSAFE: c_ulong = !(CURLAUTH_BASIC | CURLAUTH_DIGEST_IE);
 
@@ -330,42 +330,42 @@ pub const CURLSSH_AUTH_PUBLICKEY: c_ulong = 1 << 0;
 pub const CURLSSH_AUTH_PASSWORD: c_ulong = 1 << 1;
 pub const CURLSSH_AUTH_HOST: c_ulong = 1 << 2;
 pub const CURLSSH_AUTH_KEYBOARD: c_ulong = 1 << 3;
-pub const CURLSSH_AUTH_AGENT: c_ulong = 1 << 4;
+// pub const CURLSSH_AUTH_AGENT: c_ulong = 1 << 4;
 pub const CURLSSH_AUTH_DEFAULT: c_ulong = CURLSSH_AUTH_ANY;
 
 pub const CURLGSSAPI_DELEGATION_NONE: c_ulong = 0;
 pub const CURLGSSAPI_DELEGATION_POLICY_FLAG: c_ulong = 1 << 0;
 pub const CURLGSSAPI_DELEGATION_FLAG: c_ulong = 1 << 1;
 
-pub type curl_khtype = __enum_ty;
-pub const CURLKHTYPE_UNKNOWN: curl_khtype = 0;
-pub const CURLKHTYPE_RSA1: curl_khtype = 1;
-pub const CURLKHTYPE_RSA: curl_khtype = 2;
-pub const CURLKHTYPE_DSS: curl_khtype = 3;
+// pub type curl_khtype = __enum_ty;
+// pub const CURLKHTYPE_UNKNOWN: curl_khtype = 0;
+// pub const CURLKHTYPE_RSA1: curl_khtype = 1;
+// pub const CURLKHTYPE_RSA: curl_khtype = 2;
+// pub const CURLKHTYPE_DSS: curl_khtype = 3;
 
-#[repr(C)]
-pub struct curl_khkey {
-    pub key: *const c_char,
-    pub len: size_t,
-    pub keytype: curl_khtype,
-}
+// #[repr(C)]
+// pub struct curl_khkey {
+//     pub key: *const c_char,
+//     pub len: size_t,
+//     pub keytype: curl_khtype,
+// }
 
-pub type curl_khstat = __enum_ty;
-pub const CURLKHSTAT_FINE_ADD_TO_FILE: curl_khstat = 0;
-pub const CURLKHSTAT_FINE: curl_khstat = 1;
-pub const CURLKHSTAT_REJECT: curl_khstat = 2;
-pub const CURLKHSTAT_DEFER: curl_khstat = 3;
+// pub type curl_khstat = __enum_ty;
+// pub const CURLKHSTAT_FINE_ADD_TO_FILE: curl_khstat = 0;
+// pub const CURLKHSTAT_FINE: curl_khstat = 1;
+// pub const CURLKHSTAT_REJECT: curl_khstat = 2;
+// pub const CURLKHSTAT_DEFER: curl_khstat = 3;
+//
+// pub type curl_khmatch = __enum_ty;
+// pub const CURLKHMATCH_OK: curl_khmatch = 0;
+// pub const CURLKHMATCH_MISMATCH: curl_khmatch = 1;
+// pub const CURLKHMATCH_MISSING: curl_khmatch = 2;
 
-pub type curl_khmatch = __enum_ty;
-pub const CURLKHMATCH_OK: curl_khmatch = 0;
-pub const CURLKHMATCH_MISMATCH: curl_khmatch = 1;
-pub const CURLKHMATCH_MISSING: curl_khmatch = 2;
-
-pub type curl_sshkeycallback = extern fn(*mut CURL,
-                                         *const curl_khkey,
-                                         *const curl_khkey,
-                                         curl_khmatch,
-                                         *mut c_void) -> c_int;
+// pub type curl_sshkeycallback = extern fn(*mut CURL,
+//                                          *const curl_khkey,
+//                                          *const curl_khkey,
+//                                          curl_khmatch,
+//                                          *mut c_void) -> c_int;
 
 pub type curl_usessl = __enum_ty;
 pub const CURLUSESSL_NONE: curl_usessl = 0;
@@ -574,20 +574,20 @@ pub const CURLOPT_TRANSFER_ENCODING: CURLoption = CURLOPTTYPE_LONG + 207;
 pub const CURLOPT_CLOSESOCKETFUNCTION: CURLoption = CURLOPTTYPE_FUNCTIONPOINT + 208;
 pub const CURLOPT_CLOSESOCKETDATA: CURLoption = CURLOPTTYPE_OBJECTPOINT + 209;
 pub const CURLOPT_GSSAPI_DELEGATION: CURLoption = CURLOPTTYPE_LONG + 210;
-pub const CURLOPT_DNS_SERVERS: CURLoption = CURLOPTTYPE_OBJECTPOINT + 211;
-pub const CURLOPT_ACCEPTTIMEOUT_MS: CURLoption = CURLOPTTYPE_LONG + 212;
-pub const CURLOPT_TCP_KEEPALIVE: CURLoption = CURLOPTTYPE_LONG + 213;
-pub const CURLOPT_TCP_KEEPIDLE: CURLoption = CURLOPTTYPE_LONG + 214;
-pub const CURLOPT_TCP_KEEPINTVL: CURLoption = CURLOPTTYPE_LONG + 215;
-pub const CURLOPT_SSL_OPTIONS: CURLoption = CURLOPTTYPE_LONG + 216;
-pub const CURLOPT_MAIL_AUTH: CURLoption = CURLOPTTYPE_OBJECTPOINT + 217;
-pub const CURLOPT_SASL_IR: CURLoption = CURLOPTTYPE_LONG + 218;
+// pub const CURLOPT_DNS_SERVERS: CURLoption = CURLOPTTYPE_OBJECTPOINT + 211;
+// pub const CURLOPT_ACCEPTTIMEOUT_MS: CURLoption = CURLOPTTYPE_LONG + 212;
+// pub const CURLOPT_TCP_KEEPALIVE: CURLoption = CURLOPTTYPE_LONG + 213;
+// pub const CURLOPT_TCP_KEEPIDLE: CURLoption = CURLOPTTYPE_LONG + 214;
+// pub const CURLOPT_TCP_KEEPINTVL: CURLoption = CURLOPTTYPE_LONG + 215;
+// pub const CURLOPT_SSL_OPTIONS: CURLoption = CURLOPTTYPE_LONG + 216;
+// pub const CURLOPT_MAIL_AUTH: CURLoption = CURLOPTTYPE_OBJECTPOINT + 217;
+// pub const CURLOPT_SASL_IR: CURLoption = CURLOPTTYPE_LONG + 218;
 pub const CURLOPT_XFERINFOFUNCTION: CURLoption = CURLOPTTYPE_FUNCTIONPOINT + 219;
-pub const CURLOPT_XOAUTH2_BEARER: CURLoption = CURLOPTTYPE_OBJECTPOINT + 220;
-pub const CURLOPT_DNS_INTERFACE: CURLoption = CURLOPTTYPE_OBJECTPOINT + 221;
-pub const CURLOPT_DNS_LOCAL_IP4: CURLoption = CURLOPTTYPE_OBJECTPOINT + 222;
-pub const CURLOPT_DNS_LOCAL_IP6: CURLoption = CURLOPTTYPE_OBJECTPOINT + 223;
-pub const CURLOPT_LOGIN_OPTIONS: CURLoption = CURLOPTTYPE_OBJECTPOINT + 224;
+// pub const CURLOPT_XOAUTH2_BEARER: CURLoption = CURLOPTTYPE_OBJECTPOINT + 220;
+// pub const CURLOPT_DNS_INTERFACE: CURLoption = CURLOPTTYPE_OBJECTPOINT + 221;
+// pub const CURLOPT_DNS_LOCAL_IP4: CURLoption = CURLOPTTYPE_OBJECTPOINT + 222;
+// pub const CURLOPT_DNS_LOCAL_IP6: CURLoption = CURLOPTTYPE_OBJECTPOINT + 223;
+// pub const CURLOPT_LOGIN_OPTIONS: CURLoption = CURLOPTTYPE_OBJECTPOINT + 224;
 
 pub const CURL_IPRESOLVE_WHATEVER: c_int = 0;
 pub const CURL_IPRESOLVE_V4: c_int = 1;
@@ -598,9 +598,9 @@ pub const CURL_SSLVERSION_DEFAULT: CURLoption = 0;
 pub const CURL_SSLVERSION_TLSv1: CURLoption = 1;
 pub const CURL_SSLVERSION_SSLv2: CURLoption = 2;
 pub const CURL_SSLVERSION_SSLv3: CURLoption = 3;
-pub const CURL_SSLVERSION_TLSv1_0: CURLoption = 4;
-pub const CURL_SSLVERSION_TLSv1_1: CURLoption = 5;
-pub const CURL_SSLVERSION_TLSv1_2: CURLoption = 6;
+// pub const CURL_SSLVERSION_TLSv1_0: CURLoption = 4;
+// pub const CURL_SSLVERSION_TLSv1_1: CURLoption = 5;
+// pub const CURL_SSLVERSION_TLSv1_2: CURLoption = 6;
 
 pub const CURLOPT_READDATA: CURLoption = CURLOPT_INFILE;
 pub const CURLOPT_WRITEDATA: CURLoption = CURLOPT_FILE;
@@ -665,23 +665,23 @@ pub struct curl_certinfo {
     pub certinfo: *mut *mut curl_slist,
 }
 
-pub type curl_sslbackend = __enum_ty;
-pub const CURLSSLBACKEND_NONE: curl_sslbackend = 0;
-pub const CURLSSLBACKEND_OPENSSL: curl_sslbackend = 1;
-pub const CURLSSLBACKEND_GNUTLS: curl_sslbackend = 2;
-pub const CURLSSLBACKEND_NSS: curl_sslbackend = 3;
+// pub type curl_sslbackend = __enum_ty;
+// pub const CURLSSLBACKEND_NONE: curl_sslbackend = 0;
+// pub const CURLSSLBACKEND_OPENSSL: curl_sslbackend = 1;
+// pub const CURLSSLBACKEND_GNUTLS: curl_sslbackend = 2;
+// pub const CURLSSLBACKEND_NSS: curl_sslbackend = 3;
 // pub const CURLSSLBACKEND_QSOSSL: curl_sslbackend = 4;
-pub const CURLSSLBACKEND_GSKIT: curl_sslbackend = 5;
-pub const CURLSSLBACKEND_POLARSSL: curl_sslbackend = 6;
-pub const CURLSSLBACKEND_CYASSL: curl_sslbackend = 7;
-pub const CURLSSLBACKEND_SCHANNEL: curl_sslbackend = 8;
-pub const CURLSSLBACKEND_DARWINSSL: curl_sslbackend = 9;
+// pub const CURLSSLBACKEND_GSKIT: curl_sslbackend = 5;
+// pub const CURLSSLBACKEND_POLARSSL: curl_sslbackend = 6;
+// pub const CURLSSLBACKEND_CYASSL: curl_sslbackend = 7;
+// pub const CURLSSLBACKEND_SCHANNEL: curl_sslbackend = 8;
+// pub const CURLSSLBACKEND_DARWINSSL: curl_sslbackend = 9;
 
-#[repr(C)]
-pub struct curl_tlssessioninfo {
-    pub backend: curl_sslbackend,
-    pub internals: *mut c_void,
-}
+// #[repr(C)]
+// pub struct curl_tlssessioninfo {
+//     pub backend: curl_sslbackend,
+//     pub internals: *mut c_void,
+// }
 
 pub const CURLINFO_STRING: CURLINFO = 0x100000;
 pub const CURLINFO_LONG: CURLINFO = 0x200000;
@@ -732,7 +732,7 @@ pub const CURLINFO_RTSP_CSEQ_RECV: CURLINFO = CURLINFO_LONG + 39;
 pub const CURLINFO_PRIMARY_PORT: CURLINFO = CURLINFO_LONG + 40;
 pub const CURLINFO_LOCAL_IP: CURLINFO = CURLINFO_STRING + 41;
 pub const CURLINFO_LOCAL_PORT: CURLINFO = CURLINFO_LONG + 42;
-pub const CURLINFO_TLS_SESSION: CURLINFO = CURLINFO_SLIST + 43;
+// pub const CURLINFO_TLS_SESSION: CURLINFO = CURLINFO_SLIST + 43;
 
 pub type curl_closepolicy = __enum_ty;
 pub const CURLCLOSEPOLICY_NONE: curl_closepolicy = 0;
@@ -747,7 +747,7 @@ pub const CURL_GLOBAL_WIN32: c_long = 1 << 1;
 pub const CURL_GLOBAL_ALL: c_long = CURL_GLOBAL_SSL | CURL_GLOBAL_WIN32;
 pub const CURL_GLOBAL_NOTHING: c_long = 0;
 pub const CURL_GLOBAL_DEFAULT: c_long = CURL_GLOBAL_ALL;
-pub const CURL_GLOBAL_ACK_EINTR: c_long = 1 << 2;
+// pub const CURL_GLOBAL_ACK_EINTR: c_long = 1 << 2;
 
 pub type curl_lock_data = __enum_ty;
 pub const CURL_LOCK_DATA_NONE: curl_lock_data = 0;
@@ -778,7 +778,7 @@ pub const CURLSHE_BAD_OPTION: CURLSHcode = 1;
 pub const CURLSHE_IN_USE: CURLSHcode = 2;
 pub const CURLSHE_INVALID: CURLSHcode = 3;
 pub const CURLSHE_NOMEM: CURLSHcode = 4;
-pub const CURLSHE_NOT_BUILT_IN: CURLSHcode = 5;
+// pub const CURLSHE_NOT_BUILT_IN: CURLSHcode = 5;
 
 pub type CURLSHoption = __enum_ty;
 pub const CURLSHOPT_NONE: CURLSHoption = 0;
@@ -827,7 +827,7 @@ pub const CURL_VERSION_CONV: c_int = 1 << 12;
 pub const CURL_VERSION_CURLDEBUG: c_int = 1 << 13;
 pub const CURL_VERSION_TLSAUTH_SRP: c_int = 1 << 14;
 pub const CURL_VERSION_NTLM_WB: c_int = 1 << 15;
-pub const CURL_VERSION_HTTP2: c_int = 1 << 16;
+// pub const CURL_VERSION_HTTP2: c_int = 1 << 16;
 
 pub const CURLPAUSE_RECV: c_int = 1 << 0;
 pub const CURLPAUSE_RECV_CONT: c_int = 0;
@@ -845,7 +845,7 @@ pub const CURLM_OUT_OF_MEMORY: CURLMcode = 3;
 pub const CURLM_INTERNAL_ERROR: CURLMcode = 4;
 pub const CURLM_BAD_SOCKET: CURLMcode = 5;
 pub const CURLM_UNKNOWN_OPTION: CURLMcode = 6;
-pub const CURLM_ADDED_ALREADY: CURLMcode = 7;
+// pub const CURLM_ADDED_ALREADY: CURLMcode = 7;
 
 pub type CURLMSG = __enum_ty;
 pub const CURLMSG_NONE: CURLMSG = 0;
@@ -858,16 +858,16 @@ pub struct CURLMsg {
     pub data: *mut c_void,
 }
 
-pub const CURL_WAIT_POLLIN: c_short = 0x1;
-pub const CURL_WAIT_POLLPRI: c_short = 0x2;
-pub const CURL_WAIT_POLLOUT: c_short = 0x4;
+// pub const CURL_WAIT_POLLIN: c_short = 0x1;
+// pub const CURL_WAIT_POLLPRI: c_short = 0x2;
+// pub const CURL_WAIT_POLLOUT: c_short = 0x4;
 
-#[repr(C)]
-pub struct curl_waitfd {
-    pub fd: curl_socket_t,
-    pub events: c_short,
-    pub revents: c_short,
-}
+// #[repr(C)]
+// pub struct curl_waitfd {
+//     pub fd: curl_socket_t,
+//     pub events: c_short,
+//     pub revents: c_short,
+// }
 
 pub const CURL_POLL_NONE: c_int = 0;
 pub const CURL_POLL_IN: c_int = 1;
@@ -891,14 +891,14 @@ pub const CURLMOPT_SOCKETDATA: CURLMoption = CURLOPTTYPE_OBJECTPOINT + 2;
 pub const CURLMOPT_PIPELINING: CURLMoption = CURLOPTTYPE_LONG + 3;
 pub const CURLMOPT_TIMERFUNCTION: CURLMoption = CURLOPTTYPE_FUNCTIONPOINT + 4;
 pub const CURLMOPT_TIMERDATA: CURLMoption = CURLOPTTYPE_OBJECTPOINT + 5;
-pub const CURLMOPT_MAXCONNECTS: CURLMoption = CURLOPTTYPE_LONG + 6;
-pub const CURLMOPT_MAX_HOST_CONNECTIONS: CURLMoption = CURLOPTTYPE_LONG + 7;
-pub const CURLMOPT_MAX_PIPELINE_LENGTH: CURLMoption = CURLOPTTYPE_LONG + 8;
-pub const CURLMOPT_CONTENT_LENGTH_PENALTY_SIZE: CURLMoption = CURLOPTTYPE_OFF_T + 9;
-pub const CURLMOPT_CHUNK_LENGTH_PENALTY_SIZE: CURLMoption = CURLOPTTYPE_OFF_T + 10;
-pub const CURLMOPT_PIPELINING_SITE_BL: CURLMoption = CURLOPTTYPE_OBJECTPOINT + 11;
-pub const CURLMOPT_PIPELINING_SERVER_BL: CURLMoption = CURLOPTTYPE_OBJECTPOINT + 12;
-pub const CURLMOPT_MAX_TOTAL_CONNECTIONS: CURLMoption = CURLOPTTYPE_LONG + 13;
+// pub const CURLMOPT_MAXCONNECTS: CURLMoption = CURLOPTTYPE_LONG + 6;
+// pub const CURLMOPT_MAX_HOST_CONNECTIONS: CURLMoption = CURLOPTTYPE_LONG + 7;
+// pub const CURLMOPT_MAX_PIPELINE_LENGTH: CURLMoption = CURLOPTTYPE_LONG + 8;
+// pub const CURLMOPT_CONTENT_LENGTH_PENALTY_SIZE: CURLMoption = CURLOPTTYPE_OFF_T + 9;
+// pub const CURLMOPT_CHUNK_LENGTH_PENALTY_SIZE: CURLMoption = CURLOPTTYPE_OFF_T + 10;
+// pub const CURLMOPT_PIPELINING_SITE_BL: CURLMoption = CURLOPTTYPE_OBJECTPOINT + 11;
+// pub const CURLMOPT_PIPELINING_SERVER_BL: CURLMoption = CURLOPTTYPE_OBJECTPOINT + 12;
+// pub const CURLMOPT_MAX_TOTAL_CONNECTIONS: CURLMoption = CURLOPTTYPE_LONG + 13;
 
 extern {
     pub fn curl_formadd(httppost: *mut *mut curl_httppost,
@@ -974,11 +974,11 @@ extern {
     //                         write_fd_set: *mut libc::fd_set,
     //                         exc_fd_set: *mut libc::fd_set,
     //                         max_fd: *mut c_int) -> CURLMcode;
-    pub fn curl_multi_wait(multi_handle: *mut CURLM,
-                           extra_fds: *mut curl_waitfd,
-                           extra_nfds: c_uint,
-                           timeout_ms: c_int,
-                           ret: *mut c_int) -> CURLMcode;
+    // pub fn curl_multi_wait(multi_handle: *mut CURLM,
+    //                        extra_fds: *mut curl_waitfd,
+    //                        extra_nfds: c_uint,
+    //                        timeout_ms: c_int,
+    //                        ret: *mut c_int) -> CURLMcode;
     pub fn curl_multi_perform(multi_handle: *mut CURLM,
                               running_handles: *mut c_int) -> CURLMcode;
     pub fn curl_multi_cleanup(multi_handle: *mut CURLM) -> CURLMcode;

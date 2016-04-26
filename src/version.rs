@@ -135,10 +135,10 @@ impl Version {
         self.flag(curl_sys::CURL_VERSION_NTLM_WB)
     }
 
-    /// Returns whether libcurl was built with support for HTTP2.
-    pub fn feature_http2(&self) -> bool {
-        self.flag(curl_sys::CURL_VERSION_HTTP2)
-    }
+    // /// Returns whether libcurl was built with support for HTTP2.
+    // pub fn feature_http2(&self) -> bool {
+    //     self.flag(curl_sys::CURL_VERSION_HTTP2)
+    // }
 
     fn flag(&self, flag: c_int) -> bool {
         unsafe {

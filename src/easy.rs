@@ -10,7 +10,7 @@ use std::str;
 use std::time::Duration;
 
 use curl_sys;
-use libc::{self, c_long, c_int, c_char, c_void, size_t};
+use libc::{self, c_long, c_int, c_char, c_void, size_t, c_double};
 
 use Error;
 use panic;
@@ -78,9 +78,9 @@ pub enum SslVersion {
     Tlsv1 = curl_sys::CURL_SSLVERSION_TLSv1 as isize,
     Sslv2 = curl_sys::CURL_SSLVERSION_SSLv2 as isize,
     Sslv3 = curl_sys::CURL_SSLVERSION_SSLv3 as isize,
-    Tlsv10 = curl_sys::CURL_SSLVERSION_TLSv1_0 as isize,
-    Tlsv11 = curl_sys::CURL_SSLVERSION_TLSv1_1 as isize,
-    Tlsv12 = curl_sys::CURL_SSLVERSION_TLSv1_2 as isize,
+    // Tlsv10 = curl_sys::CURL_SSLVERSION_TLSv1_0 as isize,
+    // Tlsv11 = curl_sys::CURL_SSLVERSION_TLSv1_1 as isize,
+    // Tlsv12 = curl_sys::CURL_SSLVERSION_TLSv1_2 as isize,
 
     /// Hidden variant to indicate that this enum should not be matched on, it
     /// may grow over time.
@@ -412,24 +412,24 @@ impl<'a> Easy<'a> {
     /// By default this function calls an internal method and corresponds to
     /// `CURLOPT_XFERINFOFUNCTION` and `CURLOPT_XFERINFODATA`.
     pub fn progress_function<F>(&mut self, f: &'a mut F) -> Result<(), Error>
-        where F: FnMut(u64, u64, u64, u64) -> bool
+        where F: FnMut(f64, f64, f64, f64) -> bool
     {
-        try!(self.setopt_ptr(curl_sys::CURLOPT_XFERINFOFUNCTION,
+        try!(self.setopt_ptr(curl_sys::CURLOPT_PROGRESSFUNCTION,
                              cb::<F> as usize as *const c_char));
         try!(self.setopt_ptr(curl_sys::CURLOPT_PROGRESSDATA,
                              f as *mut F as *const c_char));
         return Ok(());
 
         unsafe extern fn cb<F>(data: *mut c_void,
-                               dltotal: curl_sys::curl_off_t,
-                               dlnow: curl_sys::curl_off_t,
-                               ultotal: curl_sys::curl_off_t,
-                               ulnow: curl_sys::curl_off_t) -> c_int
-            where F: FnMut(u64, u64, u64, u64) -> bool
+                               dltotal: c_double,
+                               dlnow: c_double,
+                               ultotal: c_double,
+                               ulnow: c_double) -> c_int
+            where F: FnMut(f64, f64, f64, f64) -> bool
         {
             let keep_going = panic::catch(|| {
                 let fnptr = &mut *(data as *mut F);
-                fnptr(dltotal as u64, dlnow as u64, ultotal as u64, ulnow as u64)
+                fnptr(dltotal, dlnow, ultotal, ulnow)
             }).unwrap_or(false);
             if keep_going {
                 0
@@ -714,35 +714,35 @@ impl<'a> Easy<'a> {
         self.setopt_long(curl_sys::CURLOPT_TCP_NODELAY, enable as c_long)
     }
 
-    /// Configures whether TCP keepalive probes will be sent.
-    ///
-    /// The delay and frequency of these probes is controlled by `tcp_keepidle`
-    /// and `tcp_keepintvl`.
-    ///
-    /// By default this option is `false` and corresponds to
-    /// `CURLOPT_TCP_KEEPALIVE`.
-    pub fn tcp_keepalive(&mut self, enable: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_TCP_KEEPALIVE, enable as c_long)
-    }
+    // /// Configures whether TCP keepalive probes will be sent.
+    // ///
+    // /// The delay and frequency of these probes is controlled by `tcp_keepidle`
+    // /// and `tcp_keepintvl`.
+    // ///
+    // /// By default this option is `false` and corresponds to
+    // /// `CURLOPT_TCP_KEEPALIVE`.
+    // pub fn tcp_keepalive(&mut self, enable: bool) -> Result<(), Error> {
+    //     self.setopt_long(curl_sys::CURLOPT_TCP_KEEPALIVE, enable as c_long)
+    // }
 
-    /// Configures the TCP keepalive idle time wait.
-    ///
-    /// This is the delay, after which the connection is idle, keepalive probes
-    /// will be sent. Not all operating systems support this.
-    ///
-    /// By default this corresponds to `CURLOPT_TCP_KEEPIDLE`.
-    pub fn tcp_keepidle(&mut self, amt: Duration) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_TCP_KEEPIDLE,
-                         amt.as_secs() as c_long)
-    }
-
-    /// Configures the delay between keepalive probes.
-    ///
-    /// By default this corresponds to `CURLOPT_TCP_KEEPINTVL`.
-    pub fn tcp_keepintvl(&mut self, amt: Duration) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_TCP_KEEPINTVL,
-                         amt.as_secs() as c_long)
-    }
+    // /// Configures the TCP keepalive idle time wait.
+    // ///
+    // /// This is the delay, after which the connection is idle, keepalive probes
+    // /// will be sent. Not all operating systems support this.
+    // ///
+    // /// By default this corresponds to `CURLOPT_TCP_KEEPIDLE`.
+    // pub fn tcp_keepidle(&mut self, amt: Duration) -> Result<(), Error> {
+    //     self.setopt_long(curl_sys::CURLOPT_TCP_KEEPIDLE,
+    //                      amt.as_secs() as c_long)
+    // }
+    //
+    // /// Configures the delay between keepalive probes.
+    // ///
+    // /// By default this corresponds to `CURLOPT_TCP_KEEPINTVL`.
+    // pub fn tcp_keepintvl(&mut self, amt: Duration) -> Result<(), Error> {
+    //     self.setopt_long(curl_sys::CURLOPT_TCP_KEEPINTVL,
+    //                      amt.as_secs() as c_long)
+    // }
 
     /// Configures the scope for local IPv6 addresses.
     ///
@@ -751,7 +751,7 @@ impl<'a> Easy<'a> {
     ///
     /// By default this value is 0 and corresponds to `CURLOPT_ADDRESS_SCOPE`
     pub fn address_scope(&mut self, scope: u32) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_TCP_KEEPINTVL,
+        self.setopt_long(curl_sys::CURLOPT_ADDRESS_SCOPE,
                          scope as c_long)
     }
 
@@ -1410,59 +1410,59 @@ impl<'a> Easy<'a> {
         self.setopt_long(curl_sys::CURLOPT_CONNECT_ONLY, enable as c_long)
     }
 
-    /// Set interface to speak DNS over.
-    ///
-    /// Set the name of the network interface that the DNS resolver should bind
-    /// to. This must be an interface name (not an address).
-    ///
-    /// By default this option is not set and corresponds to
-    /// `CURLOPT_DNS_INTERFACE`.
-    pub fn dns_interface(&mut self, interface: &str) -> Result<(), Error> {
-        let interface = try!(CString::new(interface));
-        self.setopt_str(curl_sys::CURLOPT_DNS_INTERFACE, &interface)
-    }
-
-    /// IPv4 address to bind DNS resolves to
-    ///
-    /// Set the local IPv4 address that the resolver should bind to. The
-    /// argument should be of type char * and contain a single numerical IPv4
-    /// address as a string.
-    ///
-    /// By default this option is not set and corresponds to
-    /// `CURLOPT_DNS_LOCAL_IP4`.
-    pub fn dns_local_ip4(&mut self, ip: &str) -> Result<(), Error> {
-        let ip = try!(CString::new(ip));
-        self.setopt_str(curl_sys::CURLOPT_DNS_LOCAL_IP4, &ip)
-    }
-
-    /// IPv6 address to bind DNS resolves to
-    ///
-    /// Set the local IPv6 address that the resolver should bind to. The
-    /// argument should be of type char * and contain a single numerical IPv6
-    /// address as a string.
-    ///
-    /// By default this option is not set and corresponds to
-    /// `CURLOPT_DNS_LOCAL_IP6`.
-    pub fn dns_local_ip6(&mut self, ip: &str) -> Result<(), Error> {
-        let ip = try!(CString::new(ip));
-        self.setopt_str(curl_sys::CURLOPT_DNS_LOCAL_IP6, &ip)
-    }
-
-    /// Set preferred DNS servers.
-    ///
-    /// Provides a list of DNS servers to be used instead of the system default.
-    /// The format of the dns servers option is:
-    ///
-    /// ```text
-    /// host[:port],[host[:port]]...
-    /// ```
-    ///
-    /// By default this option is not set and corresponds to
-    /// `CURLOPT_DNS_SERVERS`.
-    pub fn dns_servers(&mut self, servers: &str) -> Result<(), Error> {
-        let servers = try!(CString::new(servers));
-        self.setopt_str(curl_sys::CURLOPT_DNS_SERVERS, &servers)
-    }
+    // /// Set interface to speak DNS over.
+    // ///
+    // /// Set the name of the network interface that the DNS resolver should bind
+    // /// to. This must be an interface name (not an address).
+    // ///
+    // /// By default this option is not set and corresponds to
+    // /// `CURLOPT_DNS_INTERFACE`.
+    // pub fn dns_interface(&mut self, interface: &str) -> Result<(), Error> {
+    //     let interface = try!(CString::new(interface));
+    //     self.setopt_str(curl_sys::CURLOPT_DNS_INTERFACE, &interface)
+    // }
+    //
+    // /// IPv4 address to bind DNS resolves to
+    // ///
+    // /// Set the local IPv4 address that the resolver should bind to. The
+    // /// argument should be of type char * and contain a single numerical IPv4
+    // /// address as a string.
+    // ///
+    // /// By default this option is not set and corresponds to
+    // /// `CURLOPT_DNS_LOCAL_IP4`.
+    // pub fn dns_local_ip4(&mut self, ip: &str) -> Result<(), Error> {
+    //     let ip = try!(CString::new(ip));
+    //     self.setopt_str(curl_sys::CURLOPT_DNS_LOCAL_IP4, &ip)
+    // }
+    //
+    // /// IPv6 address to bind DNS resolves to
+    // ///
+    // /// Set the local IPv6 address that the resolver should bind to. The
+    // /// argument should be of type char * and contain a single numerical IPv6
+    // /// address as a string.
+    // ///
+    // /// By default this option is not set and corresponds to
+    // /// `CURLOPT_DNS_LOCAL_IP6`.
+    // pub fn dns_local_ip6(&mut self, ip: &str) -> Result<(), Error> {
+    //     let ip = try!(CString::new(ip));
+    //     self.setopt_str(curl_sys::CURLOPT_DNS_LOCAL_IP6, &ip)
+    // }
+    //
+    // /// Set preferred DNS servers.
+    // ///
+    // /// Provides a list of DNS servers to be used instead of the system default.
+    // /// The format of the dns servers option is:
+    // ///
+    // /// ```text
+    // /// host[:port],[host[:port]]...
+    // /// ```
+    // ///
+    // /// By default this option is not set and corresponds to
+    // /// `CURLOPT_DNS_SERVERS`.
+    // pub fn dns_servers(&mut self, servers: &str) -> Result<(), Error> {
+    //     let servers = try!(CString::new(servers));
+    //     self.setopt_str(curl_sys::CURLOPT_DNS_SERVERS, &servers)
+    // }
 
     // =========================================================================
     // SSL/Security Options

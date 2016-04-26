@@ -91,7 +91,7 @@ Accept: */*\r\n\
     s.send("HTTP/1.1 200 OK\r\n\r\nHello!");
 
     let mut hits = 0;
-    let mut dl = 0;
+    let mut dl = 0.0;
     {
         let mut cb = |_, a, _, _| {
             hits += 1;
@@ -107,7 +107,7 @@ Accept: */*\r\n\
         t!(handle.perform());
     }
     assert!(hits > 0);
-    assert_eq!(dl, 6);
+    assert_eq!(dl, 6.0);
 }
 
 #[test]
@@ -239,9 +239,9 @@ HTTP/1.1 200 OK\r\n\
 fn misc() {
     let mut h = handle();
     t!(h.tcp_nodelay(true));
-    t!(h.tcp_keepalive(true));
-    t!(h.tcp_keepidle(Duration::new(3, 0)));
-    t!(h.tcp_keepintvl(Duration::new(3, 0)));
+    // t!(h.tcp_keepalive(true));
+    // t!(h.tcp_keepidle(Duration::new(3, 0)));
+    // t!(h.tcp_keepintvl(Duration::new(3, 0)));
     t!(h.buffer_size(10));
     t!(h.dns_cache_timeout(Duration::new(1, 0)));
 }

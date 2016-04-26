@@ -7,7 +7,7 @@ extern crate libz_sys;
 extern crate openssl_sys;
 
 use libc::{c_int, c_char, c_uint, c_long, c_double, c_void, size_t, time_t};
-use libc::{c_ulong, c_short};
+use libc::c_ulong;
 
 #[cfg(target_env = "msvc")]
 #[doc(hidden)]

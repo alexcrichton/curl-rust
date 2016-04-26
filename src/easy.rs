@@ -1814,6 +1814,9 @@ impl<'a> Easy<'a> {
 
     /// URL encodes a string `s`
     pub fn url_encode(&mut self, s: &[u8]) -> String {
+        if s.len() == 0 {
+            return String::new()
+        }
         unsafe {
             let p = curl_sys::curl_easy_escape(self.handle,
                                                s.as_ptr() as *const _,
@@ -1828,6 +1831,9 @@ impl<'a> Easy<'a> {
 
     /// URL decodes a string `s`, returning `None` if it fails
     pub fn url_decode(&mut self, s: &str) -> Vec<u8> {
+        if s.len() == 0 {
+            return Vec::new();
+        }
         unsafe {
             let mut len = 0;
             let p = curl_sys::curl_easy_unescape(self.handle,

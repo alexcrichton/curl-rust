@@ -593,13 +593,14 @@ pub const CURL_IPRESOLVE_WHATEVER: c_int = 0;
 pub const CURL_IPRESOLVE_V4: c_int = 1;
 pub const CURL_IPRESOLVE_V6: c_int = 2;
 
-pub const CURL_SSLVERSION_DEFAULT: __enum_ty = 0;
-pub const CURL_SSLVERSION_TLSv1: __enum_ty = 1;
-pub const CURL_SSLVERSION_SSLv2: __enum_ty = 2;
-pub const CURL_SSLVERSION_SSLv3: __enum_ty = 3;
-pub const CURL_SSLVERSION_TLSv1_0: __enum_ty = 4;
-pub const CURL_SSLVERSION_TLSv1_1: __enum_ty = 5;
-pub const CURL_SSLVERSION_TLSv1_2: __enum_ty = 6;
+// Note that the type here is wrong, it's just intended to just be an enum.
+pub const CURL_SSLVERSION_DEFAULT: CURLoption = 0;
+pub const CURL_SSLVERSION_TLSv1: CURLoption = 1;
+pub const CURL_SSLVERSION_SSLv2: CURLoption = 2;
+pub const CURL_SSLVERSION_SSLv3: CURLoption = 3;
+pub const CURL_SSLVERSION_TLSv1_0: CURLoption = 4;
+pub const CURL_SSLVERSION_TLSv1_1: CURLoption = 5;
+pub const CURL_SSLVERSION_TLSv1_2: CURLoption = 6;
 
 pub const CURLOPT_READDATA: CURLoption = CURLOPT_INFILE;
 pub const CURLOPT_WRITEDATA: CURLoption = CURLOPT_FILE;

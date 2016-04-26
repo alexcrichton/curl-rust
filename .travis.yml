@@ -1,19 +1,20 @@
 language: rust
 rust:
   - stable
-  - beta
-  - nightly
-matrix:
-  include:
-    - os: linux
-      rust: stable
-      env: LIBCURL_NO_PKG_CONFIG=1
+  # - beta
+  # - nightly
+# matrix:
+#   include:
+#     - os: linux
+#       rust: stable
+#       env: LIBCURL_NO_PKG_CONFIG=1
 sudo: false
 before_script:
   - pip install 'travis-cargo<0.2' --user && export PATH=$HOME/.local/bin:$PATH
 script:
   - export CARGO_TARGET_DIR=`pwd`/target
   - export RUST_TEST_THREADS=1
+  - curl --version
   - cargo test
   - cargo run --manifest-path systest/Cargo.toml
   - cargo doc --no-deps
@@ -24,5 +25,5 @@ notifications:
   email:
     on_success: never
 os:
-  - linux
+  # - linux
   - osx

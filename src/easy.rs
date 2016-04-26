@@ -1834,11 +1834,26 @@ impl<'a> Easy<'a> {
         if s.len() == 0 {
             return Vec::new();
         }
+
+        // Work around https://curl.haxx.se/docs/adv_20130622.html, a bug where
+        // if the last few characters are a bad escape then curl will have a
+        // buffer overrun.
+        let mut iter = s.chars().rev();
+        let orig_len = s.len();
+        let mut data;
+        let mut s = s;
+        if iter.next() == Some('%') ||
+           iter.next() == Some('%') ||
+           iter.next() == Some('%') {
+            data = s.to_string();
+            data.push(0u8 as char);
+            s = &data[..];
+        }
         unsafe {
             let mut len = 0;
             let p = curl_sys::curl_easy_unescape(self.handle,
                                                  s.as_ptr() as *const _,
-                                                 s.len() as c_int,
+                                                 orig_len as c_int,
                                                  &mut len);
             assert!(!p.is_null());
             let slice = slice::from_raw_parts(p as *const u8, len as usize);

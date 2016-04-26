@@ -492,14 +492,14 @@ HTTP/1.1 200 OK\r\n\
 #[test]
 fn url_encoding() {
     let mut h = handle();
-    // assert_eq!(h.url_encode(b"foo"), "foo");
-    // assert_eq!(h.url_encode(b"foo bar"), "foo%20bar");
-    // assert_eq!(h.url_encode(b"foo bar\xff"), "foo%20bar%FF");
-    // assert_eq!(h.url_encode(b""), "");
-    // assert_eq!(h.url_decode("foo"), b"foo");
-    // assert_eq!(h.url_decode("foo%20bar"), b"foo bar");
+    assert_eq!(h.url_encode(b"foo"), "foo");
+    assert_eq!(h.url_encode(b"foo bar"), "foo%20bar");
+    assert_eq!(h.url_encode(b"foo bar\xff"), "foo%20bar%FF");
+    assert_eq!(h.url_encode(b""), "");
+    assert_eq!(h.url_decode("foo"), b"foo");
+    assert_eq!(h.url_decode("foo%20bar"), b"foo bar");
     assert_eq!(h.url_decode("foo%2"), b"foo%2");
-    // assert_eq!(h.url_decode("foo%xx"), b"foo%xx");
-    // assert_eq!(h.url_decode("foo%ff"), b"foo\xff");
-    // assert_eq!(h.url_decode(""), b"");
+    assert_eq!(h.url_decode("foo%xx"), b"foo%xx");
+    assert_eq!(h.url_decode("foo%ff"), b"foo\xff");
+    assert_eq!(h.url_decode(""), b"");
 }

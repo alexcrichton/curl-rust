@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::net::{TcpListener, SocketAddr};
 use std::io::prelude::*;
 use std::thread;
@@ -21,11 +22,34 @@ fn run(listener: &TcpListener, rx: &Receiver<Message>) {
         match msg {
             Message::Read(ref expected) => {
                 let mut expected = &expected[..];
+                let mut expected_headers = HashSet::new();
                 while let Some(i) = expected.find("\n") {
+                    let line = &expected[..i + 1];
+                    expected = &expected[i + 1..];
+                    if line == "\r" {
+                        break
+                    }
+                    expected_headers.insert(line);
+                }
+                if expected.len() > 0 {
+                    assert!(expected_headers.insert(expected));
+                }
+
+                while expected_headers.len() > 0 {
                     let mut actual = String::new();
                     t!(socket.read_line(&mut actual));
-                    assert_eq!(actual, &expected[..i + 1]);
-                    expected = &expected[i + 1..];
+                    if !expected_headers.remove(&actual[..]) {
+                        panic!("unexpected header: {:?}", actual);
+                    }
+                }
+                for header in expected_headers {
+                    panic!("expected header but not found: {:?}", header);
+                }
+
+                let mut buf = vec![0; expected.len()];
+                if buf.len() > 0 {
+                    t!(socket.read_exact(&mut buf));
+                    assert_eq!(buf, expected.as_bytes());
                 }
             }
             Message::Write(ref to_write) => {

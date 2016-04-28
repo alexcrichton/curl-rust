@@ -1,30 +1,43 @@
 language: rust
-rust: stable
-env:
-  - ARCH=x86_64
-  - ARCH=i686
-os:
-  - linux
-  - osx
 matrix:
   include:
     - os: linux
       rust: stable
-      env: ARCH=x86_64 LIBCURL_NO_PKG_CONFIG=1
+      env: TARGET=x86_64-unknown-linux-gnu
     - os: linux
       rust: stable
-      env: ARCH=i686 LIBCURL_NO_PKG_CONFIG=1
+      env: TARGET=i686-unknown-linux-gnu
+      addons:
+        apt:
+          packages:
+            - gcc-multilib
+            - libssl-dev:i386
+    - os: linux
+      rust: stable
+      env: TARGET=x86_64-unknown-linux-gnu LIBCURL_NO_PKG_CONFIG=1
+    - os: linux
+      rust: stable
+      env: TARGET=i686-unknown-linux-gnu LIBCURL_NO_PKG_CONFIG=1
+      addons:
+        apt:
+          packages:
+            - gcc-multilib
+            - libssl-dev:i386
+    - os: osx
+      rust: stable
+      env: TARGET=x86_64-apple-darwin
+    - os: osx
+      rust: stable
+      env: TARGET=i686-apple-darwin
     - os: linux
       rust: beta
-      env: ARCH=x86_64
+      env: TARGET=x86_64-unknown-linux-gnu
     - os: linux
       rust: nightly
-      env: ARCH=x86_64
+      env: TARGET=x86_64-unknown-linux-gnu
 sudo: false
 before_script:
   - pip install 'travis-cargo<0.2' --user && export PATH=$HOME/.local/bin:$PATH
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then OS=unknown-linux-gnu; else OS=apple-darwin; fi
-  - export TARGET=$ARCH-$OS
   - curl https://static.rust-lang.org/rustup.sh |
     sh -s -- --add-target=$TARGET --disable-sudo -y --prefix=`rustc --print sysroot`
 script:
@@ -39,8 +52,3 @@ after_success:
 notifications:
   email:
     on_success: never
-addons:
-  apt:
-    packages:
-      - g++-multilib
-      - libssl-dev:i386

@@ -20,7 +20,7 @@ pub type CURLINFO = __enum_ty;
 pub type CURLoption = __enum_ty;
 pub type CURLcode = __enum_ty;
 pub type CURLversion = __enum_ty;
-pub type curl_off_t = c_long;
+pub type curl_off_t = i64;
 
 pub enum CURL {}
 

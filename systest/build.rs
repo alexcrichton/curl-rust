@@ -5,10 +5,10 @@ use std::env;
 fn main() {
     let mut cfg = ctest::TestGenerator::new();
 
-    cfg.header("curl/curl.h");
     if let Ok(out) = env::var("DEP_CURL_INCLUDE") {
         cfg.include(&out);
     }
+    cfg.header("curl/curl.h");
     cfg.field_name(|s, field| {
         if s == "curl_fileinfo" {
             field.replace("strings_", "strings.")

@@ -1,29 +1,41 @@
 language: rust
-rust:
-  - stable
-  - beta
-  - nightly
+rust: stable
+env:
+  - ARCH=x86_64
+  - ARCH=i686
+os:
+  - linux
+  - osx
 matrix:
   include:
     - os: linux
       rust: stable
-      env: LIBCURL_NO_PKG_CONFIG=1
+      env: ARCH=x86_64 LIBCURL_NO_PKG_CONFIG=1
+    - os: linux
+      rust: stable
+      env: ARCH=i686 LIBCURL_NO_PKG_CONFIG=1
+    - os: linux
+      rust: beta
+      env: ARCH=x86_64
+    - os: linux
+      rust: nightly
+      env: ARCH=x86_64
 sudo: false
 before_script:
   - pip install 'travis-cargo<0.2' --user && export PATH=$HOME/.local/bin:$PATH
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then OS=unknown-linux-gnu; else OS=apple-darwin; fi
+  - export TARGET=$ARCH-$OS
+  - curl https://static.rust-lang.org/rustup.sh |
+    sh -s -- --add-target=$TARGET --disable-sudo -y --prefix=`rustc --print sysroot`
 script:
   - export CARGO_TARGET_DIR=`pwd`/target
-  - export RUST_TEST_THREADS=1
   - curl --version
-  - cargo test
-  - cargo run --manifest-path systest/Cargo.toml
-  - cargo doc --no-deps
-  - cargo doc --no-deps -p curl-sys
+  - cargo test --target $TARGET
+  - cargo run --manifest-path systest/Cargo.toml --target $TARGET
+  - cargo doc --no-deps --target $TARGET
+  - cargo doc --no-deps -p curl-sys --target $TARGET
 after_success:
   - travis-cargo --only nightly doc-upload
 notifications:
   email:
     on_success: never
-os:
-  - linux
-  - osx

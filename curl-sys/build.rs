@@ -63,6 +63,14 @@ fn main() {
         cflags.push(arg);
         cflags.push(" ");
     }
+
+    // Can't run ./configure directly on msys2 b/c we're handing in
+    // Windows-style paths (those starting with C:\), but it chokes on those.
+    // For that reason we build up a shell script with paths converted to
+    // posix versions hopefully...
+    //
+    // Also apparently the buildbots choke unless we manually set LD, who knows
+    // why?!
     cmd.env("CC", compiler.path())
        .env("CFLAGS", cflags)
        .env("LD", &which("ld").unwrap())
@@ -70,6 +78,7 @@ fn main() {
        .arg(src.join("curl/configure").to_str().unwrap()
                .replace("C:\\", "/c/")
                .replace("\\", "/"));
+
     if windows {
         cmd.arg("--with-winssl");
     } else {
@@ -113,32 +122,11 @@ fn main() {
     cmd.arg("--disable-gopher");
     cmd.arg("--disable-manual");
 
-    // Can't run ./configure directly on msys2 b/c we're handing in
-    // Windows-style paths (those starting with C:\), but it chokes on those.
-    // For that reason we build up a shell script with paths converted to
-    // posix versions hopefully...
-    //
-    // Also apparently the buildbots choke unless we manually set LD, who knows
-    // why?!
     run(&mut cmd);
     run(Command::new(make())
                 .arg(&format!("-j{}", env::var("NUM_JOBS").unwrap()))
+                .arg("install")
                 .current_dir(&dst.join("build")));
-
-    // Don't run `make install` because apparently it's a little buggy on mingw
-    // for windows.
-    let _ = fs::create_dir_all(&dst.join("lib/pkgconfig"));
-
-    // Which one does windows generate? Who knows!
-    let p1 = dst.join("build/lib/.libs/libcurl.a");
-    let p2 = dst.join("build/lib/.libs/libcurl.lib");
-    if fs::metadata(&p1).is_ok() {
-        t!(fs::copy(&p1, &dst.join("lib/libcurl.a")));
-    } else {
-        t!(fs::copy(&p2, &dst.join("lib/libcurl.a")));
-    }
-    t!(fs::copy(&dst.join("build/libcurl.pc"),
-                  &dst.join("lib/pkgconfig/libcurl.pc")));
 }
 
 fn run(cmd: &mut Command) {

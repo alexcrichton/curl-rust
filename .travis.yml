@@ -43,3 +43,4 @@ addons:
   apt:
     packages:
       - g++-multilib
+      - libssl-dev:i386

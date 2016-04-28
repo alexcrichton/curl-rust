@@ -52,13 +52,13 @@ pub struct curl_httppost {
     pub userp: *mut c_void,
 }
 
-pub const HTTPPOST_FILENAME: c_long = 1 << 0;
-pub const HTTPPOST_READFILE: c_long = 1 << 1;
-pub const HTTPPOST_PTRNAME: c_long = 1 << 2;
-pub const HTTPPOST_PTRCONTENTS: c_long = 1 << 3;
-pub const HTTPPOST_BUFFER: c_long = 1 << 4;
-pub const HTTPPOST_PTRBUFFER: c_long = 1 << 5;
-pub const HTTPPOST_CALLBACK: c_long = 1 << 6;
+// pub const HTTPPOST_FILENAME: c_long = 1 << 0;
+// pub const HTTPPOST_READFILE: c_long = 1 << 1;
+// pub const HTTPPOST_PTRNAME: c_long = 1 << 2;
+// pub const HTTPPOST_PTRCONTENTS: c_long = 1 << 3;
+// pub const HTTPPOST_BUFFER: c_long = 1 << 4;
+// pub const HTTPPOST_PTRBUFFER: c_long = 1 << 5;
+// pub const HTTPPOST_CALLBACK: c_long = 1 << 6;
 
 pub type curl_progress_callback = extern fn(*mut c_void,
                                             c_double,

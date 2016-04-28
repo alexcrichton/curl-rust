@@ -39,3 +39,7 @@ after_success:
 notifications:
   email:
     on_success: never
+addons:
+  apt:
+    packages:
+      - g++-multilib

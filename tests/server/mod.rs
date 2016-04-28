@@ -39,7 +39,8 @@ fn run(listener: &TcpListener, rx: &Receiver<Message>) {
                     let mut actual = String::new();
                     t!(socket.read_line(&mut actual));
                     if !expected_headers.remove(&actual[..]) {
-                        panic!("unexpected header: {:?}", actual);
+                        panic!("unexpected header: {:?} (remaining headers {:?})",
+                               actual, expected_headers);
                     }
                 }
                 for header in expected_headers {

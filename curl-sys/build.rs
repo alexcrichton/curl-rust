@@ -4,7 +4,7 @@ extern crate gcc;
 use std::env;
 use std::ffi::OsString;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 use std::process::Command;
 
 macro_rules! t {
@@ -14,7 +14,6 @@ macro_rules! t {
     })
 }
 
-#[allow(deprecated)] // needed for `connect()`, since Rust 1.1 is supported
 fn main() {
     let target = env::var("TARGET").unwrap();
     let host = env::var("HOST").unwrap();
@@ -33,6 +32,11 @@ fn main() {
         Ok(..) => return,
         Err(e) => println!("Couldn't find libcurl from \
                            pkgconfig ({:?}), compiling it from source...", e),
+    }
+
+    if !Path::new("curl/.git").exists() {
+        let _ = Command::new("git").args(&["submodule", "update", "--init"])
+                                   .status();
     }
 
     println!("cargo:rustc-link-search={}/lib", dst.display());

@@ -324,14 +324,14 @@ pub const CURLAUTH_NTLM_WB: c_ulong = 1 << 5;
 pub const CURLAUTH_ANY: c_ulong = !CURLAUTH_DIGEST_IE;
 pub const CURLAUTH_ANYSAFE: c_ulong = !(CURLAUTH_BASIC | CURLAUTH_DIGEST_IE);
 
-pub const CURLSSH_AUTH_ANY: c_ulong = !0;
-pub const CURLSSH_AUTH_NONE: c_ulong = 0;
-pub const CURLSSH_AUTH_PUBLICKEY: c_ulong = 1 << 0;
-pub const CURLSSH_AUTH_PASSWORD: c_ulong = 1 << 1;
-pub const CURLSSH_AUTH_HOST: c_ulong = 1 << 2;
-pub const CURLSSH_AUTH_KEYBOARD: c_ulong = 1 << 3;
+// pub const CURLSSH_AUTH_ANY: c_ulong = !0;
+// pub const CURLSSH_AUTH_NONE: c_ulong = 0;
+// pub const CURLSSH_AUTH_PUBLICKEY: c_ulong = 1 << 0;
+// pub const CURLSSH_AUTH_PASSWORD: c_ulong = 1 << 1;
+// pub const CURLSSH_AUTH_HOST: c_ulong = 1 << 2;
+// pub const CURLSSH_AUTH_KEYBOARD: c_ulong = 1 << 3;
 // pub const CURLSSH_AUTH_AGENT: c_ulong = 1 << 4;
-pub const CURLSSH_AUTH_DEFAULT: c_ulong = CURLSSH_AUTH_ANY;
+// pub const CURLSSH_AUTH_DEFAULT: c_ulong = CURLSSH_AUTH_ANY;
 
 pub const CURLGSSAPI_DELEGATION_NONE: c_ulong = 0;
 pub const CURLGSSAPI_DELEGATION_POLICY_FLAG: c_ulong = 1 << 0;

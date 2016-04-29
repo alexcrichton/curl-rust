@@ -18,7 +18,7 @@ mod server;
 
 fn handle<'a>() -> Easy<'a> {
     let mut e = Easy::new();
-    t!(e.timeout(Duration::new(1, 0)));
+    t!(e.timeout(Duration::new(20, 0)));
     return e
 }
 

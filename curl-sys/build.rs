@@ -29,7 +29,12 @@ fn main() {
 
     // Next, fall back and try to use pkg-config if its available.
     match pkg_config::find_library("libcurl") {
-        Ok(..) => return,
+        Ok(lib) => {
+            for path in lib.include_paths.iter() {
+                println!("cargo:include={}", path.display());
+            }
+            return
+        }
         Err(e) => println!("Couldn't find libcurl from \
                            pkgconfig ({:?}), compiling it from source...", e),
     }

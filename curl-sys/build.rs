@@ -28,15 +28,17 @@ fn main() {
     }
 
     // Next, fall back and try to use pkg-config if its available.
-    match pkg_config::find_library("libcurl") {
-        Ok(lib) => {
-            for path in lib.include_paths.iter() {
-                println!("cargo:include={}", path.display());
+    if !target.contains("windows") {
+        match pkg_config::find_library("libcurl") {
+            Ok(lib) => {
+                for path in lib.include_paths.iter() {
+                    println!("cargo:include={}", path.display());
+                }
+                return
             }
-            return
+            Err(e) => println!("Couldn't find libcurl from \
+                               pkgconfig ({:?}), compiling it from source...", e),
         }
-        Err(e) => println!("Couldn't find libcurl from \
-                           pkgconfig ({:?}), compiling it from source...", e),
     }
 
     if !Path::new("curl/.git").exists() {

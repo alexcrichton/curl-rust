@@ -9,7 +9,7 @@ use ffi::opt;
 use ffi;
 use http::Response;
 use http::body::{Body,ToBody};
-use {ProgressCb,ErrCode};
+use {HeaderCb,ProgressCb,ErrCode};
 
 use self::Method::{Get, Head, Post, Put, Patch, Delete};
 use self::BodyType::{Fixed, Chunked};
@@ -187,6 +187,7 @@ pub struct Request<'a, 'b> {
     body_type: Option<BodyType>,
     content_type: bool, // whether or not the content type was set
     expect_continue: bool, // whether to expect a 100 continue from the server
+    header_cb: Option<Box<HeaderCb<'b>>>,
     progress: Option<Box<ProgressCb<'b>>>,
     follow: bool,
 }
@@ -207,6 +208,7 @@ impl<'a, 'b> Request<'a, 'b> {
             body_type: None,
             content_type: false,
             expect_continue: false,
+            header_cb: None,
             progress: None,
             follow: false,
         }
@@ -269,6 +271,13 @@ impl<'a, 'b> Request<'a, 'b> {
         self
     }
 
+    pub fn header_cb<F>(mut self, cb: F) -> Request<'a, 'b>
+        where F: FnMut(&str, &str) + 'b
+    {
+        self.header_cb = Some(Box::new(cb) as Box<HeaderCb<'b>>);
+        self
+    }
+
     pub fn progress<F>(mut self, cb: F) -> Request<'a, 'b>
         where F: FnMut(usize, usize, usize, usize) + 'b
     {
@@ -292,6 +301,7 @@ impl<'a, 'b> Request<'a, 'b> {
             body_type,
             content_type,
             expect_continue,
+            header_cb,
             progress,
             follow,
             ..
@@ -399,7 +409,7 @@ impl<'a, 'b> Request<'a, 'b> {
         // [1]: http://curl.haxx.se/libcurl/c/threadsafe.html
         try!(handle.easy.setopt(opt::NOSIGNAL, 1));
 
-        handle.easy.perform(body.as_mut(), progress)
+        handle.easy.perform(body.as_mut(), header_cb, progress)
     }
 }
 

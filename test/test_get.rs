@@ -52,6 +52,41 @@ pub fn test_get_with_custom_headers() {
 }
 
 #[test]
+pub fn test_get_header_callback() {
+  let srv = server!(
+    recv!(
+      b"GET / HTTP/1.1\r\n\
+        Host: localhost:{PORT}\r\n\
+        Accept: */*\r\n\r\n"),
+    send!(
+      b"HTTP/1.1 200 OK\r\n\
+        Server: test\r\n\
+        Content-Length: 5\r\n\r\n\
+        Hello\r\n"));
+
+  let mut headers: Vec<String> = vec![];
+  let mut values: Vec<String> = vec![];
+
+  let res = handle()
+    .get(server::url("/"))
+    .header_cb(|k, v| {
+      headers.push(String::from(k));
+      values.push(String::from(v));
+    })
+    .exec().unwrap();
+
+  srv.assert();
+
+  assert!(res.get_code() == 200);
+  assert!(headers.len() == 2);
+  assert!(values.len() == 2);
+  assert!(headers[0] == "Server");
+  assert!(values[0] == "test");
+  assert!(headers[1] == "Content-Length");
+  assert!(values[1] == "5");
+}
+
+#[test]
 pub fn test_get_tracking_progress() {
   let srv = server!(
     recv!(

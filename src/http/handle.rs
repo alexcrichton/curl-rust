@@ -93,6 +93,11 @@ impl Handle {
         self
     }
 
+    pub fn user_agent(mut self, value: &str) -> Handle {
+        self.easy.setopt(opt::USERAGENT, value).unwrap();
+        self
+    }
+
     pub fn userpwd(mut self, userpwd: &str) -> Handle {
         self.easy.setopt(opt::USERPWD, userpwd).unwrap();
         self

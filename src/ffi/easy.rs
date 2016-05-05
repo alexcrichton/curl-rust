@@ -14,7 +14,7 @@ use curl_ffi as ffi;
 pub type ProgressCb<'a> = FnMut(usize, usize, usize, usize) + 'a;
 
 pub struct Easy {
-    curl: *mut ffi::CURL
+    pub curl: *mut ffi::CURL
 }
 
 impl Easy {

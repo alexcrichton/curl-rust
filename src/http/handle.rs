@@ -17,7 +17,7 @@ use self::BodyType::{Fixed, Chunked};
 const DEFAULT_TIMEOUT_MS: usize = 30_000;
 
 pub struct Handle {
-    easy: Easy,
+    pub easy: Easy,
 }
 
 impl Handle {
@@ -191,7 +191,7 @@ pub struct Request<'a, 'b> {
     follow: bool,
 }
 
-enum BodyType {
+pub enum BodyType {
     Fixed(usize),
     Chunked,
 }

@@ -530,7 +530,6 @@ impl<'a> Easy<'a> {
                              f as *mut F as *const c_char));
         return Ok(());
 
-        // TODO: expose `handle`? is that safe?
         unsafe extern fn cb<F>(buffer: *mut c_char,
                                size: size_t,
                                nitems: size_t,

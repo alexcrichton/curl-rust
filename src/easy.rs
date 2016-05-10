@@ -142,6 +142,12 @@ pub struct List {
     raw: *mut curl_sys::curl_slist,
 }
 
+/// An iterator over `List`
+pub struct Iter<'a> {
+    _me: &'a List,
+    cur: *mut curl_sys::curl_slist,
+}
+
 unsafe impl Send for List {}
 unsafe impl Sync for List {}
 
@@ -657,7 +663,7 @@ impl<'a> Easy<'a> {
     ///
     /// By default this option is 0 (any port) and corresponds to
     /// `CURLOPT_LOCALPORT`.
-    pub fn local_port(&mut self, port: u16) -> Result<(), Error> {
+    pub fn set_local_port(&mut self, port: u16) -> Result<(), Error> {
         self.setopt_long(curl_sys::CURLOPT_LOCALPORT, port as c_long)
     }
 
@@ -1182,6 +1188,19 @@ impl<'a> Easy<'a> {
     pub fn custom_request(&mut self, request: &str) -> Result<(), Error> {
         let request = try!(CString::new(request));
         self.setopt_str(curl_sys::CURLOPT_CUSTOMREQUEST, &request)
+    }
+
+    /// Get the modification time of the remote resource
+    ///
+    /// If true, libcurl will attempt to get the modification time of the
+    /// remote document in this operation. This requires that the remote server
+    /// sends the time or replies to a time querying command. The `filetime`
+    /// function can be used after a transfer to extract the received time (if
+    /// any).
+    ///
+    /// By default this option is `false` and corresponds to `CURLOPT_FILETIME`
+    pub fn fetch_filetime(&mut self, fetch: bool) -> Result<(), Error> {
+        self.setopt_long(curl_sys::CURLOPT_FILETIME, fetch as c_long)
     }
 
     /// Indicate whether to download the request without getting the body
@@ -1804,16 +1823,7 @@ impl<'a> Easy<'a> {
     /// Returns `Ok(None)` if no effective url is listed or `Err` if an error
     /// happens or the underlying bytes aren't valid utf-8.
     pub fn effective_url(&self) -> Result<Option<&str>, Error> {
-        match self.effective_url_bytes() {
-            Ok(None) => Ok(None),
-            Err(e) => Err(e),
-            Ok(Some(bytes)) => {
-                match str::from_utf8(bytes) {
-                    Ok(s) => Ok(Some(s)),
-                    Err(_) => Err(Error::new(curl_sys::CURLE_CONV_FAILED)),
-                }
-            }
-        }
+        self.getopt_str(curl_sys::CURLINFO_EFFECTIVE_URL)
     }
 
     /// Get the last used URL, in bytes
@@ -1827,7 +1837,6 @@ impl<'a> Easy<'a> {
     /// happens or the underlying bytes aren't valid utf-8.
     pub fn effective_url_bytes(&self) -> Result<Option<&[u8]>, Error> {
         self.getopt_bytes(curl_sys::CURLINFO_EFFECTIVE_URL)
-            .map(|c| c.map(|c| c.to_bytes()))
     }
 
     /// Get the last response code
@@ -1855,17 +1864,170 @@ impl<'a> Easy<'a> {
 
     /// Get the remote time of the retrieved document
     ///
-    /// Pass a pointer to a long to receive the remote time of the retrieved
-    /// document (in number of seconds since 1 jan 1970 in the GMT/UTC time
-    /// zone). If you get -1, it can be because of many reasons (it might be
-    /// unknown, the server might hide it or the server doesn't support the
-    /// command that tells document time etc) and the time of the document is
-    /// unknown.
+    /// Returns the remote time of the retrieved document (in number of seconds
+    /// since 1 Jan 1970 in the GMT/UTC time zone). If you get `None`, it can be
+    /// because of many reasons (it might be unknown, the server might hide it
+    /// or the server doesn't support the command that tells document time etc)
+    /// and the time of the document is unknown.
     ///
     /// Note that you must tell the server to collect this information before
-    /// the transfer is made, by using the CURLOPT_FILETIME option to
-    /// curl_easy_setopt or you will unconditionally get a -1 back.
-    pub fn filetime(&self) -> Result<u64, Error> {
+    /// the transfer is made, by using the `filetime` method to
+    /// or you will unconditionally get a `None` back.
+    ///
+    /// This corresponds to `CURLINFO_FILETIME` and may return an error if the
+    /// option is not supported
+    pub fn filetime(&self) -> Result<Option<i64>, Error> {
+        self.getopt_long(curl_sys::CURLINFO_FILETIME).map(|r| {
+            if r == -1 {
+                None
+            } else {
+                Some(r as i64)
+            }
+        })
+    }
+
+    /// Get the number of redirects
+    ///
+    /// Corresponds to `CURLINFO_REDIRECT_COUNT` and may return an error if the
+    /// option isn't supported.
+    pub fn redirect_count(&self) -> Result<u32, Error> {
+        self.getopt_long(curl_sys::CURLINFO_REDIRECT_COUNT).map(|c| c as u32)
+    }
+
+    /// Get the URL a redirect would go to
+    ///
+    /// Returns the URL a redirect would take you to if you would enable
+    /// `follow_location`. This can come very handy if you think using the
+    /// built-in libcurl redirect logic isn't good enough for you but you would
+    /// still prefer to avoid implementing all the magic of figuring out the new
+    /// URL.
+    ///
+    /// Corresponds to `CURLINFO_REDIRECT_URL` and may return an error if the
+    /// url isn't valid utf-8 or an error happens.
+    pub fn redirect_url(&self) -> Result<Option<&str>, Error> {
+        self.getopt_str(curl_sys::CURLINFO_REDIRECT_URL)
+    }
+
+    /// Get the URL a redirect would go to, in bytes
+    ///
+    /// Returns the URL a redirect would take you to if you would enable
+    /// `follow_location`. This can come very handy if you think using the
+    /// built-in libcurl redirect logic isn't good enough for you but you would
+    /// still prefer to avoid implementing all the magic of figuring out the new
+    /// URL.
+    ///
+    /// Corresponds to `CURLINFO_REDIRECT_URL` and may return an error.
+    pub fn redirect_url_bytes(&self) -> Result<Option<&[u8]>, Error> {
+        self.getopt_bytes(curl_sys::CURLINFO_REDIRECT_URL)
+    }
+
+    /// Get size of retrieved headers
+    ///
+    /// Corresponds to `CURLINFO_HEADER_SIZE` and may return an error if the
+    /// option isn't supported.
+    pub fn header_size(&self) -> Result<u64, Error> {
+        self.getopt_long(curl_sys::CURLINFO_HEADER_SIZE).map(|c| c as u64)
+    }
+
+    /// Get size of sent request.
+    ///
+    /// Corresponds to `CURLINFO_REQUEST_SIZE` and may return an error if the
+    /// option isn't supported.
+    pub fn request_size(&self) -> Result<u64, Error> {
+        self.getopt_long(curl_sys::CURLINFO_REQUEST_SIZE).map(|c| c as u64)
+    }
+
+    /// Get Content-Type
+    ///
+    /// Returns the content-type of the downloaded object. This is the value
+    /// read from the Content-Type: field.  If you get `None`, it means that the
+    /// server didn't send a valid Content-Type header or that the protocol
+    /// used doesn't support this.
+    ///
+    /// Corresponds to `CURLINFO_CONTENT_TYPE` and may return an error if the
+    /// option isn't supported.
+    pub fn content_type(&self) -> Result<Option<&str>, Error> {
+        self.getopt_str(curl_sys::CURLINFO_CONTENT_TYPE)
+    }
+
+    /// Get Content-Type, in bytes
+    ///
+    /// Returns the content-type of the downloaded object. This is the value
+    /// read from the Content-Type: field.  If you get `None`, it means that the
+    /// server didn't send a valid Content-Type header or that the protocol
+    /// used doesn't support this.
+    ///
+    /// Corresponds to `CURLINFO_CONTENT_TYPE` and may return an error if the
+    /// option isn't supported.
+    pub fn content_type_bytes(&self) -> Result<Option<&[u8]>, Error> {
+        self.getopt_bytes(curl_sys::CURLINFO_CONTENT_TYPE)
+    }
+
+    /// Get errno number from last connect failure.
+    ///
+    /// Note that the value is only set on failure, it is not reset upon a
+    /// successful operation. The number is OS and system specific.
+    ///
+    /// Corresponds to `CURLINFO_OS_ERRNO` and may return an error if the
+    /// option isn't supported.
+    pub fn os_errno(&self) -> Result<i32, Error> {
+        self.getopt_long(curl_sys::CURLINFO_OS_ERRNO).map(|c| c as i32)
+    }
+
+    /// Get IP address of last connection.
+    ///
+    /// Returns a string holding the IP address of the most recent connection
+    /// done with this curl handle. This string may be IPv6 when that is
+    /// enabled.
+    ///
+    /// Corresponds to `CURLINFO_PRIMARY_IP` and may return an error if the
+    /// option isn't supported.
+    pub fn primary_ip(&self) -> Result<Option<&str>, Error> {
+        self.getopt_str(curl_sys::CURLINFO_PRIMARY_IP)
+    }
+
+    /// Get the latest destination port number
+    ///
+    /// Corresponds to `CURLINFO_PRIMARY_PORT` and may return an error if the
+    /// option isn't supported.
+    pub fn primary_port(&self) -> Result<u16, Error> {
+        self.getopt_long(curl_sys::CURLINFO_PRIMARY_PORT).map(|c| c as u16)
+    }
+
+    /// Get local IP address of last connection
+    ///
+    /// Returns a string holding the IP address of the local end of most recent
+    /// connection done with this curl handle. This string may be IPv6 when that
+    /// is enabled.
+    ///
+    /// Corresponds to `CURLINFO_LOCAL_IP` and may return an error if the
+    /// option isn't supported.
+    pub fn local_ip(&self) -> Result<Option<&str>, Error> {
+        self.getopt_str(curl_sys::CURLINFO_LOCAL_IP)
+    }
+
+    /// Get the latest local port number
+    ///
+    /// Corresponds to `CURLINFO_LOCAL_PORT` and may return an error if the
+    /// option isn't supported.
+    pub fn local_port(&self) -> Result<u16, Error> {
+        self.getopt_long(curl_sys::CURLINFO_LOCAL_PORT).map(|c| c as u16)
+    }
+
+    /// Get all known cookies
+    ///
+    /// Returns a linked-list of all cookies cURL knows (expired ones, too).
+    ///
+    /// Corresponds to the `CURLINFO_COOKIELIST` option and may return an error
+    /// if the option isn't supported.
+    pub fn cookies(&self) -> Result<List, Error> {
+        unsafe {
+            let mut list = 0 as *mut _;
+            try!(cvt(curl_sys::curl_easy_getinfo(self.handle,
+                                                 curl_sys::CURLINFO_COOKIELIST,
+                                                 &mut list)));
+            Ok(List { raw: list })
+        }
     }
 
     // =========================================================================
@@ -2059,14 +2221,28 @@ impl<'a> Easy<'a> {
     }
 
     fn getopt_bytes(&self, opt: curl_sys::CURLINFO)
-                    -> Result<Option<&CStr>, Error> {
+                    -> Result<Option<&[u8]>, Error> {
         unsafe {
             let mut p = 0 as *const c_char;
             try!(cvt(curl_sys::curl_easy_getinfo(self.handle, opt, &mut p)));
             if p.is_null() {
                 Ok(None)
             } else {
-                Ok(Some(CStr::from_ptr(p)))
+                Ok(Some(CStr::from_ptr(p).to_bytes()))
+            }
+        }
+    }
+
+    fn getopt_str(&self, opt: curl_sys::CURLINFO)
+                    -> Result<Option<&str>, Error> {
+        match self.getopt_bytes(opt) {
+            Ok(None) => Ok(None),
+            Err(e) => Err(e),
+            Ok(Some(bytes)) => {
+                match str::from_utf8(bytes) {
+                    Ok(s) => Ok(Some(s)),
+                    Err(_) => Err(Error::new(curl_sys::CURLE_CONV_FAILED)),
+                }
             }
         }
     }
@@ -2104,12 +2280,33 @@ impl List {
             Ok(())
         }
     }
+
+    /// Returns an iterator over the nodes in this list.
+    pub fn iter(&self) -> Iter {
+        Iter { _me: self, cur: self.raw }
+    }
 }
 
 impl Drop for List {
     fn drop(&mut self) {
         unsafe {
             curl_sys::curl_slist_free_all(self.raw)
+        }
+    }
+}
+
+impl<'a> Iterator for Iter<'a> {
+    type Item = &'a [u8];
+
+    fn next(&mut self) -> Option<&'a [u8]> {
+        if self.cur.is_null() {
+            return None
+        }
+
+        unsafe {
+            let ret = Some(CStr::from_ptr((*self.cur).data).to_bytes());
+            self.cur = (*self.cur).next;
+            return ret
         }
     }
 }

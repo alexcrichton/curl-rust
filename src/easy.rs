@@ -1792,6 +1792,83 @@ impl<'a> Easy<'a> {
     }
 
     // =========================================================================
+    // getters
+
+    /// Get the last used URL
+    ///
+    /// In cases when you've asked libcurl to follow redirects, it may
+    /// not be the same value you set with `url`.
+    ///
+    /// This methods corresponds to the `CURLINFO_EFFECTIVE_URL` option.
+    ///
+    /// Returns `Ok(None)` if no effective url is listed or `Err` if an error
+    /// happens or the underlying bytes aren't valid utf-8.
+    pub fn effective_url(&self) -> Result<Option<&str>, Error> {
+        match self.effective_url_bytes() {
+            Ok(None) => Ok(None),
+            Err(e) => Err(e),
+            Ok(Some(bytes)) => {
+                match str::from_utf8(bytes) {
+                    Ok(s) => Ok(Some(s)),
+                    Err(_) => Err(Error::new(curl_sys::CURLE_CONV_FAILED)),
+                }
+            }
+        }
+    }
+
+    /// Get the last used URL, in bytes
+    ///
+    /// In cases when you've asked libcurl to follow redirects, it may
+    /// not be the same value you set with `url`.
+    ///
+    /// This methods corresponds to the `CURLINFO_EFFECTIVE_URL` option.
+    ///
+    /// Returns `Ok(None)` if no effective url is listed or `Err` if an error
+    /// happens or the underlying bytes aren't valid utf-8.
+    pub fn effective_url_bytes(&self) -> Result<Option<&[u8]>, Error> {
+        self.getopt_bytes(curl_sys::CURLINFO_EFFECTIVE_URL)
+            .map(|c| c.map(|c| c.to_bytes()))
+    }
+
+    /// Get the last response code
+    ///
+    /// The stored value will be zero if no server response code has been
+    /// received. Note that a proxy's CONNECT response should be read with
+    /// `http_connectcode` and not this.
+    ///
+    /// Corresponds to `CURLINFO_RESPONSE_CODE` and returns an error if this
+    /// option is not supported.
+    pub fn response_code(&self) -> Result<u32, Error> {
+        self.getopt_long(curl_sys::CURLINFO_RESPONSE_CODE).map(|c| c as u32)
+    }
+
+    /// Get the CONNECT response code
+    ///
+    /// Returns the last received HTTP proxy response code to a CONNECT request.
+    /// The returned value will be zero if no such response code was available.
+    ///
+    /// Corresponds to `CURLINFO_HTTP_CONNECTCODE` and returns an error if this
+    /// option is not supported.
+    pub fn http_connectcode(&self) -> Result<u32, Error> {
+        self.getopt_long(curl_sys::CURLINFO_HTTP_CONNECTCODE).map(|c| c as u32)
+    }
+
+    /// Get the remote time of the retrieved document
+    ///
+    /// Pass a pointer to a long to receive the remote time of the retrieved
+    /// document (in number of seconds since 1 jan 1970 in the GMT/UTC time
+    /// zone). If you get -1, it can be because of many reasons (it might be
+    /// unknown, the server might hide it or the server doesn't support the
+    /// command that tells document time etc) and the time of the document is
+    /// unknown.
+    ///
+    /// Note that you must tell the server to collect this information before
+    /// the transfer is made, by using the CURLOPT_FILETIME option to
+    /// curl_easy_setopt or you will unconditionally get a -1 back.
+    pub fn filetime(&self) -> Result<u64, Error> {
+    }
+
+    // =========================================================================
     // Other methods
 
     /// After options have been set, this will perform the transfer described by
@@ -1978,6 +2055,27 @@ impl<'a> Easy<'a> {
                     val: curl_sys::curl_off_t) -> Result<(), Error> {
         unsafe {
             cvt(curl_sys::curl_easy_setopt(self.handle, opt, val))
+        }
+    }
+
+    fn getopt_bytes(&self, opt: curl_sys::CURLINFO)
+                    -> Result<Option<&CStr>, Error> {
+        unsafe {
+            let mut p = 0 as *const c_char;
+            try!(cvt(curl_sys::curl_easy_getinfo(self.handle, opt, &mut p)));
+            if p.is_null() {
+                Ok(None)
+            } else {
+                Ok(Some(CStr::from_ptr(p)))
+            }
+        }
+    }
+
+    fn getopt_long(&self, opt: curl_sys::CURLINFO) -> Result<c_long, Error> {
+        unsafe {
+            let mut p = 0;
+            try!(cvt(curl_sys::curl_easy_getinfo(self.handle, opt, &mut p)));
+            Ok(p)
         }
     }
 }

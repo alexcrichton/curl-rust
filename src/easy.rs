@@ -253,9 +253,28 @@ impl<'a> Easy<'a> {
                 handle: handle,
                 _marker: marker::PhantomData,
             };
-            let _ = ret.signal(false);
-            ret
+            configure(&mut ret);
+            return ret
         }
+
+        fn configure(handle: &mut Easy) {
+            let _ = handle.signal(false);
+            ssl_configure(handle);
+        }
+
+        #[cfg(all(unix, not(target_os = "macos")))]
+        fn ssl_configure(handle: &mut Easy) {
+            let probe = ::openssl_sys::probe::probe();
+            if let Some(ref path) = probe.cert_file {
+                let _ = handle.cainfo(path);
+            }
+            if let Some(ref path) = probe.cert_dir {
+                let _ = handle.capath(path);
+            }
+        }
+
+        #[cfg(not(all(unix, not(target_os = "macos"))))]
+        fn ssl_configure(_handle: &mut Easy) {}
     }
 
     // =========================================================================
@@ -642,14 +661,12 @@ impl<'a> Easy<'a> {
     /// # Examples
     ///
     /// ```
-    /// use std::io::*;
     /// use std::str;
     ///
     /// use curl::easy::Easy;
     ///
     /// let mut headers = Vec::new();
     /// {
-    ///     let mut data_to_upload = b"foobar";
     ///     let mut callback = |header: &[u8]| {
     ///         headers.push(str::from_utf8(header).unwrap().to_string());
     ///         true

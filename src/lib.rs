@@ -46,6 +46,9 @@
 extern crate curl_sys;
 extern crate libc;
 
+#[cfg(all(unix, not(target_os = "macos")))]
+extern crate openssl_sys;
+
 use std::ffi::CStr;
 use std::str;
 use std::sync::{Once, ONCE_INIT};

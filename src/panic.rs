@@ -1,22 +1,30 @@
-struct Bomb {
-    armed: bool,
-}
+use std::any::Any;
+use std::cell::RefCell;
+use std::panic::{self, AssertUnwindSafe};
 
-impl Drop for Bomb {
-    fn drop(&mut self) {
-        if self.armed {
-            panic!("cannot panic in a callback in libcurl, panicking again to \
-                    abort the process safely")
+thread_local!(static LAST_ERROR: RefCell<Option<Box<Any + Send>>> = {
+    RefCell::new(None)
+});
+
+pub fn catch<T, F: FnOnce() -> T>(f: F) -> Option<T> {
+    if LAST_ERROR.with(|slot| slot.borrow().is_some()) {
+        return None
+    }
+
+    // Note that `AssertUnwindSafe` is used here as we prevent reentering
+    // arbitrary code due to the `LAST_ERROR` check above plus propagation of a
+    // panic after we return back to user code from C.
+    match panic::catch_unwind(AssertUnwindSafe(f)) {
+        Ok(ret) => Some(ret),
+        Err(e) => {
+            LAST_ERROR.with(|slot| *slot.borrow_mut() = Some(e));
+            None
         }
     }
 }
 
-pub fn catch<R, F: FnOnce() -> R>(f: F) -> Option<R> {
-    let mut bomb = Bomb { armed: true };
-    let ret = f();
-    bomb.armed = false;
-    Some(ret)
-}
-
 pub fn propagate() {
+    if let Some(t) = LAST_ERROR.with(|slot| slot.borrow_mut().take()) {
+        panic::resume_unwind(t)
+    }
 }

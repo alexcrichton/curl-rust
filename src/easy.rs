@@ -1,4 +1,11 @@
-//! dox
+//! Bindings to the "easy" libcurl API.
+//!
+//! This module contains some simple types like `Easy` and `List` which are just
+//! wrappers around the corresponding libcurl types. There's also a few enums
+//! scattered about for various options here and there.
+//!
+//! Most simple usage of libcurl will likely use the `Easy` structure here, and
+//! you can find more docs about its usage on that struct.
 
 use std::cell::Cell;
 use std::ffi::{CString, CStr};
@@ -20,13 +27,82 @@ use panic;
 
 /// Raw bindings to a libcurl "easy session".
 ///
-/// This type corresponds to the `CURL` type in libcurl.
+/// This type corresponds to the `CURL` type in libcurl, and is probably what
+/// you want for just sending off a simple HTTP request and fetching a response.
+/// Each easy handle can be thought of as a large builder before calling the
+/// final `perform` function.
+///
+/// There are many many configuration options for each `Easy` handle, and they
+/// should all have their own documentation indicating what it affects and how
+/// it interacts with other options. Some implementations of libcurl can use
+/// this handle to interact with many different protocols, although by default
+/// this crate only guarantees the HTTP/HTTPS protocols working.
+///
+/// This struct's associated lifetime indicates the lifetime of various pieces
+/// of borrowed data that can be configured. Examples of this are callbacks,
+/// POST data, and HTTP headers. The associated lifetime can be "reset" through
+/// the `reset_lifetime` function to allow changing the scope of parameters on a
+/// handle.
+///
+/// Note that almost all methods on this structure which configure various
+/// properties return a `Result`. This is largely used to detect whether the
+/// underlying implementation of libcurl actually implements the option being
+/// requested. If you're linked to a version of libcurl which doesn't support
+/// the option, then an error will be returned. Some options also perform some
+/// validation when they're set, and the error is returned through this vector.
+///
+/// ## Examples
+///
+/// Creating a handle which can be used later
+///
+/// ```
+/// use curl::easy::Easy;
+///
+/// let handle = Easy::new();
+/// ```
+///
+/// Send an HTTP request, writing the response to stdout.
+///
+/// ```
+/// use curl::easy::Easy;
+///
+/// let mut handle = Easy::new();
+/// handle.url("https://www.rust-lang.org/").unwrap();
+/// handle.perform().unwrap();
+/// ```
+///
+/// Collect all output of an HTTP request to a vector.
+///
+/// ```
+/// use curl::easy::Easy;
+///
+/// let mut data = Vec::new();
+/// {
+///     let mut callback = |d: &[u8]| {
+///         data.extend_from_slice(d);
+///         d.len()
+///     };
+///     let mut handle = Easy::new();
+///     handle.url("https://www.rust-lang.org/").unwrap();
+///     handle.write_function(&mut callback).unwrap();
+///     handle.perform().unwrap();
+/// }
+/// println!("{:?}", data);
+/// ```
+///
+/// More examples of various properties of an HTTP request can be found on the
+/// specific methods as well.
 pub struct Easy<'a> {
     handle: *mut curl_sys::CURL,
     _marker: marker::PhantomData<Cell<&'a i32>>,
 }
 
+// libcurl guarantees that a CURL handle is fine to be transferred so long as
+// it's not used concurrently, and we do that correctly ourselves.
 unsafe impl<'a> Send for Easy<'a> {}
+
+// This type is `Sync` as it adheres to the proper `self` conventions, which in
+// this case for libcurl basically means that everything takes `&mut self`.
 unsafe impl<'a> Sync for Easy<'a> {}
 
 /// Possible proxy types that libcurl currently understands.
@@ -173,10 +249,12 @@ impl<'a> Easy<'a> {
         unsafe {
             let handle = curl_sys::curl_easy_init();
             assert!(!handle.is_null());
-            Easy {
+            let mut ret = Easy {
                 handle: handle,
                 _marker: marker::PhantomData,
-            }
+            };
+            let _ = ret.signal(false);
+            ret
         }
     }
 
@@ -227,9 +305,15 @@ impl<'a> Easy<'a> {
     /// attempt to use signals to perform library functions.
     ///
     /// If this option is disabled then timeouts during name resolution will not
-    /// work unless libcurl is built against c-ares.
+    /// work unless libcurl is built against c-ares. Note that enabling this
+    /// option, however, may not cause libcurl to work with multiple threads.
     ///
-    /// By default this option is `true` and corresponds to `CURLOPT_NOSIGNAL`.
+    /// By default this option is `false` and corresponds to `CURLOPT_NOSIGNAL`.
+    /// Note that this default is **different than libcurl** as it is intended
+    /// that this library is threadsafe by default. See the [libcurl docs] for
+    /// some more information.
+    ///
+    /// [libcurl docs]: https://curl.haxx.se/libcurl/c/threadsafe.html
     pub fn signal(&mut self, signal: bool) -> Result<(), Error> {
         self.setopt_long(curl_sys::CURLOPT_NOSIGNAL,
                          (!signal) as c_long)
@@ -275,6 +359,21 @@ impl<'a> Easy<'a> {
     ///
     /// By default data is written to stdout, and this corresponds to the
     /// `CURLOPT_WRITEFUNCTION` and `CURLOPT_WRITEDATA` options.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::io::*;
+    /// use curl::easy::Easy;
+    ///
+    /// let mut callback = |d: &[u8]| {
+    ///     stdout().write(d).unwrap_or(0)
+    /// };
+    /// let mut handle = Easy::new();
+    /// handle.url("https://www.rust-lang.org/").unwrap();
+    /// handle.write_function(&mut callback).unwrap();
+    /// handle.perform().unwrap();
+    /// ```
     pub fn write_function<F>(&mut self, f: &'a mut F) -> Result<(), Error>
         where F: FnMut(&[u8]) -> usize
     {
@@ -321,6 +420,23 @@ impl<'a> Easy<'a> {
     ///
     /// By default data is read from stdin, and this corresponds to the
     /// `CURLOPT_READFUNCTION` and `CURLOPT_READDATA` options.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::io::*;
+    /// use curl::easy::Easy;
+    ///
+    /// let mut data_to_upload = &b"foobar"[..];
+    /// let mut callback = |into: &mut [u8]| {
+    ///     data_to_upload.read(into).unwrap_or(0)
+    /// };
+    /// let mut handle = Easy::new();
+    /// handle.url("https://example.com/login").unwrap();
+    /// handle.read_function(&mut callback).unwrap();
+    /// handle.post(true).unwrap();
+    /// handle.perform().unwrap();
+    /// ```
     pub fn read_function<F>(&mut self, f: &'a mut F) -> Result<(), Error>
         where F: FnMut(&mut [u8]) -> usize
     {
@@ -522,6 +638,30 @@ impl<'a> Easy<'a> {
     ///
     /// By default this option is not set and corresponds to the
     /// `CURLOPT_HEADERFUNCTION` and `CURLOPT_HEADERDATA` options.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::io::*;
+    /// use std::str;
+    ///
+    /// use curl::easy::Easy;
+    ///
+    /// let mut headers = Vec::new();
+    /// {
+    ///     let mut data_to_upload = b"foobar";
+    ///     let mut callback = |header: &[u8]| {
+    ///         headers.push(str::from_utf8(header).unwrap().to_string());
+    ///         true
+    ///     };
+    ///     let mut handle = Easy::new();
+    ///     handle.url("https://www.rust-lang.org/").unwrap();
+    ///     handle.header_function(&mut callback).unwrap();
+    ///     handle.perform().unwrap();
+    /// }
+    ///
+    /// println!("{:?}", headers);
+    /// ```
     pub fn header_function<F>(&mut self, f: &'a mut F) -> Result<(), Error>
         where F: FnMut(&[u8]) -> bool
     {
@@ -960,6 +1100,21 @@ impl<'a> Easy<'a> {
     ///
     /// By default this option is not set and corresponds to
     /// `CURLOPT_HTTPHEADER`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use curl::easy::{Easy, List};
+    ///
+    /// let mut list = List::new();
+    /// list.append("Foo: bar").unwrap();
+    /// list.append("Bar: baz").unwrap();
+    ///
+    /// let mut handle = Easy::new();
+    /// handle.url("https://www.rust-lang.org/").unwrap();
+    /// handle.http_headers(&list).unwrap();
+    /// handle.perform().unwrap();
+    /// ```
     pub fn http_headers(&mut self, list: &'a List) -> Result<(), Error> {
         self.setopt_ptr(curl_sys::CURLOPT_HTTPHEADER, list.raw as *const _)
     }
@@ -1822,7 +1977,7 @@ impl<'a> Easy<'a> {
     ///
     /// Returns `Ok(None)` if no effective url is listed or `Err` if an error
     /// happens or the underlying bytes aren't valid utf-8.
-    pub fn effective_url(&self) -> Result<Option<&str>, Error> {
+    pub fn effective_url(&mut self) -> Result<Option<&str>, Error> {
         self.getopt_str(curl_sys::CURLINFO_EFFECTIVE_URL)
     }
 
@@ -1835,7 +1990,7 @@ impl<'a> Easy<'a> {
     ///
     /// Returns `Ok(None)` if no effective url is listed or `Err` if an error
     /// happens or the underlying bytes aren't valid utf-8.
-    pub fn effective_url_bytes(&self) -> Result<Option<&[u8]>, Error> {
+    pub fn effective_url_bytes(&mut self) -> Result<Option<&[u8]>, Error> {
         self.getopt_bytes(curl_sys::CURLINFO_EFFECTIVE_URL)
     }
 
@@ -1847,7 +2002,7 @@ impl<'a> Easy<'a> {
     ///
     /// Corresponds to `CURLINFO_RESPONSE_CODE` and returns an error if this
     /// option is not supported.
-    pub fn response_code(&self) -> Result<u32, Error> {
+    pub fn response_code(&mut self) -> Result<u32, Error> {
         self.getopt_long(curl_sys::CURLINFO_RESPONSE_CODE).map(|c| c as u32)
     }
 
@@ -1858,7 +2013,7 @@ impl<'a> Easy<'a> {
     ///
     /// Corresponds to `CURLINFO_HTTP_CONNECTCODE` and returns an error if this
     /// option is not supported.
-    pub fn http_connectcode(&self) -> Result<u32, Error> {
+    pub fn http_connectcode(&mut self) -> Result<u32, Error> {
         self.getopt_long(curl_sys::CURLINFO_HTTP_CONNECTCODE).map(|c| c as u32)
     }
 
@@ -1876,7 +2031,7 @@ impl<'a> Easy<'a> {
     ///
     /// This corresponds to `CURLINFO_FILETIME` and may return an error if the
     /// option is not supported
-    pub fn filetime(&self) -> Result<Option<i64>, Error> {
+    pub fn filetime(&mut self) -> Result<Option<i64>, Error> {
         self.getopt_long(curl_sys::CURLINFO_FILETIME).map(|r| {
             if r == -1 {
                 None
@@ -1890,7 +2045,7 @@ impl<'a> Easy<'a> {
     ///
     /// Corresponds to `CURLINFO_REDIRECT_COUNT` and may return an error if the
     /// option isn't supported.
-    pub fn redirect_count(&self) -> Result<u32, Error> {
+    pub fn redirect_count(&mut self) -> Result<u32, Error> {
         self.getopt_long(curl_sys::CURLINFO_REDIRECT_COUNT).map(|c| c as u32)
     }
 
@@ -1904,7 +2059,7 @@ impl<'a> Easy<'a> {
     ///
     /// Corresponds to `CURLINFO_REDIRECT_URL` and may return an error if the
     /// url isn't valid utf-8 or an error happens.
-    pub fn redirect_url(&self) -> Result<Option<&str>, Error> {
+    pub fn redirect_url(&mut self) -> Result<Option<&str>, Error> {
         self.getopt_str(curl_sys::CURLINFO_REDIRECT_URL)
     }
 
@@ -1917,7 +2072,7 @@ impl<'a> Easy<'a> {
     /// URL.
     ///
     /// Corresponds to `CURLINFO_REDIRECT_URL` and may return an error.
-    pub fn redirect_url_bytes(&self) -> Result<Option<&[u8]>, Error> {
+    pub fn redirect_url_bytes(&mut self) -> Result<Option<&[u8]>, Error> {
         self.getopt_bytes(curl_sys::CURLINFO_REDIRECT_URL)
     }
 
@@ -1925,7 +2080,7 @@ impl<'a> Easy<'a> {
     ///
     /// Corresponds to `CURLINFO_HEADER_SIZE` and may return an error if the
     /// option isn't supported.
-    pub fn header_size(&self) -> Result<u64, Error> {
+    pub fn header_size(&mut self) -> Result<u64, Error> {
         self.getopt_long(curl_sys::CURLINFO_HEADER_SIZE).map(|c| c as u64)
     }
 
@@ -1933,7 +2088,7 @@ impl<'a> Easy<'a> {
     ///
     /// Corresponds to `CURLINFO_REQUEST_SIZE` and may return an error if the
     /// option isn't supported.
-    pub fn request_size(&self) -> Result<u64, Error> {
+    pub fn request_size(&mut self) -> Result<u64, Error> {
         self.getopt_long(curl_sys::CURLINFO_REQUEST_SIZE).map(|c| c as u64)
     }
 
@@ -1946,7 +2101,7 @@ impl<'a> Easy<'a> {
     ///
     /// Corresponds to `CURLINFO_CONTENT_TYPE` and may return an error if the
     /// option isn't supported.
-    pub fn content_type(&self) -> Result<Option<&str>, Error> {
+    pub fn content_type(&mut self) -> Result<Option<&str>, Error> {
         self.getopt_str(curl_sys::CURLINFO_CONTENT_TYPE)
     }
 
@@ -1959,7 +2114,7 @@ impl<'a> Easy<'a> {
     ///
     /// Corresponds to `CURLINFO_CONTENT_TYPE` and may return an error if the
     /// option isn't supported.
-    pub fn content_type_bytes(&self) -> Result<Option<&[u8]>, Error> {
+    pub fn content_type_bytes(&mut self) -> Result<Option<&[u8]>, Error> {
         self.getopt_bytes(curl_sys::CURLINFO_CONTENT_TYPE)
     }
 
@@ -1970,7 +2125,7 @@ impl<'a> Easy<'a> {
     ///
     /// Corresponds to `CURLINFO_OS_ERRNO` and may return an error if the
     /// option isn't supported.
-    pub fn os_errno(&self) -> Result<i32, Error> {
+    pub fn os_errno(&mut self) -> Result<i32, Error> {
         self.getopt_long(curl_sys::CURLINFO_OS_ERRNO).map(|c| c as i32)
     }
 
@@ -1982,7 +2137,7 @@ impl<'a> Easy<'a> {
     ///
     /// Corresponds to `CURLINFO_PRIMARY_IP` and may return an error if the
     /// option isn't supported.
-    pub fn primary_ip(&self) -> Result<Option<&str>, Error> {
+    pub fn primary_ip(&mut self) -> Result<Option<&str>, Error> {
         self.getopt_str(curl_sys::CURLINFO_PRIMARY_IP)
     }
 
@@ -1990,7 +2145,7 @@ impl<'a> Easy<'a> {
     ///
     /// Corresponds to `CURLINFO_PRIMARY_PORT` and may return an error if the
     /// option isn't supported.
-    pub fn primary_port(&self) -> Result<u16, Error> {
+    pub fn primary_port(&mut self) -> Result<u16, Error> {
         self.getopt_long(curl_sys::CURLINFO_PRIMARY_PORT).map(|c| c as u16)
     }
 
@@ -2002,7 +2157,7 @@ impl<'a> Easy<'a> {
     ///
     /// Corresponds to `CURLINFO_LOCAL_IP` and may return an error if the
     /// option isn't supported.
-    pub fn local_ip(&self) -> Result<Option<&str>, Error> {
+    pub fn local_ip(&mut self) -> Result<Option<&str>, Error> {
         self.getopt_str(curl_sys::CURLINFO_LOCAL_IP)
     }
 
@@ -2010,7 +2165,7 @@ impl<'a> Easy<'a> {
     ///
     /// Corresponds to `CURLINFO_LOCAL_PORT` and may return an error if the
     /// option isn't supported.
-    pub fn local_port(&self) -> Result<u16, Error> {
+    pub fn local_port(&mut self) -> Result<u16, Error> {
         self.getopt_long(curl_sys::CURLINFO_LOCAL_PORT).map(|c| c as u16)
     }
 
@@ -2020,7 +2175,7 @@ impl<'a> Easy<'a> {
     ///
     /// Corresponds to the `CURLINFO_COOKIELIST` option and may return an error
     /// if the option isn't supported.
-    pub fn cookies(&self) -> Result<List, Error> {
+    pub fn cookies(&mut self) -> Result<List, Error> {
         unsafe {
             let mut list = 0 as *mut _;
             try!(cvt(curl_sys::curl_easy_getinfo(self.handle,
@@ -2238,7 +2393,7 @@ impl<'a> Easy<'a> {
         }
     }
 
-    fn getopt_bytes(&self, opt: curl_sys::CURLINFO)
+    fn getopt_bytes(&mut self, opt: curl_sys::CURLINFO)
                     -> Result<Option<&[u8]>, Error> {
         unsafe {
             let mut p = 0 as *const c_char;
@@ -2251,7 +2406,7 @@ impl<'a> Easy<'a> {
         }
     }
 
-    fn getopt_str(&self, opt: curl_sys::CURLINFO)
+    fn getopt_str(&mut self, opt: curl_sys::CURLINFO)
                     -> Result<Option<&str>, Error> {
         match self.getopt_bytes(opt) {
             Ok(None) => Ok(None),
@@ -2265,7 +2420,7 @@ impl<'a> Easy<'a> {
         }
     }
 
-    fn getopt_long(&self, opt: curl_sys::CURLINFO) -> Result<c_long, Error> {
+    fn getopt_long(&mut self, opt: curl_sys::CURLINFO) -> Result<c_long, Error> {
         unsafe {
             let mut p = 0;
             try!(cvt(curl_sys::curl_easy_getinfo(self.handle, opt, &mut p)));

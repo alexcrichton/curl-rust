@@ -83,9 +83,7 @@ fn main() {
        .env("LD", &which("ld").unwrap())
        .env("VERBOSE", "1")
        .current_dir(&dst.join("build"))
-       .arg(src.join("curl/configure").to_str().unwrap()
-               .replace("C:\\", "/c/")
-               .replace("\\", "/"));
+       .arg(msys_compatible(&src.join("curl/configure")));
 
     if windows {
         cmd.arg("--with-winssl");
@@ -106,7 +104,7 @@ fn main() {
     cmd.arg("--enable-static=yes");
     cmd.arg("--enable-shared=no");
     cmd.arg("--enable-optimize");
-    cmd.arg(format!("--prefix={}", dst.display()));
+    cmd.arg(format!("--prefix={}", msys_compatible(&dst)));
 
     if target != host {
         cmd.arg(format!("--host={}", host));
@@ -154,6 +152,15 @@ fn which(cmd: &str) -> Option<PathBuf> {
     env::split_paths(&paths).map(|p| p.join(&cmd)).find(|p| {
         fs::metadata(p).is_ok()
     })
+}
+
+fn msys_compatible(path: &Path) -> String {
+    let path = path.to_str().unwrap();
+    if !cfg!(windows) {
+        return path.to_string()
+    }
+    path.replace("C:\\", "/c/")
+        .replace("\\", "/")
 }
 
 fn build_msvc(target: &str) {

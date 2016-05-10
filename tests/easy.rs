@@ -503,3 +503,34 @@ fn url_encoding() {
     assert_eq!(h.url_decode("foo%ff"), b"foo\xff");
     assert_eq!(h.url_decode(""), b"");
 }
+
+#[test]
+fn getters() {
+    let s = Server::new();
+    s.receive("\
+GET / HTTP/1.1\r\n\
+Host: 127.0.0.1:$PORT\r\n\
+Accept: */*\r\n\
+\r\n");
+    s.send("\
+HTTP/1.1 200 OK\r\n\
+\r\n");
+
+    let mut h = handle();
+    t!(h.url(&s.url("/")));
+    t!(h.cookie_file("/dev/null"));
+    t!(h.perform());
+    assert_eq!(t!(h.response_code()), 200);
+    assert_eq!(t!(h.redirect_count()), 0);
+    assert_eq!(t!(h.redirect_url()), None);
+    assert_eq!(t!(h.content_type()), None);
+
+    let addr = format!("http://{}/", s.addr());
+    assert_eq!(t!(h.effective_url()), Some(&addr[..]));
+
+    // TODO: test this
+    // let cookies = t!(h.cookies()).iter()
+    //                              .map(|s| s.to_vec())
+    //                              .collect::<Vec<_>>();
+    // assert_eq!(cookies.len(), 1);
+}

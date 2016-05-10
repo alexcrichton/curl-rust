@@ -81,6 +81,7 @@ fn main() {
     cmd.env("CC", compiler.path())
        .env("CFLAGS", cflags)
        .env("LD", &which("ld").unwrap())
+       .env("VERBOSE", "1")
        .current_dir(&dst.join("build"))
        .arg(src.join("curl/configure").to_str().unwrap()
                .replace("C:\\", "/c/")
@@ -128,6 +129,8 @@ fn main() {
     cmd.arg("--disable-smtp");
     cmd.arg("--disable-gopher");
     cmd.arg("--disable-manual");
+    cmd.arg("--disable-smb");
+    cmd.arg("--disable-sspi");
 
     run(&mut cmd);
     run(Command::new(make())

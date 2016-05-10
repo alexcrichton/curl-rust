@@ -538,3 +538,23 @@ HTTP/1.1 200 OK\r\n\
     //                              .collect::<Vec<_>>();
     // assert_eq!(cookies.len(), 1);
 }
+
+#[test]
+#[should_panic]
+fn panic_in_callback() {
+    let s = Server::new();
+    s.receive("\
+GET / HTTP/1.1\r\n\
+Host: 127.0.0.1:$PORT\r\n\
+Accept: */*\r\n\
+\r\n");
+    s.send("\
+HTTP/1.1 200 OK\r\n\
+\r\n");
+
+    let mut header = |_: &[u8]| panic!();
+    let mut h = handle();
+    t!(h.url(&s.url("/")));
+    t!(h.header_function(&mut header));
+    t!(h.perform());
+}

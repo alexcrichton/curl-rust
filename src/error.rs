@@ -283,7 +283,7 @@ impl Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        error::Error::description(self).fmt(f)
+        write!(f, "[{}] {}", self.code(), error::Error::description(self))
     }
 }
 

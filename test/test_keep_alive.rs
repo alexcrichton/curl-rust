@@ -52,7 +52,7 @@ pub fn test_post_get_requests() {
                 NEXT\r\n\r\n")
     );
 
-    let mut handle = handle().timeout(1000);
+    let mut handle = handle().timeout(2000);
     let res1 = handle.post(server::url("/"), "Hello").exec().unwrap();
     let res2 = handle.get(server::url("/next")).exec().unwrap();
 

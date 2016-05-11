@@ -12,7 +12,7 @@ install:
   - set PATH=%PATH%;C:\Users\appveyor\.cargo\bin
   - rustup update beta-x86_64-pc-windows-msvc
   - rustup default beta-x86_64-pc-windows-msvc
-  - rustup target add %TARGET%
+  - if NOT "%TARGET%" == "x86_64-pc-windows-msvc" rustup target add %TARGET%
   - if defined MSYS_BITS set PATH=C:\msys64\mingw%MSYS_BITS%\bin;C:\msys64\usr\bin;%PATH%
   - rustc -V
   - cargo -V

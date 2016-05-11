@@ -9,6 +9,7 @@ fn main() {
         cfg.include(&out);
     }
     cfg.header("curl/curl.h");
+    cfg.define("CURL_STATICLIB", None);
     cfg.field_name(|s, field| {
         if s == "curl_fileinfo" {
             field.replace("strings_", "strings.")

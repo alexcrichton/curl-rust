@@ -7,15 +7,19 @@ environment:
   - TARGET: x86_64-pc-windows-msvc
   - TARGET: i686-pc-windows-msvc
 install:
-  - ps: Start-FileDownload "https://static.rust-lang.org/dist/rust-nightly-${env:TARGET}.exe"
-  - rust-nightly-%TARGET%.exe /VERYSILENT /NORESTART /DIR="C:\Program Files (x86)\Rust"
-  - set PATH=%PATH%;C:\Program Files (x86)\Rust\bin
+  - curl -sSf -o rustup-init.exe https://win.rustup.rs/
+  - rustup-init.exe -y
+  - set PATH=%PATH%;C:\Users\appveyor\.cargo\bin
+  - rustup update beta-x86_64-pc-windows-msvc
+  - rustup default beta-x86_64-pc-windows-msvc
+  - rustup target add %TARGET%
   - if defined MSYS_BITS set PATH=C:\msys64\mingw%MSYS_BITS%\bin;C:\msys64\usr\bin;%PATH%
   - rustc -V
   - cargo -V
+  - set CARGO_TARGET_DIR=target
 
 build: false
 
 test_script:
-  - cargo test
-  - cargo run --manifest-path systest/Cargo.toml
+  - cargo test --target %TARGET%
+  - cargo run --manifest-path systest/Cargo.toml --target %TARGET%

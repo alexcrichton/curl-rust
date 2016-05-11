@@ -106,7 +106,8 @@ fn main() {
     cmd.arg("--enable-optimize");
     cmd.arg(format!("--prefix={}", msys_compatible(&dst)));
 
-    if target != host {
+    if target != host &&
+       (!target.contains("windows") || !host.contains("windows")) {
         cmd.arg(format!("--host={}", host));
         cmd.arg(format!("--target={}", target));
     }

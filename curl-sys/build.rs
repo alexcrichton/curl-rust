@@ -6,6 +6,7 @@ use std::ffi::OsString;
 use std::fs;
 use std::path::{PathBuf, Path};
 use std::process::Command;
+use std::io::ErrorKind;
 
 macro_rules! t {
     ($e:expr) => (match $e {
@@ -131,16 +132,30 @@ fn main() {
     cmd.arg("--disable-smb");
     cmd.arg("--disable-sspi");
 
-    run(&mut cmd);
+    run(&mut cmd, "sh");
     run(Command::new(make())
                 .arg(&format!("-j{}", env::var("NUM_JOBS").unwrap()))
                 .arg("install")
-                .current_dir(&dst.join("build")));
+                .current_dir(&dst.join("build")), "make");
 }
 
-fn run(cmd: &mut Command) {
+fn run(cmd: &mut Command, program: &str) {
     println!("running: {:?}", cmd);
-    assert!(t!(cmd.status()).success());
+    let status = match cmd.status() {
+        Ok(status) => status,
+        Err(ref e) if e.kind() == ErrorKind::NotFound => {
+            fail(&format!("failed to execute command: {}\nis `{}` not installed?",
+                          e, program));
+        }
+        Err(e) => fail(&format!("failed to execute command: {}", e)),
+    };
+    if !status.success() {
+        fail(&format!("command did not execute successfully, got: {}", status));
+    }
+}
+
+fn fail(s: &str) -> ! {
+    panic!("\n{}\n\nbuild script failed, must exit now", s)
 }
 
 fn make() -> &'static str {
@@ -202,7 +217,7 @@ fn build_msvc(target: &str) {
         let _ = fs::remove_file(&inc.join("lib/zlib_a.lib"));
         t!(fs::hard_link(inc.join("lib/zlib.lib"), inc.join("lib/zlib_a.lib")));
     }
-    run(&mut cmd);
+    run(&mut cmd, "nmake");
 
     let name = format!("libcurl-vc-{}-release-static-zlib-static-\
                         ipv6-sspi-winssl", machine);

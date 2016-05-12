@@ -1963,22 +1963,22 @@ impl<'a> Easy<'a> {
                          enable as c_long)
     }
 
-    /// Stores a private pointer-sized piece of data.
-    ///
-    /// This can be retrieved through the `private` function and otherwise
-    /// libcurl does not tamper with this value. This corresponds to
-    /// `CURLOPT_PRIVATE` and defaults to 0.
-    pub fn set_private(&mut self, private: usize) -> Result<(), Error> {
-        self.setopt_ptr(curl_sys::CURLOPT_PRIVATE, private as *const _)
-    }
+    // /// Stores a private pointer-sized piece of data.
+    // ///
+    // /// This can be retrieved through the `private` function and otherwise
+    // /// libcurl does not tamper with this value. This corresponds to
+    // /// `CURLOPT_PRIVATE` and defaults to 0.
+    // pub fn set_private(&mut self, private: usize) -> Result<(), Error> {
+    //     self.setopt_ptr(curl_sys::CURLOPT_PRIVATE, private as *const _)
+    // }
 
-    /// Fetches this handle's private pointer-sized piece of data.
-    ///
-    /// This corresponds to
-    /// `CURLINFO_PRIVATE` and defaults to 0.
-    pub fn private(&mut self) -> Result<usize, Error> {
-        self.getopt_ptr(curl_sys::CURLINFO_PRIVATE).map(|p| p as usize)
-    }
+    // /// Fetches this handle's private pointer-sized piece of data.
+    // ///
+    // /// This corresponds to
+    // /// `CURLINFO_PRIVATE` and defaults to 0.
+    // pub fn private(&mut self) -> Result<usize, Error> {
+    //     self.getopt_ptr(curl_sys::CURLINFO_PRIVATE).map(|p| p as usize)
+    // }
 
     // =========================================================================
     // getters
@@ -2308,8 +2308,8 @@ impl<'a> Easy<'a> {
         default_configure(self);
     }
 
-    /// Re-initializes this handle to all the default values *and* resets the
-    /// lifetime associated with this handle.
+    /// Re-initializes all lifetime-related configuration of this handle and
+    /// returns a handle with a new associated lifetime.
     ///
     /// The lifetime on this handle is currently used to prevent storing
     /// configuration which references data that lives shorter than this handle
@@ -2317,8 +2317,9 @@ impl<'a> Easy<'a> {
     /// to reuse an `Easy` handle as the lifetime of callbacks may be limited to
     /// a smaller scope.
     ///
-    /// This will have the same effect as `reset`, plus the additional effect of
-    /// returning a handle with a new arbitrary lifetime.
+    /// This will have the same effect as `reset` for any configuration option
+    /// that is also bounded by this handle's lifetime, plus the additional
+    /// effect of returning a handle with a new arbitrary lifetime.
     pub fn reset_lifetime<'b>(mut self) -> Easy<'b> {
         self.reset();
         let new = Easy { handle: self.handle, _marker: marker::PhantomData };

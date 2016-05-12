@@ -1963,6 +1963,23 @@ impl<'a> Easy<'a> {
                          enable as c_long)
     }
 
+    /// Stores a private pointer-sized piece of data.
+    ///
+    /// This can be retrieved through the `private` function and otherwise
+    /// libcurl does not tamper with this value. This corresponds to
+    /// `CURLOPT_PRIVATE` and defaults to 0.
+    pub fn set_private(&mut self, private: usize) -> Result<(), Error> {
+        self.setopt_ptr(curl_sys::CURLOPT_PRIVATE, private as *const _)
+    }
+
+    /// Fetches this handle's private pointer-sized piece of data.
+    ///
+    /// This corresponds to
+    /// `CURLINFO_PRIVATE` and defaults to 0.
+    pub fn private(&mut self) -> Result<usize, Error> {
+        self.getopt_ptr(curl_sys::CURLINFO_PRIVATE).map(|p| p as usize)
+    }
+
     // =========================================================================
     // getters
 
@@ -2395,13 +2412,21 @@ impl<'a> Easy<'a> {
     fn getopt_bytes(&mut self, opt: curl_sys::CURLINFO)
                     -> Result<Option<&[u8]>, Error> {
         unsafe {
-            let mut p = 0 as *const c_char;
-            try!(cvt(curl_sys::curl_easy_getinfo(self.handle, opt, &mut p)));
+            let p = try!(self.getopt_ptr(opt));
             if p.is_null() {
                 Ok(None)
             } else {
                 Ok(Some(CStr::from_ptr(p).to_bytes()))
             }
+        }
+    }
+
+    fn getopt_ptr(&mut self, opt: curl_sys::CURLINFO)
+                  -> Result<*const c_char, Error> {
+        unsafe {
+            let mut p = 0 as *const c_char;
+            try!(cvt(curl_sys::curl_easy_getinfo(self.handle, opt, &mut p)));
+            Ok(p)
         }
     }
 

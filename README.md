@@ -1,10 +1,11 @@
-# Curl-Rust
+# curl-rust
 
-libcurl bindings for Rust. **This project is in active development and
-could (will probably) break API compatibility at any time**.
+libcurl bindings for Rust
 
-[![Build Status](https://travis-ci.org/carllerche/curl-rust.svg?branch=master)](https://travis-ci.org/carllerche/curl-rust)
-[![crates.io](http://meritbadge.herokuapp.com/mio)](https://crates.io/crates/curl)
+[![Build Status](https://travis-ci.org/alexcrichton/curl-rust.svg?branch=master)](https://travis-ci.org/alexcrichton/curl-rust)
+[![Build status](https://ci.appveyor.com/api/projects/status/lx98wtbxhhhajpr9?svg=true)](https://ci.appveyor.com/project/alexcrichton/curl-rust)
+
+[Documentation](http://alexcrichton.com/curl-rust)
 
 ## Quick Start
 
@@ -113,3 +114,8 @@ fn main() {
 The bindings have been developed using curl version 7.24.0. They should
 work with any newer version of curl and possibly with older versions,
 but this has not been tested.
+
+## License
+
+The `curl-rust` crate is licensed under the MIT license, see `LICENSE` for more
+details.

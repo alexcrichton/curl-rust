@@ -2386,6 +2386,11 @@ impl<'a> Easy<'a> {
         }
     }
 
+    /// Get a pointer to the raw underlying CURL handle.
+    pub fn raw(&self) -> *mut curl_sys::CURL {
+        self.handle
+    }
+
     #[cfg(unix)]
     fn setopt_path(&mut self,
                    opt: curl_sys::CURLoption,

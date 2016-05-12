@@ -3,7 +3,7 @@
 libcurl bindings for Rust. **This project is in active development and
 could (will probably) break API compatibility at any time**.
 
-[![Build Status](https://travis-ci.org/carllerche/curl-rust.svg?branch=master)](https://travis-ci.org/carllerche/curl-rust)
+[![Build Status](https://travis-ci.org/alexcrichton/curl-rust.svg?branch=master)](https://travis-ci.org/alexcrichton/curl-rust)
 [![crates.io](http://meritbadge.herokuapp.com/mio)](https://crates.io/crates/curl)
 
 ## Quick Start
@@ -28,7 +28,7 @@ Response header names are automatically lower cased.
 ## Post / Put requests
 
 Both of these methods expect that a request body is provided. A request
-body can be a `&[u8]`, `&str`, or `&Reader`. For example:
+body can be a `&[u8]`, `&str`, `&String`, or `&mut Read`. For example:
 
 ```rust
 let resp = http::handle()

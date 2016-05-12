@@ -253,28 +253,9 @@ impl<'a> Easy<'a> {
                 handle: handle,
                 _marker: marker::PhantomData,
             };
-            configure(&mut ret);
+            default_configure(&mut ret);
             return ret
         }
-
-        fn configure(handle: &mut Easy) {
-            let _ = handle.signal(false);
-            ssl_configure(handle);
-        }
-
-        #[cfg(all(unix, not(target_os = "macos")))]
-        fn ssl_configure(handle: &mut Easy) {
-            let probe = ::openssl_sys::probe::probe();
-            if let Some(ref path) = probe.cert_file {
-                let _ = handle.cainfo(path);
-            }
-            if let Some(ref path) = probe.cert_dir {
-                let _ = handle.capath(path);
-            }
-        }
-
-        #[cfg(not(all(unix, not(target_os = "macos"))))]
-        fn ssl_configure(_handle: &mut Easy) {}
     }
 
     // =========================================================================
@@ -2307,6 +2288,7 @@ impl<'a> Easy<'a> {
         unsafe {
             curl_sys::curl_easy_reset(self.handle);
         }
+        default_configure(self);
     }
 
     /// Re-initializes this handle to all the default values *and* resets the
@@ -2445,6 +2427,25 @@ impl<'a> Easy<'a> {
         }
     }
 }
+
+fn default_configure(handle: &mut Easy) {
+    let _ = handle.signal(false);
+    ssl_configure(handle);
+}
+
+#[cfg(all(unix, not(target_os = "macos")))]
+fn ssl_configure(handle: &mut Easy) {
+    let probe = ::openssl_sys::probe::probe();
+    if let Some(ref path) = probe.cert_file {
+        let _ = handle.cainfo(path);
+    }
+    if let Some(ref path) = probe.cert_dir {
+        let _ = handle.capath(path);
+    }
+}
+
+#[cfg(not(all(unix, not(target_os = "macos"))))]
+fn ssl_configure(_handle: &mut Easy) {}
 
 impl<'a> Drop for Easy<'a> {
     fn drop(&mut self) {

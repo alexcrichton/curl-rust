@@ -52,3 +52,6 @@ after_success:
 notifications:
   email:
     on_success: never
+env:
+  global:
+    secure: LL8jOjJgR3txi+YmGqZTiCLqKYCZdHSRrropilczZwm5goTr75BYXStS4AMCsioENPskeazWRBomQZ003Or0nNliFV5VfnG4DK4Z0qCkEe5CpHEda2erF369Wq4hRGPKatbUj7aN36GokmZtaC6XZF/DmYxCE4zTSoMg8KI3Meo=

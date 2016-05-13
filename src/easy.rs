@@ -2312,30 +2312,33 @@ impl<'a> Easy<'a> {
         }
     }
 
-    /// Attempts to clone this handle, returning a new session handle with the
-    /// same options set for this handle.
-    ///
-    /// Internal state info and things like persistent connections ccannot be
-    /// transferred.
-    ///
-    /// # Errors
-    ///
-    /// If a new handle could not be allocated or another error happens, `None`
-    /// is returned.
-    pub fn try_clone<'b>(&mut self) -> Option<Easy<'b>> {
-        unsafe {
-            let handle = curl_sys::curl_easy_duphandle(self.handle);
-            if handle.is_null() {
-                None
-            } else {
-                Some(Easy {
-                    handle: handle,
-                    data: blank_data(),
-                    _marker: marker::PhantomData,
-                })
-            }
-        }
-    }
+    // TODO: I don't think this is safe, you can drop this which has all the
+    //       callback data and then the next is use-after-free
+    //
+    // /// Attempts to clone this handle, returning a new session handle with the
+    // /// same options set for this handle.
+    // ///
+    // /// Internal state info and things like persistent connections ccannot be
+    // /// transferred.
+    // ///
+    // /// # Errors
+    // ///
+    // /// If a new handle could not be allocated or another error happens, `None`
+    // /// is returned.
+    // pub fn try_clone<'b>(&mut self) -> Option<Easy<'b>> {
+    //     unsafe {
+    //         let handle = curl_sys::curl_easy_duphandle(self.handle);
+    //         if handle.is_null() {
+    //             None
+    //         } else {
+    //             Some(Easy {
+    //                 handle: handle,
+    //                 data: blank_data(),
+    //                 _marker: marker::PhantomData,
+    //             })
+    //         }
+    //     }
+    // }
 
     /// Re-initializes this handle to the default values.
     ///

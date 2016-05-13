@@ -1,10 +1,54 @@
 language: rust
+matrix:
+  include:
+    - os: linux
+      rust: beta
+      env: TARGET=x86_64-unknown-linux-gnu
+    - os: linux
+      rust: beta
+      env: TARGET=i686-unknown-linux-gnu
+      addons:
+        apt:
+          packages:
+            - gcc-multilib
+            - libssl-dev:i386
+    - os: linux
+      rust: beta
+      env: TARGET=x86_64-unknown-linux-gnu LIBCURL_NO_PKG_CONFIG=1
+    - os: linux
+      rust: beta
+      env: TARGET=i686-unknown-linux-gnu LIBCURL_NO_PKG_CONFIG=1
+      addons:
+        apt:
+          packages:
+            - gcc-multilib
+            - libssl-dev:i386
+    - os: osx
+      rust: beta
+      env: TARGET=x86_64-apple-darwin
+    - os: osx
+      rust: beta
+      env: TARGET=i686-apple-darwin
+    # - os: linux
+    #   rust: beta
+    #   env: TARGET=x86_64-unknown-linux-gnu
+    - os: linux
+      rust: nightly
+      env: TARGET=x86_64-unknown-linux-gnu
 sudo: false
-rust:
-  - stable
-
-os:
-  - linux
-
+before_script:
+  - pip install 'travis-cargo<0.2' --user && export PATH=$HOME/.local/bin:$PATH
+  - curl https://static.rust-lang.org/rustup.sh |
+    sh -s -- --add-target=$TARGET --disable-sudo -y --prefix=`rustc --print sysroot`
 script:
-  - cargo test
+  - export CARGO_TARGET_DIR=`pwd`/target
+  - curl --version
+  - cargo test --target $TARGET
+  - cargo run --manifest-path systest/Cargo.toml --target $TARGET
+  - cargo doc --no-deps --target $TARGET
+  - cargo doc --no-deps -p curl-sys --target $TARGET
+after_success:
+  - travis-cargo --only nightly doc-upload
+notifications:
+  email:
+    on_success: never

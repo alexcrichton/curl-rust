@@ -4,8 +4,9 @@ extern crate gcc;
 use std::env;
 use std::ffi::OsString;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 use std::process::Command;
+use std::io::ErrorKind;
 
 macro_rules! t {
     ($e:expr) => (match $e {
@@ -14,7 +15,6 @@ macro_rules! t {
     })
 }
 
-#[allow(deprecated)] // needed for `connect()`, since Rust 1.1 is supported
 fn main() {
     let target = env::var("TARGET").unwrap();
     let host = env::var("HOST").unwrap();
@@ -29,10 +29,22 @@ fn main() {
     }
 
     // Next, fall back and try to use pkg-config if its available.
-    match pkg_config::find_library("libcurl") {
-        Ok(..) => return,
-        Err(e) => println!("Couldn't find libcurl from \
-                           pkgconfig ({:?}), compiling it from source...", e),
+    if !target.contains("windows") {
+        match pkg_config::find_library("libcurl") {
+            Ok(lib) => {
+                for path in lib.include_paths.iter() {
+                    println!("cargo:include={}", path.display());
+                }
+                return
+            }
+            Err(e) => println!("Couldn't find libcurl from \
+                               pkgconfig ({:?}), compiling it from source...", e),
+        }
+    }
+
+    if !Path::new("curl/.git").exists() {
+        let _ = Command::new("git").args(&["submodule", "update", "--init"])
+                                   .status();
     }
 
     println!("cargo:rustc-link-search={}/lib", dst.display());
@@ -59,13 +71,21 @@ fn main() {
         cflags.push(arg);
         cflags.push(" ");
     }
+
+    // Can't run ./configure directly on msys2 b/c we're handing in
+    // Windows-style paths (those starting with C:\), but it chokes on those.
+    // For that reason we build up a shell script with paths converted to
+    // posix versions hopefully...
+    //
+    // Also apparently the buildbots choke unless we manually set LD, who knows
+    // why?!
     cmd.env("CC", compiler.path())
        .env("CFLAGS", cflags)
        .env("LD", &which("ld").unwrap())
+       .env("VERBOSE", "1")
        .current_dir(&dst.join("build"))
-       .arg(src.join("curl/configure").to_str().unwrap()
-               .replace("C:\\", "/c/")
-               .replace("\\", "/"));
+       .arg(msys_compatible(&src.join("curl/configure")));
+
     if windows {
         cmd.arg("--with-winssl");
     } else {
@@ -85,9 +105,10 @@ fn main() {
     cmd.arg("--enable-static=yes");
     cmd.arg("--enable-shared=no");
     cmd.arg("--enable-optimize");
-    cmd.arg(format!("--prefix={}", dst.display()));
+    cmd.arg(format!("--prefix={}", msys_compatible(&dst)));
 
-    if target != host {
+    if target != host &&
+       (!target.contains("windows") || !host.contains("windows")) {
         cmd.arg(format!("--host={}", host));
         cmd.arg(format!("--target={}", target));
     }
@@ -108,38 +129,33 @@ fn main() {
     cmd.arg("--disable-smtp");
     cmd.arg("--disable-gopher");
     cmd.arg("--disable-manual");
+    cmd.arg("--disable-smb");
+    cmd.arg("--disable-sspi");
 
-    // Can't run ./configure directly on msys2 b/c we're handing in
-    // Windows-style paths (those starting with C:\), but it chokes on those.
-    // For that reason we build up a shell script with paths converted to
-    // posix versions hopefully...
-    //
-    // Also apparently the buildbots choke unless we manually set LD, who knows
-    // why?!
-    run(&mut cmd);
+    run(&mut cmd, "sh");
     run(Command::new(make())
                 .arg(&format!("-j{}", env::var("NUM_JOBS").unwrap()))
-                .current_dir(&dst.join("build")));
-
-    // Don't run `make install` because apparently it's a little buggy on mingw
-    // for windows.
-    let _ = fs::create_dir_all(&dst.join("lib/pkgconfig"));
-
-    // Which one does windows generate? Who knows!
-    let p1 = dst.join("build/lib/.libs/libcurl.a");
-    let p2 = dst.join("build/lib/.libs/libcurl.lib");
-    if fs::metadata(&p1).is_ok() {
-        t!(fs::copy(&p1, &dst.join("lib/libcurl.a")));
-    } else {
-        t!(fs::copy(&p2, &dst.join("lib/libcurl.a")));
-    }
-    t!(fs::copy(&dst.join("build/libcurl.pc"),
-                  &dst.join("lib/pkgconfig/libcurl.pc")));
+                .arg("install")
+                .current_dir(&dst.join("build")), "make");
 }
 
-fn run(cmd: &mut Command) {
+fn run(cmd: &mut Command, program: &str) {
     println!("running: {:?}", cmd);
-    assert!(t!(cmd.status()).success());
+    let status = match cmd.status() {
+        Ok(status) => status,
+        Err(ref e) if e.kind() == ErrorKind::NotFound => {
+            fail(&format!("failed to execute command: {}\nis `{}` not installed?",
+                          e, program));
+        }
+        Err(e) => fail(&format!("failed to execute command: {}", e)),
+    };
+    if !status.success() {
+        fail(&format!("command did not execute successfully, got: {}", status));
+    }
+}
+
+fn fail(s: &str) -> ! {
+    panic!("\n{}\n\nbuild script failed, must exit now", s)
 }
 
 fn make() -> &'static str {
@@ -152,6 +168,15 @@ fn which(cmd: &str) -> Option<PathBuf> {
     env::split_paths(&paths).map(|p| p.join(&cmd)).find(|p| {
         fs::metadata(p).is_ok()
     })
+}
+
+fn msys_compatible(path: &Path) -> String {
+    let path = path.to_str().unwrap();
+    if !cfg!(windows) {
+        return path.to_string()
+    }
+    path.replace("C:\\", "/c/")
+        .replace("\\", "/")
 }
 
 fn build_msvc(target: &str) {
@@ -192,7 +217,7 @@ fn build_msvc(target: &str) {
         let _ = fs::remove_file(&inc.join("lib/zlib_a.lib"));
         t!(fs::hard_link(inc.join("lib/zlib.lib"), inc.join("lib/zlib_a.lib")));
     }
-    run(&mut cmd);
+    run(&mut cmd, "nmake");
 
     let name = format!("libcurl-vc-{}-release-static-zlib-static-\
                         ipv6-sspi-winssl", machine);

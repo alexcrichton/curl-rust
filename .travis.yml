@@ -45,8 +45,8 @@ script:
   - curl --version
   - cargo test --target $TARGET
   - cargo run --manifest-path systest/Cargo.toml --target $TARGET
-  - cargo doc --no-deps --target $TARGET
-  - cargo doc --no-deps -p curl-sys --target $TARGET
+  - cargo doc --no-deps
+  - cargo doc --no-deps -p curl-sys
 after_success:
   - travis-cargo --only nightly doc-upload
 notifications:

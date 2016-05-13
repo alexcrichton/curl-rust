@@ -32,13 +32,12 @@ use curl::easy::Easy;
 // Capture output into a local `Vec`.
 fn main() {
     let mut dst = Vec::new();
-    let mut write = |data: &[u8]| {
-        dst.extend_from_slice(data);
-        data.len()
-    };
     let mut easy = Easy::new();
     easy.url("https://www.rust-lang.org/").unwrap();
-    easy.write_function(&mut write).unwrap();
+    easy.write_function(|data| {
+        dst.extend_from_slice(data);
+        data.len()
+    }).unwrap();
     easy.perform().unwrap();
 }
 ```

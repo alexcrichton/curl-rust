@@ -77,11 +77,11 @@ extern crate curl;
 use curl::easy::{Easy, List};
 
 fn main() {
-    let mut list = List::new();
-    list.append("Authorization: Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==").unwrap();
-
     let mut easy = Easy::new();
     easy.url("http://www.example.com").unwrap();
+
+    let mut list = List::new();
+    list.append("Authorization: Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==").unwrap();
     easy.http_headers(list).unwrap();
     easy.perform().unwrap();
 }

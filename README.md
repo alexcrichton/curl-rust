@@ -56,13 +56,12 @@ use curl::easy::Easy;
 
 fn main() {
     let mut data = "this is the body".as_bytes();
-    let mut read = |slice: &mut [u8]|  {
-        data.read(slice).unwrap_or(0)
-    };
 
     let mut easy = Easy::new();
     easy.url("http://www.example.com/upload").unwrap();
-    easy.read_function(&mut read).unwrap();
+    easy.read_function(|buf| {
+        data.read(buf).unwrap_or(0)
+    }).unwrap();
     easy.post(true).unwrap();
     easy.perform().unwrap();
 }
@@ -83,7 +82,7 @@ fn main() {
 
     let mut easy = Easy::new();
     easy.url("http://www.example.com").unwrap();
-    easy.http_headers(&list).unwrap();
+    easy.http_headers(list).unwrap();
     easy.perform().unwrap();
 }
 ```

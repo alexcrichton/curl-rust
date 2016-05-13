@@ -11,7 +11,6 @@ use std::cell::Cell;
 use std::ffi::{CString, CStr};
 use std::io::SeekFrom;
 use std::marker;
-use std::mem;
 use std::path::Path;
 use std::slice;
 use std::str;
@@ -95,6 +94,17 @@ use panic;
 pub struct Easy<'a> {
     handle: *mut curl_sys::CURL,
     _marker: marker::PhantomData<Cell<&'a i32>>,
+    data: Box<EasyData<'a>>,
+}
+
+struct EasyData<'a> {
+    write: Box<FnMut(&[u8]) -> usize + Send + 'a>,
+    read: Box<FnMut(&mut [u8]) -> usize + Send + 'a>,
+    seek: Box<FnMut(SeekFrom) -> SeekResult + Send + 'a>,
+    debug: Box<FnMut(InfoType, &[u8]) + Send + 'a>,
+    header: Box<FnMut(&[u8]) -> bool + Send + 'a>,
+    progress: Box<FnMut(f64, f64, f64, f64) -> bool + Send + 'a>,
+    header_list: List,
 }
 
 // libcurl guarantees that a CURL handle is fine to be transferred so long as
@@ -226,7 +236,6 @@ pub struct Iter<'a> {
 }
 
 unsafe impl Send for List {}
-unsafe impl Sync for List {}
 
 fn cvt(r: curl_sys::CURLcode) -> Result<(), Error> {
     if r == curl_sys::CURLE_OK {
@@ -251,6 +260,7 @@ impl<'a> Easy<'a> {
             assert!(!handle.is_null());
             let mut ret = Easy {
                 handle: handle,
+                data: blank_data(),
                 _marker: marker::PhantomData,
             };
             default_configure(&mut ret);
@@ -366,32 +376,36 @@ impl<'a> Easy<'a> {
     /// use std::io::*;
     /// use curl::easy::Easy;
     ///
-    /// let mut callback = |d: &[u8]| {
-    ///     stdout().write(d).unwrap_or(0)
-    /// };
     /// let mut handle = Easy::new();
     /// handle.url("https://www.rust-lang.org/").unwrap();
-    /// handle.write_function(&mut callback).unwrap();
+    /// handle.write_function(|data| {
+    ///     stdout().write(data).unwrap_or(0)
+    /// }).unwrap();
     /// handle.perform().unwrap();
     /// ```
-    pub fn write_function<F>(&mut self, f: &'a mut F) -> Result<(), Error>
-        where F: FnMut(&[u8]) -> usize
+    pub fn write_function<F>(&mut self, f: F) -> Result<(), Error>
+        where F: FnMut(&[u8]) -> usize + Send + 'a
     {
+        self._write_function(Box::new(f))
+    }
+
+    fn _write_function(&mut self, f: Box<FnMut(&[u8]) -> usize + Send + 'a>)
+                       -> Result<(), Error> {
+        self.data.write = f;
         try!(self.setopt_ptr(curl_sys::CURLOPT_WRITEFUNCTION,
-                             cb::<F> as usize as *const c_char));
+                             cb as usize as *const c_char));
+        let ptr = &*self.data as *const _;
         try!(self.setopt_ptr(curl_sys::CURLOPT_WRITEDATA,
-                             f as *mut F as *const c_char));
+                             ptr as *const c_char));
         return Ok(());
 
-        unsafe extern fn cb<F>(ptr: *mut c_char,
-                               size: size_t,
-                               nmemb: size_t,
-                               data: *mut c_void) -> size_t
-            where F: FnMut(&[u8]) -> usize,
-        {
+        unsafe extern fn cb(ptr: *mut c_char,
+                            size: size_t,
+                            nmemb: size_t,
+                            data: *mut c_void) -> size_t {
             let input = slice::from_raw_parts(ptr as *const u8, size * nmemb);
             panic::catch(|| {
-                (*(data as *mut F))(input)
+                ((*(data as *mut EasyData)).write)(input)
             }).unwrap_or(!0)
         }
     }
@@ -428,33 +442,37 @@ impl<'a> Easy<'a> {
     /// use curl::easy::Easy;
     ///
     /// let mut data_to_upload = &b"foobar"[..];
-    /// let mut callback = |into: &mut [u8]| {
-    ///     data_to_upload.read(into).unwrap_or(0)
-    /// };
     /// let mut handle = Easy::new();
     /// handle.url("https://example.com/login").unwrap();
-    /// handle.read_function(&mut callback).unwrap();
+    /// handle.read_function(|into| {
+    ///     data_to_upload.read(into).unwrap_or(0)
+    /// }).unwrap();
     /// handle.post(true).unwrap();
     /// handle.perform().unwrap();
     /// ```
-    pub fn read_function<F>(&mut self, f: &'a mut F) -> Result<(), Error>
-        where F: FnMut(&mut [u8]) -> usize
+    pub fn read_function<F>(&mut self, f: F) -> Result<(), Error>
+        where F: FnMut(&mut [u8]) -> usize + Send + 'a
     {
+        self._read_function(Box::new(f))
+    }
+
+    fn _read_function(&mut self, f: Box<FnMut(&mut [u8]) -> usize + Send + 'a>)
+                      -> Result<(), Error> {
+        self.data.read = f;
         try!(self.setopt_ptr(curl_sys::CURLOPT_READFUNCTION,
-                             cb::<F> as usize as *const c_char));
+                             cb as usize as *const c_char));
+        let ptr = &*self.data as *const _;
         try!(self.setopt_ptr(curl_sys::CURLOPT_READDATA,
-                             f as *mut F as *const c_char));
+                             ptr as *const c_char));
         return Ok(());
 
-        unsafe extern fn cb<F>(ptr: *mut c_char,
-                               size: size_t,
-                               nmemb: size_t,
-                               data: *mut c_void) -> size_t
-            where F: FnMut(&mut [u8]) -> usize,
-        {
+        unsafe extern fn cb(ptr: *mut c_char,
+                            size: size_t,
+                            nmemb: size_t,
+                            data: *mut c_void) -> size_t {
             let input = slice::from_raw_parts_mut(ptr as *mut u8, size * nmemb);
             panic::catch(|| {
-                (*(data as *mut F))(input)
+                ((*(data as *mut EasyData)).read)(input)
             }).unwrap_or(!0)
         }
     }
@@ -478,27 +496,32 @@ impl<'a> Easy<'a> {
     ///
     /// By default data this option is not set, and this corresponds to the
     /// `CURLOPT_SEEKFUNCTION` and `CURLOPT_SEEKDATA` options.
-    pub fn seek_function<F>(&mut self, f: &'a mut F) -> Result<(), Error>
-        where F: FnMut(SeekFrom) -> SeekResult
+    pub fn seek_function<F>(&mut self, f: F) -> Result<(), Error>
+        where F: FnMut(SeekFrom) -> SeekResult + Send + 'a
     {
+        self._seek_function(Box::new(f))
+    }
+
+    fn _seek_function(&mut self, f: Box<FnMut(SeekFrom) -> SeekResult + Send + 'a>)
+                      -> Result<(), Error> {
+        self.data.seek = f;
         try!(self.setopt_ptr(curl_sys::CURLOPT_SEEKFUNCTION,
-                             cb::<F> as usize as *const c_char));
+                             cb as usize as *const c_char));
+        let ptr = &*self.data as *const _;
         try!(self.setopt_ptr(curl_sys::CURLOPT_SEEKDATA,
-                             f as *mut F as *const c_char));
+                             ptr as *const c_char));
         return Ok(());
 
-        unsafe extern fn cb<F>(data: *mut c_void,
-                               offset: curl_sys::curl_off_t,
-                               origin: c_int) -> c_int
-            where F: FnMut(SeekFrom) -> SeekResult
-        {
+        unsafe extern fn cb(data: *mut c_void,
+                            offset: curl_sys::curl_off_t,
+                            origin: c_int) -> c_int {
             panic::catch(|| {
                 let from = if origin == libc::SEEK_SET {
                     SeekFrom::Start(offset as u64)
                 } else {
                     panic!("unknown origin from libcurl: {}", origin);
                 };
-                (*(data as *mut F))(from) as c_int
+                ((*(data as *mut EasyData)).seek)(from) as c_int
             }).unwrap_or(!0)
         }
     }
@@ -534,25 +557,31 @@ impl<'a> Easy<'a> {
     ///
     /// By default this function calls an internal method and corresponds to
     /// `CURLOPT_XFERINFOFUNCTION` and `CURLOPT_XFERINFODATA`.
-    pub fn progress_function<F>(&mut self, f: &'a mut F) -> Result<(), Error>
-        where F: FnMut(f64, f64, f64, f64) -> bool
+    pub fn progress_function<F>(&mut self, f: F) -> Result<(), Error>
+        where F: FnMut(f64, f64, f64, f64) -> bool + Send + 'a
     {
+        self._progress_function(Box::new(f))
+    }
+
+    fn _progress_function(&mut self,
+                          f: Box<FnMut(f64, f64, f64, f64) -> bool + Send + 'a>)
+                          -> Result<(), Error> {
+        self.data.progress = f;
         try!(self.setopt_ptr(curl_sys::CURLOPT_PROGRESSFUNCTION,
-                             cb::<F> as usize as *const c_char));
+                             cb as usize as *const c_char));
+        let ptr = &*self.data as *const _;
         try!(self.setopt_ptr(curl_sys::CURLOPT_PROGRESSDATA,
-                             f as *mut F as *const c_char));
+                             ptr as *const c_char));
         return Ok(());
 
-        unsafe extern fn cb<F>(data: *mut c_void,
-                               dltotal: c_double,
-                               dlnow: c_double,
-                               ultotal: c_double,
-                               ulnow: c_double) -> c_int
-            where F: FnMut(f64, f64, f64, f64) -> bool
-        {
+        unsafe extern fn cb(data: *mut c_void,
+                            dltotal: c_double,
+                            dlnow: c_double,
+                            ultotal: c_double,
+                            ulnow: c_double) -> c_int {
             let keep_going = panic::catch(|| {
-                let fnptr = &mut *(data as *mut F);
-                fnptr(dltotal, dlnow, ultotal, ulnow)
+                let data = &mut *(data as *mut EasyData);
+                (data.progress)(dltotal, dlnow, ultotal, ulnow)
             }).unwrap_or(false);
             if keep_going {
                 0
@@ -570,23 +599,28 @@ impl<'a> Easy<'a> {
     ///
     /// By default this option is not set and corresponds to the
     /// `CURLOPT_DEBUGFUNCTION` and `CURLOPT_DEBUGDATA` options.
-    pub fn debug_function<F>(&mut self, f: &'a mut F) -> Result<(), Error>
-        where F: FnMut(InfoType, &[u8])
+    pub fn debug_function<F>(&mut self, f: F) -> Result<(), Error>
+        where F: FnMut(InfoType, &[u8]) + Send + 'a
     {
+        self._debug_function(Box::new(f))
+    }
+
+    fn _debug_function(&mut self, f: Box<FnMut(InfoType, &[u8]) + Send + 'a>)
+                       -> Result<(), Error> {
+        self.data.debug = f;
         try!(self.setopt_ptr(curl_sys::CURLOPT_DEBUGFUNCTION,
-                             cb::<F> as usize as *const c_char));
+                             cb as usize as *const c_char));
+        let ptr = &*self.data as *const _;
         try!(self.setopt_ptr(curl_sys::CURLOPT_DEBUGDATA,
-                             f as *mut F as *const c_char));
+                             ptr as *const c_char));
         return Ok(());
 
         // TODO: expose `handle`? is that safe?
-        unsafe extern fn cb<F>(_handle: *mut curl_sys::CURL,
-                               kind: curl_sys::curl_infotype,
-                               data: *mut c_char,
-                               size: size_t,
-                               userptr: *mut c_void) -> c_int
-            where F: FnMut(InfoType, &[u8])
-        {
+        unsafe extern fn cb(_handle: *mut curl_sys::CURL,
+                            kind: curl_sys::curl_infotype,
+                            data: *mut c_char,
+                            size: size_t,
+                            userptr: *mut c_void) -> c_int {
             panic::catch(|| {
                 let data = slice::from_raw_parts(data as *const u8, size);
                 let kind = match kind {
@@ -599,7 +633,7 @@ impl<'a> Easy<'a> {
                     curl_sys::CURLINFO_SSL_DATA_OUT => InfoType::SslDataOut,
                     _ => return,
                 };
-                (*(userptr as *mut F))(kind, data)
+                ((*(userptr as *mut EasyData)).debug)(kind, data)
             });
             return 0
         }
@@ -648,37 +682,41 @@ impl<'a> Easy<'a> {
     ///
     /// let mut headers = Vec::new();
     /// {
-    ///     let mut callback = |header: &[u8]| {
-    ///         headers.push(str::from_utf8(header).unwrap().to_string());
-    ///         true
-    ///     };
     ///     let mut handle = Easy::new();
     ///     handle.url("https://www.rust-lang.org/").unwrap();
-    ///     handle.header_function(&mut callback).unwrap();
+    ///     handle.header_function(|header| {
+    ///         headers.push(str::from_utf8(header).unwrap().to_string());
+    ///         true
+    ///     }).unwrap();
     ///     handle.perform().unwrap();
     /// }
     ///
     /// println!("{:?}", headers);
     /// ```
-    pub fn header_function<F>(&mut self, f: &'a mut F) -> Result<(), Error>
-        where F: FnMut(&[u8]) -> bool
+    pub fn header_function<F>(&mut self, f: F) -> Result<(), Error>
+        where F: FnMut(&[u8]) -> bool + Send + 'a
     {
+        self._header_function(Box::new(f))
+    }
+
+    fn _header_function(&mut self, f: Box<FnMut(&[u8]) -> bool + Send + 'a>)
+                        -> Result<(), Error> {
+        self.data.header = f;
         try!(self.setopt_ptr(curl_sys::CURLOPT_HEADERFUNCTION,
-                             cb::<F> as usize as *const c_char));
+                             cb as usize as *const c_char));
+        let ptr = &*self.data as *const _;
         try!(self.setopt_ptr(curl_sys::CURLOPT_HEADERDATA,
-                             f as *mut F as *const c_char));
+                             ptr as *const c_char));
         return Ok(());
 
-        unsafe extern fn cb<F>(buffer: *mut c_char,
-                               size: size_t,
-                               nitems: size_t,
-                               userptr: *mut c_void) -> size_t
-            where F: FnMut(&[u8]) -> bool
-        {
+        unsafe extern fn cb(buffer: *mut c_char,
+                            size: size_t,
+                            nitems: size_t,
+                            userptr: *mut c_void) -> size_t {
             let keep_going = panic::catch(|| {
                 let data = slice::from_raw_parts(buffer as *const u8,
                                                  size * nitems);
-                (*(userptr as *mut F))(data)
+                ((*(userptr as *mut EasyData)).header)(data)
             }).unwrap_or(false);
             if keep_going {
                 size * nitems
@@ -1110,11 +1148,13 @@ impl<'a> Easy<'a> {
     ///
     /// let mut handle = Easy::new();
     /// handle.url("https://www.rust-lang.org/").unwrap();
-    /// handle.http_headers(&list).unwrap();
+    /// handle.http_headers(list).unwrap();
     /// handle.perform().unwrap();
     /// ```
-    pub fn http_headers(&mut self, list: &'a List) -> Result<(), Error> {
-        self.setopt_ptr(curl_sys::CURLOPT_HTTPHEADER, list.raw as *const _)
+    pub fn http_headers(&mut self, list: List) -> Result<(), Error> {
+        self.data.header_list = list;
+        let ptr = self.data.header_list.raw;
+        self.setopt_ptr(curl_sys::CURLOPT_HTTPHEADER, ptr as *const _)
     }
 
     // /// Add some headers to send to the HTTP proxy.
@@ -2290,6 +2330,7 @@ impl<'a> Easy<'a> {
             } else {
                 Some(Easy {
                     handle: handle,
+                    data: blank_data(),
                     _marker: marker::PhantomData,
                 })
             }
@@ -2306,25 +2347,6 @@ impl<'a> Easy<'a> {
             curl_sys::curl_easy_reset(self.handle);
         }
         default_configure(self);
-    }
-
-    /// Re-initializes all lifetime-related configuration of this handle and
-    /// returns a handle with a new associated lifetime.
-    ///
-    /// The lifetime on this handle is currently used to prevent storing
-    /// configuration which references data that lives shorter than this handle
-    /// (e.g. preventing use-after-free). This can make it difficult, however,
-    /// to reuse an `Easy` handle as the lifetime of callbacks may be limited to
-    /// a smaller scope.
-    ///
-    /// This will have the same effect as `reset` for any configuration option
-    /// that is also bounded by this handle's lifetime, plus the additional
-    /// effect of returning a handle with a new arbitrary lifetime.
-    pub fn reset_lifetime<'b>(mut self) -> Easy<'b> {
-        self.reset();
-        let new = Easy { handle: self.handle, _marker: marker::PhantomData };
-        mem::forget(self);
-        new
     }
 
     /// Receives data from a connected socket.
@@ -2452,6 +2474,18 @@ impl<'a> Easy<'a> {
             Ok(p)
         }
     }
+}
+
+fn blank_data<'a>() -> Box<EasyData<'a>> {
+    Box::new(EasyData {
+        write: Box::new(|_| panic!()),
+        read: Box::new(|_| panic!()),
+        seek: Box::new(|_| panic!()),
+        debug: Box::new(|_, _| panic!()),
+        header: Box::new(|_| panic!()),
+        progress: Box::new(|_, _, _, _| panic!()),
+        header_list: List::new(),
+    })
 }
 
 fn default_configure(handle: &mut Easy) {

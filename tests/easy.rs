@@ -68,13 +68,12 @@ Accept: */*\r\n\
 
     let mut all = Vec::<u8>::new();
     {
-        let mut write = |data: &[u8]| {
-            all.extend(data);
-            data.len()
-        };
         let mut handle = handle();
         t!(handle.url(&s.url("/")));
-        t!(handle.write_function(&mut write));
+        t!(handle.write_function(|data| {
+            all.extend(data);
+            data.len()
+        }));
         t!(handle.perform());
     }
     assert_eq!(all, b"hello!");
@@ -98,12 +97,11 @@ Accept: */*\r\n\
             dl = a;
             true
         };
-        let mut write = sink;
         let mut handle = handle();
         t!(handle.url(&s.url("/foo")));
         t!(handle.progress(true));
         t!(handle.progress_function(&mut cb));
-        t!(handle.write_function(&mut write));
+        t!(handle.write_function(sink));
         t!(handle.perform());
     }
     assert!(hits > 0);
@@ -127,15 +125,13 @@ Hello!");
 
     let mut headers = Vec::new();
     {
-        let mut header = |h: &[u8]| {
-            headers.push(str::from_utf8(h).unwrap().to_string());
-            true
-        };
-        let mut write = sink;
         let mut handle = handle();
         t!(handle.url(&s.url("/")));
-        t!(handle.header_function(&mut header));
-        t!(handle.write_function(&mut write));
+        t!(handle.header_function(|h| {
+            headers.push(str::from_utf8(h).unwrap().to_string());
+            true
+        }));
+        t!(handle.write_function(sink));
         t!(handle.perform());
     }
     assert_eq!(headers, vec![
@@ -216,7 +212,7 @@ HTTP/1.1 200 OK\r\n\
     let mut h = handle();
     t!(h.url("http://example.com/"));
     t!(h.proxy(&s.url("/")));
-    t!(h.http_headers(&header));
+    t!(h.http_headers(header));
     t!(h.perform());
 }
 
@@ -333,16 +329,17 @@ HTTP/1.1 200 OK\r\n\
 \r\n");
 
     let mut data = "data\n".as_bytes();
-    let mut read = |buf: &mut [u8]| data.read(buf).unwrap();
     let mut list = List::new();
     t!(list.append("Expect:"));
     let mut h = handle();
     t!(h.url(&s.url("/")));
     t!(h.put(true));
-    t!(h.read_function(&mut read));
+    t!(h.read_function(|buf| {
+        data.read(buf).unwrap()
+    }));
     t!(h.in_filesize(5));
     t!(h.upload(true));
-    t!(h.http_headers(&list));
+    t!(h.http_headers(list));
     t!(h.perform());
 }
 
@@ -406,12 +403,13 @@ HTTP/1.1 200 OK\r\n\
 \r\n");
 
     let mut data = "data\n".as_bytes();
-    let mut read = |buf: &mut [u8]| data.read(buf).unwrap();
     let mut h = handle();
     t!(h.url(&s.url("/")));
     t!(h.post(true));
     t!(h.post_field_size(5));
-    t!(h.read_function(&mut read));
+    t!(h.read_function(|buf| {
+        data.read(buf).unwrap()
+    }));
     t!(h.perform());
 }
 
@@ -470,7 +468,7 @@ HTTP/1.1 200 OK\r\n\
     t!(custom.append("Accept:"));
     let mut h = handle();
     t!(h.url(&s.url("/")));
-    t!(h.http_headers(&custom));
+    t!(h.http_headers(custom));
     t!(h.perform());
 }
 
@@ -552,9 +550,8 @@ Accept: */*\r\n\
 HTTP/1.1 200 OK\r\n\
 \r\n");
 
-    let mut header = |_: &[u8]| panic!();
     let mut h = handle();
     t!(h.url(&s.url("/")));
-    t!(h.header_function(&mut header));
+    t!(h.header_function(|_| panic!()));
     t!(h.perform());
 }

@@ -1,5 +1,7 @@
 # curl-rust
 
+**This project is in active development and	could (will probably) break API compatibility at any time**.
+
 libcurl bindings for Rust
 
 [![Build Status](https://travis-ci.org/alexcrichton/curl-rust.svg?branch=master)](https://travis-ci.org/alexcrichton/curl-rust)

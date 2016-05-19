@@ -7,6 +7,7 @@
 //! Most simple usage of libcurl will likely use the `Easy` structure here, and
 //! you can find more docs about its usage on that struct.
 
+use std::cell::Cell;
 use std::ffi::{CString, CStr};
 use std::io::SeekFrom;
 use std::path::Path;
@@ -2274,6 +2275,131 @@ impl Easy {
     // =========================================================================
     // Other methods
 
+    /// After options have been set, this will perform the transfer described by
+    /// the options.
+    ///
+    /// This performs the request in a synchronous fashion. This can be used
+    /// multiple times for one easy handle and libcurl will attempt to re-use
+    /// the same connection for all transfers.
+    ///
+    /// This method will preserve all options configured in this handle for the
+    /// next request, and if that is not desired then the options can be
+    /// manually reset or the `reset` method can be called.
+    ///
+    /// Note that this method takes `&self`, which is quite important! This
+    /// allows applications to close over the handle in various callbacks to
+    /// call methods like `unpause_write` and `unpause_read` while a transfer is
+    /// in progress.
+    pub fn perform(&self) -> Result<(), Error> {
+        unsafe {
+            self.reset_scoped_configuration();
+        }
+        self.do_perform()
+    }
+
+    fn do_perform(&self) -> Result<(), Error> {
+        if self.data.running.get() {
+            return Err(Error::new(curl_sys::CURLE_FAILED_INIT))
+        }
+
+        self.data.running.set(true);
+        let ret = unsafe {
+            cvt(curl_sys::curl_easy_perform(self.handle))
+        };
+        self.data.running.set(false);
+        panic::propagate();
+        return ret
+    }
+
+    /// Creates a new scoped transfer which can be used to set callbacks and
+    /// data which only live for the scope of the returned object.
+    ///
+    /// An `Easy` handle is often reused between different requests to cache
+    /// connections to servers, but often the lifetime of the data as part of
+    /// each transfer is unique. This function serves as an ability to share an
+    /// `Easy` across many transfers while ergonomically using possibly
+    /// stack-local data as part of each transfer.
+    ///
+    /// Configuration can be set on the `Easy` and then a `Transfer` can be
+    /// created to set scoped configuration (like callbacks). Finally, the
+    /// `perform` method on the `Transfer` function can be used.
+    ///
+    /// When the `Transfer` option is dropped then all configuration set on the
+    /// transfer itself will be reset.
+    pub fn transfer<'data, 'easy>(&'easy mut self) -> Transfer<'easy, 'data> {
+        // NB: We need to be *very* careful here about how we treat the
+        //     callbacks set on a `Transfer`! It may be possible for that type
+        //     to leak, and if we were to continue using the callbacks there
+        //     there could possibly be use-after-free as they reference
+        //     stack-local data. As a result, we attempt to be robust in the
+        //     face of leaking a `Transfer` (one that didn't drop).
+        //
+        // What this basically amounts to is that whenever we poke libcurl that
+        // *might* call one of those callbacks or use some of that data we clear
+        // out everything that would have been set on a `Transfer` and instead
+        // start fresh. This call to `reset_scoped_configuration` will reset all
+        // callbacks based on the state in *this* handle which we know is still
+        // alive, so it's safe to configure.
+        //
+        // Also note that because we have to be resilient in the face of
+        // `Transfer` leaks anyway we just don't bother with a `Drop` impl and
+        // instead rely on this always running to reset any configuration.
+        assert!(!self.data.running.get());
+        unsafe {
+            self.reset_scoped_configuration();
+        }
+        Transfer {
+            data: Box::new(TransferData::default()),
+            easy: self,
+        }
+    }
+
+    // See note above in `transfer` for what this is doing.
+    unsafe fn reset_scoped_configuration(&self) {
+        let EasyData {
+            ref write,
+            ref read,
+            ref seek,
+            ref debug,
+            ref header,
+            ref progress,
+            ref running,
+            header_list: _,
+        } = *self.data;
+
+        // Can't reset while running, we'll detect this elsewhere
+        if running.get() {
+            return
+        }
+
+        let ptr = |set| {
+            if set {
+                &*self.data as *const _ as *mut c_void
+            } else {
+                0 as *mut _
+            }
+        };
+
+        let write = ptr(write.is_some());
+        let read = ptr(read.is_some());
+        let seek = ptr(seek.is_some());
+        let debug = ptr(debug.is_some());
+        let header = ptr(header.is_some());
+        let progress = ptr(progress.is_some());
+
+        let _ = self.set_write_function(easy_write_cb, write);
+        let _ = self.set_read_function(easy_read_cb, read);
+        let _ = self.set_seek_function(easy_seek_cb, seek);
+        let _ = self.set_debug_function(easy_debug_cb, debug);
+        let _ = self.set_header_function(easy_header_cb, header);
+        let _ = self.set_progress_function(easy_progress_cb, progress);
+
+        // Clear out the post fields which may be referencing stale data.
+        // curl_sys::curl_easy_setopt(easy,
+        //                            curl_sys::CURLOPT_POSTFIELDS,
+        //                            0 as *const i32);
+    }
+
     /// Unpause reading on a connection.
     ///
     /// Using this function, you can explicitly unpause a connection that was
@@ -2315,67 +2441,6 @@ impl Easy {
             try!(cvt(curl_sys::curl_easy_pause(self.handle,
                                                curl_sys::CURLPAUSE_SEND_CONT)));
             Ok(())
-        }
-    }
-
-    /// After options have been set, this will perform the transfer described by
-    /// the options.
-    ///
-    /// This performs the request in a synchronous fashion. This can be used
-    /// multiple times for one easy handle and libcurl will attempt to re-use
-    /// the same connection for all transfers.
-    ///
-    /// This method will preserve all options configured in this handle for the
-    /// next request, and if that is not desired then the options can be
-    /// manually reset or the `reset` method can be called.
-    pub fn perform(&mut self) -> Result<(), Error> {
-        let ret = unsafe {
-            self.data.reset_scoped_configuration(self.handle);
-            cvt(curl_sys::curl_easy_perform(self.handle))
-        };
-        panic::propagate();
-        return ret
-    }
-
-    /// Creates a new scoped transfer which can be used to set callbacks and
-    /// data which only live for the scope of the returned object.
-    ///
-    /// An `Easy` handle is often reused between different requests to cache
-    /// connections to servers, but often the lifetime of the data as part of
-    /// each transfer is unique. This function serves as an ability to share an
-    /// `Easy` across many transfers while ergonomically using possibly
-    /// stack-local data as part of each transfer.
-    ///
-    /// Configuration can be set on the `Easy` and then a `Transfer` can be
-    /// created to set scoped configuration (like callbacks). Finally, the
-    /// `perform` method on the `Transfer` function can be used.
-    ///
-    /// When the `Transfer` option is dropped then all configuration set on the
-    /// transfer itself will be reset.
-    pub fn transfer<'data, 'easy>(&'easy mut self) -> Transfer<'easy, 'data> {
-        // NB: We need to be *very* careful here about how we treat the
-        //     callbacks set on a `Transfer`! It may be possible for that type
-        //     to leak, and if we were to continue using the callbacks there
-        //     there could possibly be use-after-free as they reference
-        //     stack-local data. As a result, we attempt to be robust in the
-        //     face of leaking a `Transfer` (one that didn't drop).
-        //
-        // What this basically amounts to is that whenever we poke libcurl that
-        // *might* call one of those callbacks or use some of that data we clear
-        // out everything that would have been set on a `Transfer` and instead
-        // start fresh. This call to `reset_scoped_configuration` will reset all
-        // callbacks based on the state in *this* handle which we know is still
-        // alive, so it's safe to configure.
-        //
-        // Also note that because we have to be resilient in the face of
-        // `Transfer` leaks anyway we just don't bother with a `Drop` impl and
-        // instead rely on this always running to reset any configuration.
-        unsafe {
-            self.data.reset_scoped_configuration(self.handle);
-        }
-        Transfer {
-            data: Box::new(EasyData::default()),
-            easy: self,
         }
     }
 

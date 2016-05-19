@@ -1,6 +1,6 @@
 extern crate curl;
 
-use std::cell::RefCell;
+use std::cell::{RefCell, Cell};
 use std::io::Read;
 use std::rc::Rc;
 use std::str;
@@ -13,7 +13,7 @@ macro_rules! t {
     })
 }
 
-use curl::easy::{Easy, List, WriteError, ReadError};
+use curl::easy::{Easy, List, WriteError, ReadError, Transfer};
 
 use server::Server;
 mod server;
@@ -588,4 +588,56 @@ HTTP/1.1 200 OK\r\n\
     t!(h.http_headers(list));
     let err = h.perform().unwrap_err();
     assert!(err.is_aborted_by_callback());
+}
+
+#[test]
+fn pause_write_then_resume() {
+    let s = Server::new();
+    s.receive("\
+GET / HTTP/1.1\r\n\
+Host: 127.0.0.1:$PORT\r\n\
+Accept: */*\r\n\
+\r\n");
+    s.send("\
+HTTP/1.1 200 OK\r\n\
+\r\n
+a\n
+b");
+
+    let mut h = handle();
+    t!(h.url(&s.url("/")));
+    t!(h.progress(true));
+
+    struct State<'a, 'b> {
+        paused: Cell<bool>,
+        unpaused: Cell<bool>,
+        transfer: RefCell<Transfer<'a, 'b>>,
+    }
+
+    let h = Rc::new(State {
+        paused: Cell::new(false),
+        unpaused: Cell::new(false),
+        transfer: RefCell::new(h.transfer()),
+    });
+
+    let h2 = h.clone();
+    t!(h.transfer.borrow_mut().write_function(move |data| {
+        if h2.unpaused.get() {
+            h2.unpaused.set(false);
+            Ok(data.len())
+        } else {
+            h2.paused.set(true);
+            Err(WriteError::Pause)
+        }
+    }));
+    let h2 = h.clone();
+    t!(h.transfer.borrow_mut().progress_function(move |_, _, _, _| {
+        if h2.paused.get() {
+            h2.paused.set(false);
+            h2.unpaused.set(true);
+            t!(h2.transfer.borrow().unpause_write());
+        }
+        true
+    }));
+    t!(h.transfer.borrow().perform());
 }

@@ -1,6 +1,8 @@
 extern crate curl;
 
+use std::cell::RefCell;
 use std::io::Read;
+use std::rc::Rc;
 use std::str;
 use std::time::Duration;
 

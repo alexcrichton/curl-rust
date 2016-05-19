@@ -107,6 +107,13 @@ fn main() {
 }
 ```
 
+## Multiple requests
+
+The libcurl library provides support for sending multiple requests
+simultaneously through the "multi" interface. This is currently bound in the
+`multi` module of this crate and provides the ability to execute multiple
+transfers simultaneously. For more information, see that module.
+
 ## Version Support
 
 The bindings have been developed using curl version 7.24.0. They should

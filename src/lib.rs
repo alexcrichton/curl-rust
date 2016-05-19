@@ -61,6 +61,7 @@ mod version;
 
 mod panic;
 pub mod easy;
+pub mod multi;
 
 /// Initializes the underlying libcurl library.
 ///

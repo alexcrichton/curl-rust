@@ -874,6 +874,9 @@ pub const CURL_POLL_IN: c_int = 1;
 pub const CURL_POLL_OUT: c_int = 2;
 pub const CURL_POLL_INOUT: c_int = 3;
 pub const CURL_POLL_REMOVE: c_int = 4;
+pub const CURL_CSELECT_IN: c_int = 1;
+pub const CURL_CSELECT_OUT: c_int = 2;
+pub const CURL_CSELECT_ERR: c_int = 4;
 pub const CURL_SOCKET_TIMEOUT: curl_socket_t = CURL_SOCKET_BAD;
 
 pub type curl_socket_callback = extern fn(*mut CURL,

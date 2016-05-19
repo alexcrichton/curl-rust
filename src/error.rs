@@ -418,6 +418,11 @@ impl MultiError {
         self.code == curl_sys::CURLM_UNKNOWN_OPTION
     }
 
+    /// Returns whether this error corresponds to CURLM_CALL_MULTI_PERFORM.
+    pub fn is_call_perform(&self) -> bool {
+        self.code == curl_sys::CURLM_CALL_MULTI_PERFORM
+    }
+
     // /// Returns whether this error corresponds to CURLM_ADDED_ALREADY.
     // pub fn is_added_already(&self) -> bool {
     //     self.code == curl_sys::CURLM_ADDED_ALREADY

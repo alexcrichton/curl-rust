@@ -493,16 +493,21 @@ impl<'e, 'm, 'cb> Drop for EasyHandle<'e, 'm, 'cb> {
 
 impl<'multi, 'cb> Message<'multi, 'cb> {
     /// If this message indicates that a transfer has finished, returns the
-    /// result code of the transfer.
-    pub fn result(&self) -> Option<u32> {
+    /// result of the transfer in `Some`.
+    ///
+    /// If the message doesn't indicate that a transfer has finished, then
+    /// `None` is returned.
+    pub fn result(&self) -> Option<Result<(), MultiError>> {
         unsafe {
             if (*self.ptr).msg == curl_sys::CURLMSG_DONE {
-                Some((*self.ptr).data as u32)
+                Some(cvt((*self.ptr).data as curl_sys::CURLMcode))
             } else {
                 None
             }
         }
     }
+
+    // TODO: expose the easy handle somehow...
 }
 
 impl Events {

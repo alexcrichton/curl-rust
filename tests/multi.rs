@@ -1,3 +1,5 @@
+#![cfg(unix)]
+
 extern crate curl;
 extern crate mio;
 
@@ -71,7 +73,7 @@ Accept: */*\r\n\
 
     let mut done = 0;
     m.messages(|msg| {
-        msg.result().unwrap();
+        msg.result().unwrap().unwrap();
         done += 1;
     });
     assert_eq!(done, 2);
@@ -133,6 +135,13 @@ HTTP/1.1 200 OK\r\n\
         next_token: 1,
         token_map: HashMap::new(),
     }));
+
+    let mut done = 0;
+    m.messages(|m| {
+        m.result().unwrap().unwrap();
+        done += 1;
+    });
+    assert_eq!(done, 1);
 
     struct Handler<'a, 'b: 'a> {
         multi: &'a Multi<'b>,

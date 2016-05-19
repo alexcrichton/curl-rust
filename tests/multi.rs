@@ -146,19 +146,19 @@ HTTP/1.1 200 OK\r\n\
     let mut e = t!(e.remove());
     assert_eq!(t!(e.response_code()), 200);
 
-    struct Handler<'a, 'b: 'a> {
-        multi: &'a Multi<'b>,
+    struct Handler<'a> {
+        multi: &'a Multi,
         cur_timeout: Option<mio::Timeout>,
         next_token: usize,
         token_map: HashMap<usize, Socket>,
     }
 
-    impl<'a, 'b> mio::Handler for Handler<'a, 'b> {
+    impl<'a> mio::Handler for Handler<'a> {
         type Timeout = ();
         type Message = Message;
 
         fn ready(&mut self,
-                 l: &mut mio::EventLoop<Handler<'a, 'b>>,
+                 l: &mut mio::EventLoop<Handler<'a>>,
                  token: mio::Token,
                  events: mio::EventSet) {
             let socket = self.token_map[&token.as_usize()];
@@ -179,7 +179,7 @@ HTTP/1.1 200 OK\r\n\
         }
 
         fn timeout(&mut self,
-                   l: &mut mio::EventLoop<Handler<'a, 'b>>,
+                   l: &mut mio::EventLoop<Handler<'a>>,
                    _msg: ()) {
             if t!(self.multi.timeout()) == 0 {
                 l.shutdown();
@@ -187,7 +187,7 @@ HTTP/1.1 200 OK\r\n\
         }
 
         fn notify(&mut self,
-                  l: &mut mio::EventLoop<Handler<'a, 'b>>,
+                  l: &mut mio::EventLoop<Handler<'a>>,
                   msg: Message) {
             match msg {
                 Message::Timeout(dur) => {

@@ -1,7 +1,5 @@
 //! Multi - initiating multiple requests simultaneously
 
-use std::cell::Cell;
-use std::marker;
 use std::time::Duration;
 
 use libc::{c_int, c_char, c_void, c_long};
@@ -24,26 +22,22 @@ use panic;
 /// the APIs correspond pretty closely with this crate.
 ///
 /// [multi tutorial]: https://curl.haxx.se/libcurl/c/libcurl-multi.html
-///
-/// The lifetime attached to this handle is the lifetime of the callbacks that
-/// are set for the multi interface.
-pub struct Multi<'cb> {
+pub struct Multi {
     raw: *mut curl_sys::CURLM,
-    _marker: marker::PhantomData<Cell<&'cb i32>>,
-    data: Box<MultiData<'cb>>,
+    data: Box<MultiData>,
 }
 
-struct MultiData<'cb> {
-    socket: Box<FnMut(Socket, SocketEvents, usize) + Send + 'cb>,
-    timer: Box<FnMut(Option<Duration>) -> bool + Send + 'cb>,
+struct MultiData {
+    socket: Box<FnMut(Socket, SocketEvents, usize) + Send>,
+    timer: Box<FnMut(Option<Duration>) -> bool + Send>,
 }
 
 /// Message from the `messages` function of a multi handle.
 ///
 /// Currently only indicates whether a transfer is done.
-pub struct Message<'multi, 'cb: 'multi> {
+pub struct Message<'multi> {
     ptr: *mut curl_sys::CURLMsg,
-    _multi: &'multi Multi<'cb>,
+    _multi: &'multi Multi,
 }
 
 /// Wrapper around an easy handle while it's owned by a multi handle.
@@ -51,8 +45,8 @@ pub struct Message<'multi, 'cb: 'multi> {
 /// Once an easy handle has been added to a multi handle then it can no longer
 /// be used via `perform`. This handle is also used to remove the easy handle
 /// from the multi handle when desired.
-pub struct EasyHandle<'easy, 'multi, 'cb: 'multi> {
-    multi: &'multi Multi<'cb>,
+pub struct EasyHandle<'easy, 'multi> {
+    multi: &'multi Multi,
     easy: Option<Easy<'easy>>,
 }
 
@@ -75,17 +69,16 @@ pub struct SocketEvents {
 /// Raw underlying socket type that the multi handles use
 pub type Socket = curl_sys::curl_socket_t;
 
-impl<'cb> Multi<'cb> {
+impl Multi {
     /// Creates a new multi session through which multiple HTTP transfers can be
     /// initiated.
-    pub fn new() -> Multi<'cb> {
+    pub fn new() -> Multi {
         unsafe {
             ::init();
             let ptr = curl_sys::curl_multi_init();
             assert!(!ptr.is_null());
             Multi {
                 raw: ptr,
-                _marker: marker::PhantomData,
                 data: Box::new(MultiData {
                     socket: Box::new(|_, _, _| ()),
                     timer: Box::new(|_| true),
@@ -109,13 +102,13 @@ impl<'cb> Multi<'cb> {
     /// The third `usize` parameter is a custom value set by the `assign` method
     /// below.
     pub fn socket_function<F>(&mut self, f: F) -> Result<(), MultiError>
-        where F: FnMut(Socket, SocketEvents, usize) + Send + 'cb,
+        where F: FnMut(Socket, SocketEvents, usize) + Send + 'static,
     {
         self._socket_function(Box::new(f))
     }
 
     fn _socket_function(&mut self,
-                        f: Box<FnMut(Socket, SocketEvents, usize) + Send + 'cb>)
+                        f: Box<FnMut(Socket, SocketEvents, usize) + Send>)
                         -> Result<(), MultiError>
     {
         self.data.socket = f;
@@ -203,13 +196,13 @@ impl<'cb> Multi<'cb> {
     /// error. This callback can be used instead of, or in addition to,
     /// `get_timeout`.
     pub fn timer_function<F>(&mut self, f: F) -> Result<(), MultiError>
-        where F: FnMut(Option<Duration>) -> bool + Send + 'cb,
+        where F: FnMut(Option<Duration>) -> bool + Send + 'static,
     {
         self._timer_function(Box::new(f))
     }
 
     fn _timer_function(&mut self,
-                        f: Box<FnMut(Option<Duration>) -> bool + Send + 'cb>)
+                        f: Box<FnMut(Option<Duration>) -> bool + Send>)
                         -> Result<(), MultiError>
     {
         self.data.timer = f;
@@ -265,7 +258,7 @@ impl<'cb> Multi<'cb> {
     /// it again with `remove` on the returned handle - even when a transfer
     /// with that specific easy handle is completed.
     pub fn add<'e, 'm>(&'m self, easy: Easy<'e>)
-               -> Result<EasyHandle<'e, 'm, 'cb>, MultiError> {
+               -> Result<EasyHandle<'e, 'm>, MultiError> {
         unsafe {
             try!(cvt(curl_sys::curl_multi_add_handle(self.raw, easy.raw())));
         }
@@ -454,13 +447,13 @@ fn cvt(code: curl_sys::CURLMcode) -> Result<(), MultiError> {
     }
 }
 
-impl<'cb> Drop for Multi<'cb> {
+impl Drop for Multi {
     fn drop(&mut self) {
         let _ = self.close();
     }
 }
 
-impl<'e, 'm, 'cb> EasyHandle<'e, 'm, 'cb> {
+impl<'e, 'm> EasyHandle<'e, 'm> {
     /// Femove this easy handle from a multi session
     ///
     /// Removes this easy handle from the multi handle. This will make the
@@ -488,13 +481,13 @@ impl<'e, 'm, 'cb> EasyHandle<'e, 'm, 'cb> {
     }
 }
 
-impl<'e, 'm, 'cb> Drop for EasyHandle<'e, 'm, 'cb> {
+impl<'e, 'm> Drop for EasyHandle<'e, 'm> {
     fn drop(&mut self) {
         let _ = self._remove();
     }
 }
 
-impl<'multi, 'cb> Message<'multi, 'cb> {
+impl<'multi> Message<'multi> {
     /// If this message indicates that a transfer has finished, returns the
     /// result of the transfer in `Some`.
     ///

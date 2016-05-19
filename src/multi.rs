@@ -24,6 +24,9 @@ use panic;
 /// the APIs correspond pretty closely with this crate.
 ///
 /// [multi tutorial]: https://curl.haxx.se/libcurl/c/libcurl-multi.html
+///
+/// The lifetime attached to this handle is the lifetime of the callbacks that
+/// are set for the multi interface.
 pub struct Multi<'cb> {
     raw: *mut curl_sys::CURLM,
     _marker: marker::PhantomData<Cell<&'cb i32>>,

@@ -126,7 +126,7 @@ HTTP/1.1 200 OK\r\n\
     t!(h.upload(true));
     t!(h.http_headers(list));
 
-    let _e = t!(m.add(h));
+    let e = t!(m.add(h));
 
     assert!(t!(m.perform()) > 0);
     t!(l.run(&mut Handler {
@@ -142,6 +142,9 @@ HTTP/1.1 200 OK\r\n\
         done += 1;
     });
     assert_eq!(done, 1);
+
+    let mut e = t!(e.remove());
+    assert_eq!(t!(e.response_code()), 200);
 
     struct Handler<'a, 'b: 'a> {
         multi: &'a Multi<'b>,

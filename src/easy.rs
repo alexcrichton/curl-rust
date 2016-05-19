@@ -2274,7 +2274,7 @@ impl Easy {
     /// created to set scoped configuration (like callbacks). Finally, the
     /// `perform` method on the `Transfer` function can be used.
     ///
-    /// When the `Transfer` option is dropped then all configuratoin set on the
+    /// When the `Transfer` option is dropped then all configuration set on the
     /// transfer itself will be reset.
     pub fn transfer<'data, 'easy>(&'easy mut self) -> Transfer<'easy, 'data> {
         // NB: We need to be *very* careful here about how we treat the

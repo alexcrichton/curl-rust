@@ -63,7 +63,7 @@ use panic;
 /// let mut handle = Easy::new();
 /// handle.url("https://www.rust-lang.org/").unwrap();
 /// handle.write_function(|data| {
-///     stdout().write(data).unwrap()
+///     Ok(stdout().write(data).unwrap())
 /// }).unwrap();
 /// handle.perform().unwrap();
 /// ```
@@ -80,7 +80,7 @@ use panic;
 ///     let mut transfer = handle.transfer();
 ///     transfer.write_function(|new_data| {
 ///         data.extend_from_slice(new_data);
-///         new_data.len()
+///         Ok(new_data.len())
 ///     }).unwrap();
 ///     transfer.perform().unwrap();
 /// }
@@ -102,8 +102,8 @@ pub struct Transfer<'easy, 'data> {
 
 #[derive(Default)]
 struct EasyData<'a> {
-    write: Option<Box<FnMut(&[u8]) -> usize + Send + 'a>>,
-    read: Option<Box<FnMut(&mut [u8]) -> usize + Send + 'a>>,
+    write: Option<Box<FnMut(&[u8]) -> Result<usize, WriteError> + Send + 'a>>,
+    read: Option<Box<FnMut(&mut [u8]) -> Result<usize, ReadError> + Send + 'a>>,
     seek: Option<Box<FnMut(SeekFrom) -> SeekResult + Send + 'a>>,
     debug: Option<Box<FnMut(InfoType, &[u8]) + Send + 'a>>,
     header: Option<Box<FnMut(&[u8]) -> bool + Send + 'a>>,
@@ -114,10 +114,6 @@ struct EasyData<'a> {
 // libcurl guarantees that a CURL handle is fine to be transferred so long as
 // it's not used concurrently, and we do that correctly ourselves.
 unsafe impl Send for Easy {}
-
-// This type is `Sync` as it adheres to the proper `self` conventions, which in
-// this case for libcurl basically means that everything takes `&mut self`.
-unsafe impl Sync for Easy {}
 
 /// Possible proxy types that libcurl currently understands.
 #[allow(missing_docs)]
@@ -240,6 +236,31 @@ pub struct Iter<'a> {
 }
 
 unsafe impl Send for List {}
+
+/// Possible error codes that can be returned from the `read_function` callback.
+pub enum ReadError {
+    /// Indicates that the connection should be aborted immediately
+    Abort,
+
+    /// Indicates that reading should be paused until `unpause` is called.
+    Pause,
+
+    /// Hidden variant to indicate that this enum should not be matched on, it
+    /// may grow over time.
+    #[doc(hidden)]
+    __Nonexhaustive,
+}
+
+/// Possible error codes that can be returned from the `write_function` callback.
+pub enum WriteError {
+    /// Indicates that reading should be paused until `unpause` is called.
+    Pause,
+
+    /// Hidden variant to indicate that this enum should not be matched on, it
+    /// may grow over time.
+    #[doc(hidden)]
+    __Nonexhaustive,
+}
 
 fn cvt(r: curl_sys::CURLcode) -> Result<(), Error> {
     if r == curl_sys::CURLE_OK {
@@ -367,8 +388,8 @@ impl Easy {
     /// transfer to get aborted and the libcurl function used will return
     /// an error with `is_write_error`.
     ///
-    /// If your callback function returns `CURL_WRITEFUNC_PAUSE` it will cause
-    /// this transfer to become paused. See `pause` for further details.
+    /// If your callback function returns `Err(WriteError::Pause)` it will cause
+    /// this transfer to become paused. See `unpause_write` for further details.
     ///
     /// By default data is sent into the void, and this corresponds to the
     /// `CURLOPT_WRITEFUNCTION` and `CURLOPT_WRITEDATA` options.
@@ -387,7 +408,7 @@ impl Easy {
     /// let mut handle = Easy::new();
     /// handle.url("https://www.rust-lang.org/").unwrap();
     /// handle.write_function(|data| {
-    ///     stdout().write(data).unwrap_or(0)
+    ///     Ok(stdout().write(data).unwrap())
     /// }).unwrap();
     /// handle.perform().unwrap();
     /// ```
@@ -405,12 +426,12 @@ impl Easy {
     /// let mut transfer = handle.transfer();
     /// transfer.write_function(|data| {
     ///     buf.extend_from_slice(data);
-    ///     data.len()
+    ///     Ok(data.len())
     /// }).unwrap();
     /// transfer.perform().unwrap();
     /// ```
     pub fn write_function<F>(&mut self, f: F) -> Result<(), Error>
-        where F: FnMut(&[u8]) -> usize + Send + 'static
+        where F: FnMut(&[u8]) -> Result<usize, WriteError> + Send + 'static
     {
         unsafe {
             self.data.write_function(self.handle, Some(Box::new(f)))
@@ -432,12 +453,12 @@ impl Easy {
     /// bytes and you upload less than N bytes), you may experience that the
     /// server "hangs" waiting for the rest of the data that won't come.
     ///
-    /// The read callback may return `CURL_READFUNC_ABORT` to stop the current
-    /// operation immediately, resulting in a `is_aborted_by_callback` error
-    /// code from the transfer.
+    /// The read callback may return `Err(ReadError::Abort)` to stop the
+    /// current operation immediately, resulting in a `is_aborted_by_callback`
+    /// error code from the transfer.
     ///
-    /// The callback can return `CURL_READFUNC_PAUSE` to cause reading from this
-    /// connection to pause. See `pause` for further details.
+    /// The callback can return `Err(ReadError::Pause)` to cause reading from
+    /// this connection to pause. See `unpause_read` for further details.
     ///
     /// By default data not input, and this corresponds to the
     /// `CURLOPT_READFUNCTION` and `CURLOPT_READDATA` options.
@@ -458,7 +479,7 @@ impl Easy {
     /// let mut handle = Easy::new();
     /// handle.url("https://example.com/login").unwrap();
     /// handle.read_function(|into| {
-    ///     stdin().read(into).unwrap()
+    ///     Ok(stdin().read(into).unwrap())
     /// }).unwrap();
     /// handle.post(true).unwrap();
     /// handle.perform().unwrap();
@@ -477,12 +498,12 @@ impl Easy {
     ///
     /// let mut transfer = handle.transfer();
     /// transfer.read_function(|into| {
-    ///     data_to_upload.read(into).unwrap()
+    ///     Ok(data_to_upload.read(into).unwrap())
     /// }).unwrap();
     /// transfer.perform().unwrap();
     /// ```
     pub fn read_function<F>(&mut self, f: F) -> Result<(), Error>
-        where F: FnMut(&mut [u8]) -> usize + Send + 'static
+        where F: FnMut(&mut [u8]) -> Result<usize, ReadError> + Send + 'static
     {
         unsafe {
             self.data.read_function(self.handle, Some(Box::new(f)))
@@ -2177,6 +2198,50 @@ impl Easy {
     // =========================================================================
     // Other methods
 
+    /// Unpause reading on a connection.
+    ///
+    /// Using this function, you can explicitly unpause a connection that was
+    /// previously paused.
+    ///
+    /// A connection can be paused by letting the read or the write callbacks
+    /// return `ReadError::Pause` or `WriteError::Pause`.
+    ///
+    /// To unpause, you may for example call this from the progress callback
+    /// which gets called at least once per second, even if the connection is
+    /// paused.
+    ///
+    /// The chance is high that you will get your write callback called before
+    /// this function returns.
+    pub fn unpause_read(&self) -> Result<(), Error> {
+        unsafe {
+            try!(cvt(curl_sys::curl_easy_pause(self.handle,
+                                               curl_sys::CURLPAUSE_RECV_CONT)));
+            Ok(())
+        }
+    }
+
+    /// Unpause writing on a connection.
+    ///
+    /// Using this function, you can explicitly unpause a connection that was
+    /// previously paused.
+    ///
+    /// A connection can be paused by letting the read or the write callbacks
+    /// return `ReadError::Pause` or `WriteError::Pause`. A write callback that
+    /// returns pause signals to the library that it couldn't take care of any
+    /// data at all, and that data will then be delivered again to the callback
+    /// when the writing is later unpaused.
+    ///
+    /// To unpause, you may for example call this from the progress callback
+    /// which gets called at least once per second, even if the connection is
+    /// paused.
+    pub fn unpause_write(&self) -> Result<(), Error> {
+        unsafe {
+            try!(cvt(curl_sys::curl_easy_pause(self.handle,
+                                               curl_sys::CURLPAUSE_SEND_CONT)));
+            Ok(())
+        }
+    }
+
     /// After options have been set, this will perform the transfer described by
     /// the options.
     ///
@@ -2465,7 +2530,7 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
     /// Same as `Easy::write_function`, just takes a non `'static` lifetime
     /// corresponding to the lifetime of this transfer.
     pub fn write_function<F>(&mut self, f: F) -> Result<(), Error>
-        where F: FnMut(&[u8]) -> usize + Send + 'data
+        where F: FnMut(&[u8]) -> Result<usize, WriteError> + Send + 'data
     {
         unsafe {
             self.data.write_function(self.easy.handle, Some(Box::new(f)))
@@ -2475,7 +2540,7 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
     /// Same as `Easy::read_function`, just takes a non `'static` lifetime
     /// corresponding to the lifetime of this transfer.
     pub fn read_function<F>(&mut self, f: F) -> Result<(), Error>
-        where F: FnMut(&mut [u8]) -> usize + Send + 'data
+        where F: FnMut(&mut [u8]) -> Result<usize, ReadError> + Send + 'data
     {
         unsafe {
             self.data.read_function(self.easy.handle, Some(Box::new(f)))
@@ -2576,7 +2641,9 @@ impl<'data> EasyData<'data> {
 
     unsafe fn write_function(&mut self,
                              easy: *mut curl_sys::CURL,
-                             f: Option<Box<FnMut(&[u8]) -> usize + Send + 'data>>)
+                             f: Option<Box<FnMut(&[u8])
+                                                 -> Result<usize, WriteError> +
+                                           Send + 'data>>)
                              -> Result<(), Error> {
         self.write = f;
         let cb = cb as curl_sys::curl_write_callback;
@@ -2604,7 +2671,15 @@ impl<'data> EasyData<'data> {
                 let input = slice::from_raw_parts(ptr as *const u8,
                                                   size * nmemb);
                 match (*(data as *mut EasyData)).write {
-                    Some(ref mut f) => f(input),
+                    Some(ref mut f) => {
+                        match f(input) {
+                            Ok(s) => s,
+                            Err(WriteError::Pause) |
+                            Err(WriteError::__Nonexhaustive) => {
+                                curl_sys::CURL_WRITEFUNC_PAUSE
+                            }
+                        }
+                    }
                     None => !0,
                 }
             }).unwrap_or(!0)
@@ -2613,7 +2688,9 @@ impl<'data> EasyData<'data> {
 
     unsafe fn read_function(&mut self,
                             easy: *mut curl_sys::CURL,
-                            f: Option<Box<FnMut(&mut [u8]) -> usize + Send + 'data>>)
+                            f: Option<Box<FnMut(&mut [u8])
+                                                -> Result<usize, ReadError> +
+                                          Send + 'data>>)
                             -> Result<(), Error> {
         self.read = f;
         let cb = cb as curl_sys::curl_read_callback;
@@ -2642,7 +2719,18 @@ impl<'data> EasyData<'data> {
                                                       size * nmemb);
                 panic::catch(|| {
                     match (*(data as *mut EasyData)).read {
-                        Some(ref mut f) => f(input),
+                        Some(ref mut f) => {
+                            match f(input) {
+                                Ok(s) => s,
+                                Err(ReadError::Pause) => {
+                                    curl_sys::CURL_READFUNC_PAUSE
+                                }
+                                Err(ReadError::__Nonexhaustive) |
+                                Err(ReadError::Abort) => {
+                                    curl_sys::CURL_READFUNC_ABORT
+                                }
+                            }
+                        }
                         None => !0,
                     }
                 }).unwrap_or(!0)

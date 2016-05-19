@@ -24,7 +24,7 @@
 //! let mut easy = Easy::new();
 //! easy.url("https://www.rust-lang.org/").unwrap();
 //! easy.write_function(|data| {
-//!     stdout().write(data).unwrap()
+//!     Ok(stdout().write(data).unwrap())
 //! }).unwrap();
 //! easy.perform().unwrap();
 //! ```

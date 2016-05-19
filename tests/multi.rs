@@ -119,7 +119,7 @@ HTTP/1.1 200 OK\r\n\
     t!(h.url(&s.url("/")));
     t!(h.put(true));
     t!(h.read_function(move |buf| {
-        data.read(buf).unwrap()
+        Ok(data.read(buf).unwrap())
     }));
     t!(h.in_filesize(128 * 1024));
     t!(h.upload(true));

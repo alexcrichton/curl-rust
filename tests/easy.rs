@@ -11,7 +11,7 @@ macro_rules! t {
     })
 }
 
-use curl::easy::{Easy, List};
+use curl::easy::{Easy, List, WriteError, ReadError};
 
 use server::Server;
 mod server;
@@ -22,9 +22,8 @@ fn handle() -> Easy {
     return e
 }
 
-fn sink(data: &[u8]) -> usize {
-    println!("sink");
-    data.len()
+fn sink(data: &[u8]) -> Result<usize, WriteError> {
+    Ok(data.len())
 }
 
 #[test]
@@ -74,7 +73,7 @@ Accept: */*\r\n\
         let mut handle = handle.transfer();
         t!(handle.write_function(|data| {
             all.extend(data);
-            data.len()
+            Ok(data.len())
         }));
         t!(handle.perform());
     }
@@ -344,7 +343,7 @@ HTTP/1.1 200 OK\r\n\
     t!(h.http_headers(list));
     let mut h = h.transfer();
     t!(h.read_function(|buf| {
-        data.read(buf).unwrap()
+        Ok(data.read(buf).unwrap())
     }));
     t!(h.perform());
 }
@@ -416,7 +415,7 @@ HTTP/1.1 200 OK\r\n\
     t!(h.post_field_size(5));
     let mut h = h.transfer();
     t!(h.read_function(|buf| {
-        data.read(buf).unwrap()
+        Ok(data.read(buf).unwrap())
     }));
     t!(h.perform());
 }
@@ -562,4 +561,29 @@ HTTP/1.1 200 OK\r\n\
     t!(h.url(&s.url("/")));
     t!(h.header_function(|_| panic!()));
     t!(h.perform());
+}
+
+#[test]
+fn abort_read() {
+    let s = Server::new();
+    s.receive("\
+PUT / HTTP/1.1\r\n\
+Host: 127.0.0.1:$PORT\r\n\
+Accept: */*\r\n\
+Content-Length: 2\r\n\
+\r\n");
+    s.send("\
+HTTP/1.1 200 OK\r\n\
+\r\n");
+
+    let mut h = handle();
+    t!(h.url(&s.url("/")));
+    t!(h.read_function(|_| Err(ReadError::Abort)));
+    t!(h.put(true));
+    t!(h.in_filesize(2));
+    let mut list = List::new();
+    t!(list.append("Expect:"));
+    t!(h.http_headers(list));
+    let err = h.perform().unwrap_err();
+    assert!(err.is_aborted_by_callback());
 }

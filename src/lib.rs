@@ -16,11 +16,16 @@
 //! cache connections and such.
 //!
 //! ```rust,no_run
+//! use std::io::{stdout, Write};
+//!
 //! use curl::easy::Easy;
 //!
 //! // Write the contents of rust-lang.org to stdout
 //! let mut easy = Easy::new();
 //! easy.url("https://www.rust-lang.org/").unwrap();
+//! easy.write_function(|data| {
+//!     stdout().write(data).unwrap()
+//! }).unwrap();
 //! easy.perform().unwrap();
 //! ```
 //!
@@ -28,8 +33,8 @@
 //!
 //! One option you have currently is to send multiple requests in multiple
 //! threads, but otherwise libcurl has a "multi" interface for doing this
-//! operation. This unfortunately has not yet been bound in this crate, but
-//! those should be coming soon!
+//! operation. Initial bindings of this interface can be found in the `multi`
+//! module, but feedback is welcome!
 //!
 //! # Where does libcurl come from?
 //!

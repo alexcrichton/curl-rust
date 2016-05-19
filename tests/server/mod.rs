@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::collections::HashSet;
 use std::net::{TcpListener, SocketAddr, TcpStream};
 use std::io::prelude::*;

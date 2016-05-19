@@ -16,13 +16,14 @@ use curl::easy::{Easy, List};
 use server::Server;
 mod server;
 
-fn handle<'a>() -> Easy<'a> {
+fn handle() -> Easy {
     let mut e = Easy::new();
     t!(e.timeout(Duration::new(20, 0)));
     return e
 }
 
 fn sink(data: &[u8]) -> usize {
+    println!("sink");
     data.len()
 }
 
@@ -70,6 +71,7 @@ Accept: */*\r\n\
     {
         let mut handle = handle();
         t!(handle.url(&s.url("/")));
+        let mut handle = handle.transfer();
         t!(handle.write_function(|data| {
             all.extend(data);
             data.len()
@@ -92,16 +94,17 @@ Accept: */*\r\n\
     let mut hits = 0;
     let mut dl = 0.0;
     {
-        let mut cb = |_, a, _, _| {
-            hits += 1;
-            dl = a;
-            true
-        };
         let mut handle = handle();
         t!(handle.url(&s.url("/foo")));
         t!(handle.progress(true));
-        t!(handle.progress_function(&mut cb));
         t!(handle.write_function(sink));
+
+        let mut handle = handle.transfer();
+        t!(handle.progress_function(|_, a, _, _| {
+            hits += 1;
+            dl = a;
+            true
+        }));
         t!(handle.perform());
     }
     assert!(hits > 0);
@@ -127,6 +130,8 @@ Hello!");
     {
         let mut handle = handle();
         t!(handle.url(&s.url("/")));
+
+        let mut handle = handle.transfer();
         t!(handle.header_function(|h| {
             headers.push(str::from_utf8(h).unwrap().to_string());
             true
@@ -334,12 +339,13 @@ HTTP/1.1 200 OK\r\n\
     let mut h = handle();
     t!(h.url(&s.url("/")));
     t!(h.put(true));
-    t!(h.read_function(|buf| {
-        data.read(buf).unwrap()
-    }));
     t!(h.in_filesize(5));
     t!(h.upload(true));
     t!(h.http_headers(list));
+    let mut h = h.transfer();
+    t!(h.read_function(|buf| {
+        data.read(buf).unwrap()
+    }));
     t!(h.perform());
 }
 
@@ -361,7 +367,7 @@ HTTP/1.1 200 OK\r\n\
     let mut h = handle();
     t!(h.url(&s.url("/")));
     t!(h.post(true));
-    t!(h.post_fields(b"data\n"));
+    t!(h.post_fields_copy(b"data\n"));
     t!(h.perform());
 }
 
@@ -384,6 +390,7 @@ HTTP/1.1 200 OK\r\n\
     t!(h.url(&s.url("/")));
     t!(h.post(true));
     t!(h.post_fields_copy(b"data\n"));
+    t!(h.write_function(sink));
     t!(h.perform());
 }
 
@@ -407,6 +414,7 @@ HTTP/1.1 200 OK\r\n\
     t!(h.url(&s.url("/")));
     t!(h.post(true));
     t!(h.post_field_size(5));
+    let mut h = h.transfer();
     t!(h.read_function(|buf| {
         data.read(buf).unwrap()
     }));

@@ -45,9 +45,9 @@ pub struct Message<'multi> {
 /// Once an easy handle has been added to a multi handle then it can no longer
 /// be used via `perform`. This handle is also used to remove the easy handle
 /// from the multi handle when desired.
-pub struct EasyHandle<'easy, 'multi> {
+pub struct EasyHandle<'multi> {
     multi: &'multi Multi,
-    easy: Option<Easy<'easy>>,
+    easy: Option<Easy>,
 }
 
 /// Notification of the events that have happened on a socket.
@@ -257,8 +257,7 @@ impl Multi {
     /// The easy handle will remain added to the multi handle until you remove
     /// it again with `remove` on the returned handle - even when a transfer
     /// with that specific easy handle is completed.
-    pub fn add<'e, 'm>(&'m self, easy: Easy<'e>)
-               -> Result<EasyHandle<'e, 'm>, MultiError> {
+    pub fn add(&self, easy: Easy) -> Result<EasyHandle, MultiError> {
         unsafe {
             try!(cvt(curl_sys::curl_multi_add_handle(self.raw, easy.raw())));
         }
@@ -453,7 +452,7 @@ impl Drop for Multi {
     }
 }
 
-impl<'e, 'm> EasyHandle<'e, 'm> {
+impl<'m> EasyHandle<'m> {
     /// Femove this easy handle from a multi session
     ///
     /// Removes this easy handle from the multi handle. This will make the
@@ -465,7 +464,7 @@ impl<'e, 'm> EasyHandle<'e, 'm> {
     /// Removing an easy handle while being used is perfectly legal and will
     /// effectively halt the transfer in progress involving that easy handle.
     /// All other easy handles and transfers will remain unaffected.
-    pub fn remove(mut self) -> Result<Easy<'e>, MultiError> {
+    pub fn remove(mut self) -> Result<Easy, MultiError> {
         try!(self._remove());
         Ok(self.easy.take().unwrap())
     }
@@ -481,7 +480,7 @@ impl<'e, 'm> EasyHandle<'e, 'm> {
     }
 }
 
-impl<'e, 'm> Drop for EasyHandle<'e, 'm> {
+impl<'m> Drop for EasyHandle<'m> {
     fn drop(&mut self) {
         let _ = self._remove();
     }

@@ -4,7 +4,7 @@ extern crate curl;
 extern crate mio;
 
 use std::collections::HashMap;
-use std::io::Read;
+use std::io::{Read, Cursor};
 use std::time::Duration;
 
 use curl::easy::{Easy, List};
@@ -112,14 +112,13 @@ Content-Length: 131072\r\n\
 HTTP/1.1 200 OK\r\n\
 \r\n");
 
-    let data = vec![b'a'; 128 * 1024];
-    let mut data = &data[..];
+    let mut data = Cursor::new(vec![b'a'; 128 * 1024]);
     let mut list = List::new();
     t!(list.append("Expect:"));
     let mut h = Easy::new();
     t!(h.url(&s.url("/")));
     t!(h.put(true));
-    t!(h.read_function(|buf| {
+    t!(h.read_function(move |buf| {
         data.read(buf).unwrap()
     }));
     t!(h.in_filesize(128 * 1024));

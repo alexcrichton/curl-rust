@@ -12,12 +12,17 @@ libcurl bindings for Rust
 ```rust
 extern crate curl;
 
+use std::io::{stdout, Write};
+
 use curl::easy::Easy;
 
 // Print a web page onto stdout
 fn main() {
     let mut easy = Easy::new();
     easy.url("https://www.rust-lang.org/").unwrap();
+    easy.write_function(|data| {
+        stdout().write(data).unwrap()
+    }).unwrap();
     easy.perform().unwrap();
 
     println!("{}", easy.response_code().unwrap());
@@ -34,18 +39,21 @@ fn main() {
     let mut dst = Vec::new();
     let mut easy = Easy::new();
     easy.url("https://www.rust-lang.org/").unwrap();
-    easy.write_function(|data| {
+
+    let mut transfer = easy.transfer();
+    transfer.write_function(|data| {
         dst.extend_from_slice(data);
         data.len()
     }).unwrap();
-    easy.perform().unwrap();
+    transfer.perform().unwrap();
 }
 ```
 
 ## Post / Put requests
 
-Both of these methods expect that a request body is provided. A request
-body can be a `&[u8]`, `&str`, or `&Reader`. For example:
+The `put` and `post` methods on `Easy` can configure the method of the HTTP
+request, and then `read_function` can be used to specify how data is filled in.
+This interface works particularly well with types that implement `Read`.
 
 ```rust,no_run
 extern crate curl;
@@ -58,11 +66,13 @@ fn main() {
 
     let mut easy = Easy::new();
     easy.url("http://www.example.com/upload").unwrap();
-    easy.read_function(|buf| {
+    easy.post(true).unwrap();
+
+    let mut transfer = easy.transfer();
+    transfer.read_function(|buf| {
         data.read(buf).unwrap_or(0)
     }).unwrap();
-    easy.post(true).unwrap();
-    easy.perform().unwrap();
+    transfer.perform().unwrap();
 }
 ```
 

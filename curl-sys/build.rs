@@ -104,7 +104,15 @@ fn main() {
     }
     cmd.arg("--enable-static=yes");
     cmd.arg("--enable-shared=no");
-    cmd.arg("--enable-optimize");
+    match &env::var("PROFILE").unwrap()[..] {
+        "bench" | "release" => {
+            cmd.arg("--enable-optimize");
+        }
+        _ => {
+            cmd.arg("--enable-debug");
+            cmd.arg("--disable-optimize");
+        }
+    }
     cmd.arg(format!("--prefix={}", msys_compatible(&dst)));
 
     if target != host &&

@@ -641,3 +641,31 @@ b");
     }));
     t!(h.transfer.borrow().perform());
 }
+
+#[test]
+fn perform_in_perform_is_bad() {
+    let s = Server::new();
+    s.receive("\
+GET / HTTP/1.1\r\n\
+Host: 127.0.0.1:$PORT\r\n\
+Accept: */*\r\n\
+\r\n");
+    s.send("\
+HTTP/1.1 200 OK\r\n\
+\r\n
+a\n
+b");
+
+    let mut h = handle();
+    t!(h.url(&s.url("/")));
+    t!(h.progress(true));
+
+    let h = Rc::new(RefCell::new(h.transfer()));
+
+    let h2 = h.clone();
+    t!(h.borrow_mut().write_function(move |data| {
+        assert!(h2.borrow().perform().is_err());
+        Ok(data.len())
+    }));
+    t!(h.borrow().perform());
+}

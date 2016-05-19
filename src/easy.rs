@@ -94,7 +94,17 @@ pub struct Easy {
     data: Box<EasyData>,
 }
 
-/// TODO: dox
+/// A scoped transfer of information which borrows an `Easy` and allows
+/// referencing stack-local data of the lifetime `'data`.
+///
+/// Usage of `Easy` requires the `'static` and `Send` bounds on all callbacks
+/// registered, but that's not often wanted if all you need is to collect a
+/// bunch of data in memory to a vector, for example. The `Transfer` structure,
+/// created by the `Easy::transfer` method, is used for this sort of request.
+///
+/// The callbacks attached to a `Transfer` are only active for that one transfer
+/// object, and they're allows to elide both the `Send` and `'static` bounds to
+/// close over stack-local information.
 pub struct Transfer<'easy, 'data> {
     easy: &'easy mut Easy,
     data: Box<TransferData<'data>>,

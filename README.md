@@ -7,10 +7,6 @@ libcurl bindings for Rust
 
 [Documentation](http://alexcrichton.com/curl-rust)
 
-**NOTE**: This library's `master` branch is not currently published on crates.io
-          and is slated to be the 0.3 release of the `curl` crate once Rust 1.9
-          is release.
-
 ## Quick Start
 
 ```rust

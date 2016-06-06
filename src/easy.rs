@@ -3389,10 +3389,10 @@ impl<'form, 'data> Part<'form, 'data> {
     #[cfg(windows)]
     fn path2bytes<'a>(&mut self, p: &'a Path) -> Option<&'a [u8]> {
         match p.to_str() {
-            Some(bytes) => self.bytes(bytes),
-            None if self.err.is_none() => {
+            Some(bytes) => self.bytes(bytes.as_bytes()),
+            None if self.error.is_none() => {
                 // TODO: better error code
-                self.err = Some(FormError::new(curl_sys::CURL_FORMADD_INCOMPLETE));
+                self.error = Some(FormError::new(curl_sys::CURL_FORMADD_INCOMPLETE));
                 None
             }
             None => None,
@@ -3400,6 +3400,13 @@ impl<'form, 'data> Part<'form, 'data> {
     }
 
     fn bytes<'a>(&mut self, p: &'a [u8]) -> Option<&'a [u8]> {
-        Some(p)
+        if p.contains(&0) {
+            if self.error.is_none() {
+                self.error = Some(FormError::new(curl_sys::CURL_FORMADD_INCOMPLETE));
+            }
+            None
+        } else {
+            Some(p)
+        }
     }
 }

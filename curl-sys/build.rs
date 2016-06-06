@@ -143,6 +143,8 @@ fn main() {
     run(&mut cmd, "sh");
     run(Command::new(make())
                 .arg(&format!("-j{}", env::var("NUM_JOBS").unwrap()))
+                .current_dir(&dst.join("build")), "make");
+    run(Command::new(make())
                 .arg("install")
                 .current_dir(&dst.join("build")), "make");
 }

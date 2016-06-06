@@ -58,7 +58,7 @@ use std::ffi::CStr;
 use std::str;
 use std::sync::{Once, ONCE_INIT};
 
-pub use error::{Error, ShareError, MultiError};
+pub use error::{Error, ShareError, MultiError, FormError};
 mod error;
 
 pub use version::{Version, Protocols};

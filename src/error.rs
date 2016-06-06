@@ -458,6 +458,93 @@ impl error::Error for MultiError {
     }
 }
 
+
+/// An error from "form add" operations.
+///
+/// THis structure wraps a `CURLFORMcode`.
+#[derive(Clone, PartialEq)]
+pub struct FormError {
+    code: curl_sys::CURLFORMcode,
+}
+
+impl FormError {
+    /// Creates a new error from the underlying code returned by libcurl.
+    pub fn new(code: curl_sys::CURLFORMcode) -> FormError {
+        FormError { code: code }
+    }
+
+    /// Returns whether this error corresponds to CURL_FORMADD_MEMORY.
+    pub fn is_memory(&self) -> bool {
+        self.code == curl_sys::CURL_FORMADD_MEMORY
+    }
+
+    /// Returns whether this error corresponds to CURL_FORMADD_OPTION_TWICE.
+    pub fn is_option_twice(&self) -> bool {
+        self.code == curl_sys::CURL_FORMADD_OPTION_TWICE
+    }
+
+    /// Returns whether this error corresponds to CURL_FORMADD_NULL.
+    pub fn is_null(&self) -> bool {
+        self.code == curl_sys::CURL_FORMADD_NULL
+    }
+
+    /// Returns whether this error corresponds to CURL_FORMADD_UNKNOWN_OPTION.
+    pub fn is_unknown_option(&self) -> bool {
+        self.code == curl_sys::CURL_FORMADD_UNKNOWN_OPTION
+    }
+
+    /// Returns whether this error corresponds to CURL_FORMADD_INCOMPLETE.
+    pub fn is_incomplete(&self) -> bool {
+        self.code == curl_sys::CURL_FORMADD_INCOMPLETE
+    }
+
+    /// Returns whether this error corresponds to CURL_FORMADD_ILLEGAL_ARRAY.
+    pub fn is_illegal_array(&self) -> bool {
+        self.code == curl_sys::CURL_FORMADD_ILLEGAL_ARRAY
+    }
+
+    /// Returns whether this error corresponds to CURL_FORMADD_DISABLED.
+    pub fn is_disabled(&self) -> bool {
+        self.code == curl_sys::CURL_FORMADD_DISABLED
+    }
+
+    /// Returns the value of the underlying error corresponding to libcurl.
+    pub fn code(&self) -> curl_sys::CURLFORMcode {
+        self.code
+    }
+}
+
+impl fmt::Display for FormError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        error::Error::description(self).fmt(f)
+    }
+}
+
+impl fmt::Debug for FormError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "FormError {{ description: {:?}, code: {} }}",
+               error::Error::description(self),
+               self.code)
+    }
+}
+
+impl error::Error for FormError {
+    fn description(&self) -> &str {
+        match self.code {
+            curl_sys::CURL_FORMADD_MEMORY => "allocation failure",
+            curl_sys::CURL_FORMADD_OPTION_TWICE => "one option passed twice",
+            curl_sys::CURL_FORMADD_NULL => "null pointer given for string",
+            curl_sys::CURL_FORMADD_UNKNOWN_OPTION => "unknown option",
+            curl_sys::CURL_FORMADD_INCOMPLETE => "form information not complete",
+            curl_sys::CURL_FORMADD_ILLEGAL_ARRAY => "illegal array in option",
+            curl_sys::CURL_FORMADD_DISABLED => {
+                "libcurl does not have support for this option compiled in"
+            }
+            _ => "unknown form error",
+        }
+    }
+}
+
 impl From<ffi::NulError> for Error {
     fn from(_: ffi::NulError) -> Error {
         Error { code: curl_sys::CURLE_CONV_FAILED }
@@ -478,6 +565,12 @@ impl From<ShareError> for io::Error {
 
 impl From<MultiError> for io::Error {
     fn from(e: MultiError) -> io::Error {
+        io::Error::new(io::ErrorKind::Other, e)
+    }
+}
+
+impl From<FormError> for io::Error {
+    fn from(e: FormError) -> io::Error {
         io::Error::new(io::ErrorKind::Other, e)
     }
 }

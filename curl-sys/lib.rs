@@ -35,22 +35,23 @@ pub type curl_socket_t = u64;
 #[cfg(windows)]
 pub const CURL_SOCKET_BAD: curl_socket_t = !0;
 
-// #[repr(C)]
-// pub struct curl_httppost {
-//     pub next: *mut curl_httppost,
-//     pub name: *mut c_char,
-//     pub namelength: c_long,
-//     pub contents: *mut c_char,
-//     pub contentslength: c_long,
-//     pub buffer: *mut c_char,
-//     pub bufferlength: c_long,
-//     pub contenttype: *mut c_char,
-//     pub contentheader: *mut curl_slist,
-//     pub more: *mut curl_httppost,
-//     pub flags: c_long,
-//     pub showfilename: *mut c_char,
-//     pub userp: *mut c_void,
-// }
+pub enum curl_httppost {
+    // Note that this changed in some versions of libcurl, so we currently don't
+    // bind the fields as they're apparently not stable.
+    // pub next: *mut curl_httppost,
+    // pub name: *mut c_char,
+    // pub namelength: c_long,
+    // pub contents: *mut c_char,
+    // pub contentslength: c_long,
+    // pub buffer: *mut c_char,
+    // pub bufferlength: c_long,
+    // pub contenttype: *mut c_char,
+    // pub contentheader: *mut curl_slist,
+    // pub more: *mut curl_httppost,
+    // pub flags: c_long,
+    // pub showfilename: *mut c_char,
+    // pub userp: *mut c_void,
+}
 
 // pub const HTTPPOST_FILENAME: c_long = 1 << 0;
 // pub const HTTPPOST_READFILE: c_long = 1 << 1;
@@ -904,13 +905,13 @@ pub const CURLMOPT_TIMERDATA: CURLMoption = CURLOPTTYPE_OBJECTPOINT + 5;
 // pub const CURLMOPT_MAX_TOTAL_CONNECTIONS: CURLMoption = CURLOPTTYPE_LONG + 13;
 
 extern {
-    // pub fn curl_formadd(httppost: *mut *mut curl_httppost,
-    //                     last_post: *mut *mut curl_httppost,
-    //                     ...) -> CURLFORMcode;
-    // pub fn curl_formget(form: *mut curl_httppost,
-    //                     arg: *mut c_void,
-    //                     append: curl_formget_callback) -> c_int;
-    // pub fn curl_formfree(form: *mut curl_httppost);
+    pub fn curl_formadd(httppost: *mut *mut curl_httppost,
+                        last_post: *mut *mut curl_httppost,
+                        ...) -> CURLFORMcode;
+    pub fn curl_formget(form: *mut curl_httppost,
+                        arg: *mut c_void,
+                        append: curl_formget_callback) -> c_int;
+    pub fn curl_formfree(form: *mut curl_httppost);
 
     pub fn curl_version() -> *mut c_char;
 

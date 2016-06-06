@@ -107,12 +107,14 @@ Host: 127.0.0.1:$PORT\r\n\
 Accept: */*\r\n\
 Content-Length: 131072\r\n\
 \r\n\
-{}", vec!["a"; 128 * 1024].join("")));
+{}\n", vec!["a"; 128 * 1024 - 1].join("")));
     s.send("\
 HTTP/1.1 200 OK\r\n\
 \r\n");
 
-    let mut data = Cursor::new(vec![b'a'; 128 * 1024]);
+    let mut data = vec![b'a'; 128 * 1024 - 1];
+    data.push(b'\n');
+    let mut data = Cursor::new(data);
     let mut list = List::new();
     t!(list.append("Expect:"));
     let mut h = Easy::new();

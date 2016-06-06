@@ -34,22 +34,62 @@ fn run(listener: &TcpListener, rx: &Receiver<Message>) {
                     }
                 }
 
+                let mut expected_len = None;
                 while expected_headers.len() > 0 {
                     let mut actual = String::new();
                     t!(socket.read_line(&mut actual));
-                    if !expected_headers.remove(&actual[..]) {
-                        panic!("unexpected header: {:?} (remaining headers {:?})",
-                               actual, expected_headers);
+                    if actual.starts_with("Content-Length") {
+                        let len = actual.split(": ").skip(1).next().unwrap();
+                        expected_len = len.trim().parse().ok();
                     }
+                    if expected_headers.remove(&actual[..]) {
+                        continue
+                    }
+
+                    let mut found = None;
+                    for header in expected_headers.iter() {
+                        if lines_match(header, &actual) {
+                            found = Some(header.clone());
+                            break
+                        }
+                    }
+                    if let Some(found) = found {
+                        expected_headers.remove(&found);
+                        continue
+                    }
+                    panic!("unexpected header: {:?} (remaining headers {:?})",
+                           actual, expected_headers);
                 }
                 for header in expected_headers {
                     panic!("expected header but not found: {:?}", header);
                 }
 
-                let mut buf = vec![0; expected.len()];
-                if buf.len() > 0 {
-                    t!(socket.read_exact(&mut buf));
-                    assert_eq!(buf, expected.as_bytes());
+                let mut line = String::new();
+                let mut socket = match expected_len {
+                    Some(amt) => socket.by_ref().take(amt),
+                    None => socket.by_ref().take(expected.len() as u64),
+                };
+                while socket.limit() > 0 {
+                    line.truncate(0);
+                    t!(socket.read_line(&mut line));
+                    if line.len() == 0 {
+                        break
+                    }
+                    if expected.len() == 0 {
+                        panic!("unexpected line: {:?}", line);
+                    }
+                    let i = expected.find("\n").unwrap_or(expected.len() - 1);
+                    let expected_line = &expected[..i + 1];
+                    expected = &expected[i + 1..];
+                    if lines_match(expected_line, &line) {
+                        continue
+                    }
+                    panic!("lines didn't match:\n\
+                            expected: {:?}\n\
+                            actual:   {:?}\n", expected_line, line)
+                }
+                if expected.len() != 0 {
+                    println!("didn't get expected data: {:?}", expected);
                 }
             }
             Message::Write(ref to_write) => {
@@ -62,6 +102,23 @@ fn run(listener: &TcpListener, rx: &Receiver<Message>) {
     let mut dst = Vec::new();
     t!(socket.read_to_end(&mut dst));
     assert!(dst.len() == 0);
+}
+
+fn lines_match(expected: &str, mut actual: &str) -> bool {
+    for (i, part) in expected.split("[..]").enumerate() {
+        match actual.find(part) {
+            Some(j) => {
+                if i == 0 && j != 0 {
+                    return false
+                }
+                actual = &actual[j + part.len()..];
+            }
+            None => {
+                return false
+            }
+        }
+    }
+    actual.is_empty() || expected.ends_with("[..]")
 }
 
 impl Server {

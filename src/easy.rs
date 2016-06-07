@@ -146,6 +146,7 @@ pub struct Form {
     tail: *mut curl_sys::curl_httppost,
     headers: Vec<List>,
     buffers: Vec<Vec<u8>>,
+    strings: Vec<CString>,
 }
 
 /// One part in a multipart upload, added to a `Form`.
@@ -3153,6 +3154,7 @@ impl Form {
             tail: 0 as *mut _,
             headers: Vec::new(),
             buffers: Vec::new(),
+            strings: Vec::new(),
         }
     }
 
@@ -3206,19 +3208,20 @@ impl<'form, 'data> Part<'form, 'data> {
     /// If the filename has any internal nul bytes or if on Windows it does not
     /// contain a unicode filename then the `add` function will eventually
     /// return an error.
-    pub fn file_content<P: ?Sized>(&mut self, file: &'data P) -> &mut Self
+    pub fn file_content<P>(&mut self, file: P) -> &mut Self
         where P: AsRef<Path>
     {
         self._file_content(file.as_ref())
     }
 
-    fn _file_content(&mut self, file: &'data Path) -> &mut Self {
-        if let Some(bytes) = self.path2bytes(file) {
+    fn _file_content(&mut self, file: &Path) -> &mut Self {
+        if let Some(bytes) = self.path2cstr(file) {
             let pos = self.array.len() - 1;
             self.array.insert(pos, curl_sys::curl_forms {
                 option: curl_sys::CURLFORM_FILECONTENT,
                 value: bytes.as_ptr() as *mut _,
             });
+            self.form.strings.push(bytes);
         }
         self
     }
@@ -3250,12 +3253,13 @@ impl<'form, 'data> Part<'form, 'data> {
     }
 
     fn _file(&mut self, file: &'data Path) -> &mut Self {
-        if let Some(bytes) = self.path2bytes(file) {
+        if let Some(bytes) = self.path2cstr(file) {
             let pos = self.array.len() - 1;
             self.array.insert(pos, curl_sys::curl_forms {
                 option: curl_sys::CURLFORM_FILE,
                 value: bytes.as_ptr() as *mut _,
             });
+            self.form.strings.push(bytes);
         }
         self
     }
@@ -3268,12 +3272,13 @@ impl<'form, 'data> Part<'form, 'data> {
     /// This function will panic if `content_type` contains an internal nul
     /// byte.
     pub fn content_type(&mut self, content_type: &'data str) -> &mut Self {
-        if let Some(bytes) = self.bytes(content_type.as_bytes()) {
+        if let Some(bytes) = self.bytes2cstr(content_type.as_bytes()) {
             let pos = self.array.len() - 1;
             self.array.insert(pos, curl_sys::curl_forms {
                 option: curl_sys::CURLFORM_CONTENTTYPE,
                 value: bytes.as_ptr() as *mut _,
             });
+            self.form.strings.push(bytes);
         }
         self
     }
@@ -3293,12 +3298,13 @@ impl<'form, 'data> Part<'form, 'data> {
     }
 
     fn _filename(&mut self, name: &'data Path) -> &mut Self {
-        if let Some(bytes) = self.path2bytes(name) {
+        if let Some(bytes) = self.path2cstr(name) {
             let pos = self.array.len() - 1;
             self.array.insert(pos, curl_sys::curl_forms {
                 option: curl_sys::CURLFORM_FILENAME,
                 value: bytes.as_ptr() as *mut _,
             });
+            self.form.strings.push(bytes);
         }
         self
     }
@@ -3322,12 +3328,13 @@ impl<'form, 'data> Part<'form, 'data> {
     }
 
     fn _buffer(&mut self, name: &'data Path, data: Vec<u8>) -> &mut Self {
-        if let Some(bytes) = self.path2bytes(name) {
+        if let Some(bytes) = self.path2cstr(name) {
             let pos = self.array.len() - 1;
             self.array.insert(pos, curl_sys::curl_forms {
                 option: curl_sys::CURLFORM_BUFFER,
                 value: bytes.as_ptr() as *mut _,
             });
+            self.form.strings.push(bytes);
             self.array.insert(pos + 1, curl_sys::curl_forms {
                 option: curl_sys::CURLFORM_BUFFERPTR,
                 value: data.as_ptr() as *mut _,
@@ -3381,15 +3388,15 @@ impl<'form, 'data> Part<'form, 'data> {
     }
 
     #[cfg(unix)]
-    fn path2bytes<'a>(&mut self, p: &'a Path) -> Option<&'a [u8]> {
+    fn path2cstr(&mut self, p: &Path) -> Option<CString> {
         use std::os::unix::prelude::*;
-        self.bytes(p.as_os_str().as_bytes())
+        self.bytes2cstr(p.as_os_str().as_bytes())
     }
 
     #[cfg(windows)]
-    fn path2bytes<'a>(&mut self, p: &'a Path) -> Option<&'a [u8]> {
+    fn path2cstr(&mut self, p: &Path) -> Option<CString> {
         match p.to_str() {
-            Some(bytes) => self.bytes(bytes.as_bytes()),
+            Some(bytes) => self.bytes2cstr(bytes.as_bytes()),
             None if self.error.is_none() => {
                 // TODO: better error code
                 self.error = Some(FormError::new(curl_sys::CURL_FORMADD_INCOMPLETE));
@@ -3399,14 +3406,15 @@ impl<'form, 'data> Part<'form, 'data> {
         }
     }
 
-    fn bytes<'a>(&mut self, p: &'a [u8]) -> Option<&'a [u8]> {
-        if p.contains(&0) {
-            if self.error.is_none() {
+    fn bytes2cstr(&mut self, bytes: &[u8]) -> Option<CString> {
+        match CString::new(bytes) {
+            Ok(c) => Some(c),
+            Err(..) if self.error.is_none() => {
+                // TODO: better error code
                 self.error = Some(FormError::new(curl_sys::CURL_FORMADD_INCOMPLETE));
+                None
             }
-            None
-        } else {
-            Some(p)
+            Err(..) => None,
         }
     }
 }

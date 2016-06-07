@@ -41,7 +41,7 @@ before_script:
 script:
   - curl --version
   - cargo generate-lockfile
-  - cargo generate-lockfile --manifest-path systest
+  - cargo generate-lockfile --manifest-path systest/Cargo.toml
   - if [ -z "$DOCKER" ]; then
       sh ci/run.sh;
     else

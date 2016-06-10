@@ -28,6 +28,11 @@ fn main() {
         return println!("cargo:rustc-flags=-l curl");
     }
 
+    // Illumos/Solaris requires explicit linking with libnsl
+    if target.contains("solaris") {
+        println!("cargo:rustc-flags=-l nsl");
+    }
+
     // Next, fall back and try to use pkg-config if its available.
     if !target.contains("windows") {
         match pkg_config::find_library("libcurl") {

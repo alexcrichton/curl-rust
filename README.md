@@ -62,15 +62,18 @@ use std::io::Read;
 use curl::easy::Easy;
 
 fn main() {
-    let mut data = "this is the body".as_bytes();
+    let mut data = "this is the body";
+    let mut data_bytes = data.as_bytes();
 
     let mut easy = Easy::new();
     easy.url("http://www.example.com/upload").unwrap();
     easy.post(true).unwrap();
+    let total_size = data.chars().count() as u64;
+    easy.post_field_size(total_size);
 
     let mut transfer = easy.transfer();
     transfer.read_function(|buf| {
-        Ok(data.read(buf).unwrap_or(0))
+        Ok(data_bytes.read(buf).unwrap_or(0))
     }).unwrap();
     transfer.perform().unwrap();
 }

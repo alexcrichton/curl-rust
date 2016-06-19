@@ -21,7 +21,7 @@ fn main() {
     let mut easy = Easy::new();
     easy.url("https://www.rust-lang.org/").unwrap();
     easy.write_function(|data| {
-        stdout().write(data).unwrap()
+        Ok(stdout().write(data).unwrap())
     }).unwrap();
     easy.perform().unwrap();
 
@@ -43,7 +43,7 @@ fn main() {
     let mut transfer = easy.transfer();
     transfer.write_function(|data| {
         dst.extend_from_slice(data);
-        data.len()
+        Ok(data.len())
     }).unwrap();
     transfer.perform().unwrap();
 }
@@ -62,15 +62,18 @@ use std::io::Read;
 use curl::easy::Easy;
 
 fn main() {
-    let mut data = "this is the body".as_bytes();
+    let mut data = "this is the body";
+    let mut data_bytes = data.as_bytes();
 
     let mut easy = Easy::new();
     easy.url("http://www.example.com/upload").unwrap();
     easy.post(true).unwrap();
+    let total_size = data.chars().count() as u64;
+    easy.post_field_size(total_size);
 
     let mut transfer = easy.transfer();
     transfer.read_function(|buf| {
-        data.read(buf).unwrap_or(0)
+        Ok(data_bytes.read(buf).unwrap_or(0))
     }).unwrap();
     transfer.perform().unwrap();
 }

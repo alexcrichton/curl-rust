@@ -21,7 +21,7 @@ fn main() {
     let mut easy = Easy::new();
     easy.url("https://www.rust-lang.org/").unwrap();
     easy.write_function(|data| {
-        stdout().write(data).unwrap()
+        Ok(stdout().write(data).unwrap())
     }).unwrap();
     easy.perform().unwrap();
 
@@ -43,7 +43,7 @@ fn main() {
     let mut transfer = easy.transfer();
     transfer.write_function(|data| {
         dst.extend_from_slice(data);
-        data.len()
+        Ok(data.len())
     }).unwrap();
     transfer.perform().unwrap();
 }
@@ -70,7 +70,7 @@ fn main() {
 
     let mut transfer = easy.transfer();
     transfer.read_function(|buf| {
-        data.read(buf).unwrap_or(0)
+        Ok(data.read(buf).unwrap_or(0))
     }).unwrap();
     transfer.perform().unwrap();
 }

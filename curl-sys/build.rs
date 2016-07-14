@@ -91,6 +91,26 @@ fn main() {
        .current_dir(&dst.join("build"))
        .arg(msys_compatible(&src.join("curl/configure")));
 
+    // For now this build script doesn't support paths with spaces in them. This
+    // is arguably a but in curl's configure script, but we could also try to
+    // paper over it by using a tmp directory which *doesn't* have spaces in it.
+    // As of now though that's not implemented so just give a nicer error for
+    // the time being.
+    let wants_space_error = windows &&
+        (dst.to_str().map(|s| s.contains(" ")).unwrap_or(false) ||
+         src.to_str().map(|s| s.contains(" ")).unwrap_or(false));
+    if wants_space_error {
+        panic!("\n\nunfortunately ./configure of libcurl is known to \
+                fail if there's a space in the path to the current \
+                directory\n\n\
+                there's a space in either\n  {}\n  {}\nand this will cause the \
+                build to fail\n\n\
+                the MSVC build should work with a directory that has \
+                spaces in it, and it would also work to move this to a \
+                different directory without spaces\n\n",
+               src.display(), dst.display())
+    }
+
     if windows {
         cmd.arg("--with-winssl");
     } else {

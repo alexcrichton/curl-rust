@@ -8,6 +8,11 @@ fn main() {
     if let Ok(out) = env::var("DEP_CURL_INCLUDE") {
         cfg.include(&out);
     }
+
+    if env::var("TARGET").unwrap().contains("msvc") {
+        cfg.flag("/wd4574"); // did you mean to use '#if INCL_WINSOCK_API_TYPEDEFS'
+    }
+
     cfg.header("curl/curl.h");
     cfg.define("CURL_STATICLIB", None);
     cfg.field_name(|s, field| {

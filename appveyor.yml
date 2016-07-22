@@ -1,13 +1,26 @@
 environment:
   matrix:
+
+  # Ensure MinGW works, but we need to download the 32-bit MinGW compiler from a
+  # custom location.
   - TARGET: i686-pc-windows-gnu
     MINGW_URL: https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/4.9.2/threads-win32/dwarf/i686-4.9.2-release-win32-dwarf-rt_v4-rev4.7z/download
     MINGW_ARCHIVE: i686-4.9.2-release-win32-dwarf-rt_v4-rev4.7z
     MINGW_DIR: mingw32
   - TARGET: x86_64-pc-windows-gnu
     MSYS_BITS: 64
+
+  # Ensure vanilla builds work
   - TARGET: i686-pc-windows-msvc
   - TARGET: x86_64-pc-windows-msvc
+
+  # Pin to specific VS versions to ensure the build works
+  - TARGET: x86_64-pc-windows-msvc
+    ARCH: amd64
+    VS: C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat
+  - TARGET: x86_64-pc-windows-msvc
+    ARCH: amd64
+    VS: C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat
 
 install:
   # Install rust, x86_64-pc-windows-msvc host
@@ -27,6 +40,9 @@ install:
   - if defined MINGW_ARCHIVE appveyor DownloadFile "%MINGW_URL%" -FileName "%MINGW_ARCHIVE%"
   - if defined MINGW_ARCHIVE 7z x -y "%MINGW_ARCHIVE%" > nul
   - if defined MINGW_ARCHIVE set PATH=%CD%\%MINGW_DIR%\bin;C:\msys64\usr\bin;%PATH%
+
+  # If we're pinning to a specific visual studio, do so now
+  - if defined VS call "%VS%" %ARCH%
 
   # let's see what we got
   - where gcc rustc cargo

@@ -16,7 +16,7 @@ use std::str;
 use std::time::Duration;
 
 use curl_sys;
-use libc::{self, c_long, c_int, c_char, c_void, size_t, c_double};
+use libc::{self, c_long, c_int, c_char, c_void, size_t, c_double, c_ulong};
 
 use {Error, FormError};
 use panic;
@@ -302,6 +302,13 @@ pub enum WriteError {
     /// may grow over time.
     #[doc(hidden)]
     __Nonexhaustive,
+}
+
+/// Structure which stores possible authentication methods to get passed to
+/// `http_auth` and `proxy_auth`.
+#[derive(Clone, Debug)]
+pub struct Auth {
+    bits: c_long,
 }
 
 fn cvt(r: curl_sys::CURLcode) -> Result<(), Error> {
@@ -1030,6 +1037,21 @@ impl Easy {
         self.setopt_str(curl_sys::CURLOPT_PASSWORD, &pass)
     }
 
+    /// Set HTTP server authentication methods to try
+    ///
+    /// If more than one method is set, libcurl will first query the site to see
+    /// which authentication methods it supports and then pick the best one you
+    /// allow it to use. For some methods, this will induce an extra network
+    /// round-trip. Set the actual name and password with the `password` and
+    /// `username` methods.
+    ///
+    /// For authentication with a proxy, see `proxy_auth`.
+    ///
+    /// By default this value is basic and corresponds to `CURLOPT_HTTPAUTH`.
+    pub fn http_auth(&mut self, auth: &Auth) -> Result<(), Error> {
+        self.setopt_long(curl_sys::CURLOPT_HTTPAUTH, auth.bits)
+    }
+
     /// Configures the proxy username to pass as authentication for this
     /// connection.
     ///
@@ -1048,6 +1070,19 @@ impl Easy {
     pub fn proxy_password(&mut self, pass: &str) -> Result<(), Error> {
         let pass = try!(CString::new(pass));
         self.setopt_str(curl_sys::CURLOPT_PROXYPASSWORD, &pass)
+    }
+
+    /// Set HTTP proxy authentication methods to try
+    ///
+    /// If more than one method is set, libcurl will first query the site to see
+    /// which authentication methods it supports and then pick the best one you
+    /// allow it to use. For some methods, this will induce an extra network
+    /// round-trip. Set the actual name and password with the `proxy_password`
+    /// and `proxy_username` methods.
+    ///
+    /// By default this value is basic and corresponds to `CURLOPT_PROXYAUTH`.
+    pub fn proxy_auth(&mut self, auth: &Auth) -> Result<(), Error> {
+        self.setopt_long(curl_sys::CURLOPT_PROXYAUTH, auth.bits)
     }
 
     // =========================================================================
@@ -3416,5 +3451,99 @@ impl<'form, 'data> Part<'form, 'data> {
             }
             Err(..) => None,
         }
+    }
+}
+
+impl Auth {
+    /// Creates a new set of authentications with no members.
+    ///
+    /// An `Auth` structure is used to configure which forms of authentication
+    /// are attempted when negotiating connections with servers.
+    pub fn new() -> Auth {
+        Auth { bits: 0 }
+    }
+
+    /// HTTP Basic authentication.
+    ///
+    /// This is the default choice, and the only method that is in wide-spread
+    /// use and supported virtually everywhere.  This sends the user name and
+    /// password over the network in plain text, easily captured by others.
+    pub fn basic(&mut self, on: bool) -> &mut Auth {
+        self.flag(curl_sys::CURLAUTH_BASIC, on)
+    }
+
+    /// HTTP Digest authentication.
+    ///
+    /// Digest authentication is defined in RFC 2617 and is a more secure way to
+    /// do authentication over public networks than the regular old-fashioned
+    /// Basic method.
+    pub fn digest(&mut self, on: bool) -> &mut Auth {
+        self.flag(curl_sys::CURLAUTH_DIGEST, on)
+    }
+
+    /// HTTP Digest authentication with an IE flavor.
+    ///
+    /// Digest authentication is defined in RFC 2617 and is a more secure way to
+    /// do authentication over public networks than the regular old-fashioned
+    /// Basic method. The IE flavor is simply that libcurl will use a special
+    /// "quirk" that IE is known to have used before version 7 and that some
+    /// servers require the client to use.
+    pub fn digest_ie(&mut self, on: bool) -> &mut Auth {
+        self.flag(curl_sys::CURLAUTH_DIGEST_IE, on)
+    }
+
+    /// HTTP Negotiate (SPNEGO) authentication.
+    ///
+    /// Negotiate authentication is defined in RFC 4559 and is the most secure
+    /// way to perform authentication over HTTP.
+    ///
+    /// You need to build libcurl with a suitable GSS-API library or SSPI on
+    /// Windows for this to work.
+    pub fn gssnegotiate(&mut self, on: bool) -> &mut Auth {
+        self.flag(curl_sys::CURLAUTH_GSSNEGOTIATE, on)
+    }
+
+    /// HTTP NTLM authentication.
+    ///
+    /// A proprietary protocol invented and used by Microsoft. It uses a
+    /// challenge-response and hash concept similar to Digest, to prevent the
+    /// password from being eavesdropped.
+    ///
+    /// You need to build libcurl with either OpenSSL, GnuTLS or NSS support for
+    /// this option to work, or build libcurl on Windows with SSPI support.
+    pub fn ntlm(&mut self, on: bool) -> &mut Auth {
+        self.flag(curl_sys::CURLAUTH_NTLM, on)
+    }
+
+    /// NTLM delegating to winbind helper.
+    ///
+    /// Authentication is performed by a separate binary application that is
+    /// executed when needed. The name of the application is specified at
+    /// compile time but is typically /usr/bin/ntlm_auth
+    ///
+    /// Note that libcurl will fork when necessary to run the winbind
+    /// application and kill it when complete, calling waitpid() to await its
+    /// exit when done. On POSIX operating systems, killing the process will
+    /// cause a SIGCHLD signal to be raised (regardless of whether
+    /// CURLOPT_NOSIGNAL is set), which must be handled intelligently by the
+    /// application. In particular, the application must not unconditionally
+    /// call wait() in its SIGCHLD signal handler to avoid being subject to a
+    /// race condition. This behavior is subject to change in future versions of
+    /// libcurl.
+    ///
+    /// A proprietary protocol invented and used by Microsoft. It uses a
+    /// challenge-response and hash concept similar to Digest, to prevent the
+    /// password from being eavesdropped.
+    pub fn ntlm_wb(&mut self, on: bool) -> &mut Auth {
+        self.flag(curl_sys::CURLAUTH_NTLM_WB, on)
+    }
+
+    fn flag(&mut self, bit: c_ulong, on: bool) -> &mut Auth {
+        if on {
+            self.bits |= bit as c_long;
+        } else {
+            self.bits &= !bit as c_long;
+        }
+        self
     }
 }

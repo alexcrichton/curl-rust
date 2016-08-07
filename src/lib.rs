@@ -75,6 +75,7 @@ pub mod multi;
 pub fn init() {
     static INIT: Once = ONCE_INIT;
     INIT.call_once(|| {
+        platform_init();
         unsafe {
             curl_sys::curl_global_init(curl_sys::CURL_GLOBAL_ALL);
             libc::atexit(cleanup);
@@ -84,6 +85,14 @@ pub fn init() {
     extern fn cleanup() {
         unsafe { curl_sys::curl_global_cleanup(); }
     }
+
+    #[cfg(all(unix, not(target_os = "macos")))]
+    fn platform_init() {
+        openssl_sys::init();
+    }
+
+    #[cfg(not(all(unix, not(target_os = "macos"))))]
+    fn platform_init() {}
 }
 
 unsafe fn opt_str<'a>(ptr: *const libc::c_char) -> Option<&'a str> {

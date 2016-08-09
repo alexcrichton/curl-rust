@@ -488,7 +488,11 @@ impl<'multi> Message<'multi> {
         }
     }
 
-    // TODO: expose the easy handle somehow...
+    /// Returns whether this easy message was for the specified easy handle or
+    /// not.
+    pub fn is_for(&self, handle: &EasyHandle) -> bool {
+        unsafe { (*self.ptr).easy_handle == handle.easy.raw() }
+    }
 }
 
 impl Events {

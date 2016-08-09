@@ -1,6 +1,7 @@
 //! Multi - initiating multiple requests simultaneously
 
 use std::time::Duration;
+use std::marker;
 
 use libc::{c_int, c_char, c_void, c_long};
 use curl_sys;
@@ -45,9 +46,9 @@ pub struct Message<'multi> {
 /// Once an easy handle has been added to a multi handle then it can no longer
 /// be used via `perform`. This handle is also used to remove the easy handle
 /// from the multi handle when desired.
-pub struct EasyHandle<'multi> {
-    multi: &'multi Multi,
-    easy: Option<Easy>,
+pub struct EasyHandle<'unused> {
+    easy: Easy,
+    _marker: marker::PhantomData<&'unused ()>,
 }
 
 /// Notification of the events that have happened on a socket.
@@ -257,14 +258,33 @@ impl Multi {
     /// The easy handle will remain added to the multi handle until you remove
     /// it again with `remove` on the returned handle - even when a transfer
     /// with that specific easy handle is completed.
-    pub fn add(&self, easy: Easy) -> Result<EasyHandle, MultiError> {
+    pub fn add<'a>(&self, easy: Easy) -> Result<EasyHandle<'a>, MultiError> {
         unsafe {
             try!(cvt(curl_sys::curl_multi_add_handle(self.raw, easy.raw())));
         }
         Ok(EasyHandle {
-            multi: self,
-            easy: Some(easy),
+            _marker: marker::PhantomData,
+            easy: easy,
         })
+    }
+
+    /// Remove an easy handle from this multi session
+    ///
+    /// Removes the easy handle from this multi handle. This will make the
+    /// returned easy handle be removed from this multi handle's control.
+    ///
+    /// When the easy handle has been removed from a multi stack, it is again
+    /// perfectly legal to invoke `perform` on it.
+    ///
+    /// Removing an easy handle while being used is perfectly legal and will
+    /// effectively halt the transfer in progress involving that easy handle.
+    /// All other easy handles and transfers will remain unaffected.
+    pub fn remove(&self, easy: EasyHandle) -> Result<Easy, MultiError> {
+        unsafe {
+            try!(cvt(curl_sys::curl_multi_remove_handle(self.raw,
+                                                        easy.easy.raw())));
+        }
+        Ok(easy.easy)
     }
 
     /// Read multi stack informationals
@@ -449,40 +469,6 @@ fn cvt(code: curl_sys::CURLMcode) -> Result<(), MultiError> {
 impl Drop for Multi {
     fn drop(&mut self) {
         let _ = self.close();
-    }
-}
-
-impl<'m> EasyHandle<'m> {
-    /// Femove this easy handle from a multi session
-    ///
-    /// Removes this easy handle from the multi handle. This will make the
-    /// returned easy handle be removed from this multi handle's control.
-    ///
-    /// When the easy handle has been removed from a multi stack, it is again
-    /// perfectly legal to invoke `perform` on this easy handle.
-    ///
-    /// Removing an easy handle while being used is perfectly legal and will
-    /// effectively halt the transfer in progress involving that easy handle.
-    /// All other easy handles and transfers will remain unaffected.
-    pub fn remove(mut self) -> Result<Easy, MultiError> {
-        try!(self._remove());
-        Ok(self.easy.take().unwrap())
-    }
-
-    fn _remove(&self) -> Result<(), MultiError> {
-        if let Some(easy) = self.easy.as_ref() {
-            unsafe {
-                try!(cvt(curl_sys::curl_multi_remove_handle(self.multi.raw,
-                                                            easy.raw())));
-            }
-        }
-        Ok(())
-    }
-}
-
-impl<'m> Drop for EasyHandle<'m> {
-    fn drop(&mut self) {
-        let _ = self._remove();
     }
 }
 

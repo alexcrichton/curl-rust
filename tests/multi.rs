@@ -144,7 +144,7 @@ HTTP/1.1 200 OK\r\n\
     });
     assert_eq!(done, 1);
 
-    let mut e = t!(e.remove());
+    let mut e = t!(m.remove(e));
     assert_eq!(t!(e.response_code()), 200);
 
     struct Handler<'a> {

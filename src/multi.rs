@@ -6,7 +6,7 @@ use std::marker;
 use libc::{c_int, c_char, c_void, c_long};
 use curl_sys;
 
-use MultiError;
+use {MultiError, Error};
 use easy::Easy;
 use panic;
 
@@ -478,10 +478,14 @@ impl<'multi> Message<'multi> {
     ///
     /// If the message doesn't indicate that a transfer has finished, then
     /// `None` is returned.
-    pub fn result(&self) -> Option<Result<(), MultiError>> {
+    pub fn result(&self) -> Option<Result<(), Error>> {
         unsafe {
             if (*self.ptr).msg == curl_sys::CURLMSG_DONE {
-                Some(cvt((*self.ptr).data as curl_sys::CURLMcode))
+                if (*self.ptr).data as curl_sys::CURLcode == curl_sys::CURLE_OK {
+                    Some(Ok(()))
+                } else {
+                    Some(Err(Error::new((*self.ptr).data as curl_sys::CURLcode)))
+                }
             } else {
                 None
             }

@@ -256,7 +256,11 @@ impl Multi {
     /// The easy handle will remain added to the multi handle until you remove
     /// it again with `remove` on the returned handle - even when a transfer
     /// with that specific easy handle is completed.
-    pub fn add(&self, easy: Easy) -> Result<EasyHandle, MultiError> {
+    pub fn add(&self, mut easy: Easy) -> Result<EasyHandle, MultiError> {
+        // Clear any configuration set by previous transfers because we're
+        // moving this into a `Send+'static` situation now basically.
+        easy.transfer();
+
         unsafe {
             try!(cvt(curl_sys::curl_multi_add_handle(self.raw, easy.raw())));
         }

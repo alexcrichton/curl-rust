@@ -1,7 +1,6 @@
 //! Multi - initiating multiple requests simultaneously
 
 use std::time::Duration;
-use std::marker;
 
 use libc::{c_int, c_char, c_void, c_long};
 use curl_sys;
@@ -46,9 +45,8 @@ pub struct Message<'multi> {
 /// Once an easy handle has been added to a multi handle then it can no longer
 /// be used via `perform`. This handle is also used to remove the easy handle
 /// from the multi handle when desired.
-pub struct EasyHandle<'unused> {
+pub struct EasyHandle {
     easy: Easy,
-    _marker: marker::PhantomData<&'unused ()>,
 }
 
 /// Notification of the events that have happened on a socket.
@@ -258,12 +256,11 @@ impl Multi {
     /// The easy handle will remain added to the multi handle until you remove
     /// it again with `remove` on the returned handle - even when a transfer
     /// with that specific easy handle is completed.
-    pub fn add<'a>(&self, easy: Easy) -> Result<EasyHandle<'a>, MultiError> {
+    pub fn add(&self, easy: Easy) -> Result<EasyHandle, MultiError> {
         unsafe {
             try!(cvt(curl_sys::curl_multi_add_handle(self.raw, easy.raw())));
         }
         Ok(EasyHandle {
-            _marker: marker::PhantomData,
             easy: easy,
         })
     }

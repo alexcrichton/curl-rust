@@ -5,9 +5,16 @@ extern crate libc;
 extern crate libz_sys;
 #[cfg(all(unix, not(target_os = "macos")))]
 extern crate openssl_sys;
+#[cfg(windows)]
+extern crate winapi;
 
 use libc::{c_int, c_char, c_uint, c_long, c_double, c_void, size_t, time_t};
 use libc::c_ulong;
+
+#[cfg(unix)]
+use libc::fd_set;
+#[cfg(windows)]
+use winapi::fd_set;
 
 #[cfg(target_env = "msvc")]
 #[doc(hidden)]
@@ -972,12 +979,11 @@ extern {
                                  curl_handle: *mut CURL) -> CURLMcode;
     pub fn curl_multi_remove_handle(multi_handle: *mut CURLM,
                                     curl_handle: *mut CURL) -> CURLMcode;
-    // TODO: sort out libc::fd_set on Windows
-    // pub fn curl_multi_fdset(multi_handle: *mut CURLM,
-    //                         read_fd_set: *mut libc::fd_set,
-    //                         write_fd_set: *mut libc::fd_set,
-    //                         exc_fd_set: *mut libc::fd_set,
-    //                         max_fd: *mut c_int) -> CURLMcode;
+    pub fn curl_multi_fdset(multi_handle: *mut CURLM,
+                            read_fd_set: *mut fd_set,
+                            write_fd_set: *mut fd_set,
+                            exc_fd_set: *mut fd_set,
+                            max_fd: *mut c_int) -> CURLMcode;
     // pub fn curl_multi_wait(multi_handle: *mut CURLM,
     //                        extra_fds: *mut curl_waitfd,
     //                        extra_nfds: c_uint,

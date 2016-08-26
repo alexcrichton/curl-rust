@@ -16,5 +16,8 @@ curl-sys = { path = "curl-sys", version = "0.2.1" }
 [target."cfg(all(unix, not(target_os = \"macos\")))".dependencies]
 openssl-sys = "0.7.0"
 
+[target."cfg(windows)".dependencies]
+winapi = "0.2"
+
 [dev-dependencies]
 mio = "0.5"

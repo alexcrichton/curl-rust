@@ -5,6 +5,11 @@ use std::time::Duration;
 use libc::{c_int, c_char, c_void, c_long};
 use curl_sys;
 
+#[cfg(windows)]
+use winapi::fd_set;
+#[cfg(unix)]
+use libc::fd_set;
+
 use {MultiError, Error};
 use easy::Easy;
 use panic;
@@ -444,6 +449,56 @@ impl Multi {
             let mut ret = 0;
             try!(cvt(curl_sys::curl_multi_perform(self.raw, &mut ret)));
             Ok(ret as u32)
+        }
+    }
+
+    /// Extracts file descriptor information from a multi handle
+    ///
+    /// This function extracts file descriptor information from a given
+    /// handle, and libcurl returns its `fd_set` sets. The application can use
+    /// these to `select()` on, but be sure to `FD_ZERO` them before calling
+    /// this function as curl_multi_fdset only adds its own descriptors, it
+    /// doesn't zero or otherwise remove any others. The curl_multi_perform
+    /// function should be called as soon as one of them is ready to be read
+    /// from or written to.
+    ///
+    /// If no file descriptors are set by libcurl, this function will return
+    /// `Ok(None)`. Otherwise `Ok(Some(n))` will be returned where `n` the
+    /// highest descriptor number libcurl set. When `Ok(None)` is returned it
+    /// is because libcurl currently does something that isn't possible for
+    /// your application to monitor with a socket and unfortunately you can
+    /// then not know exactly when the current action is completed using
+    /// `select()`. You then need to wait a while before you proceed and call
+    /// `perform` anyway.
+    ///
+    /// When doing `select()`, you should use `get_timeout` to figure out
+    /// how long to wait for action. Call `perform` even if no activity has
+    /// been seen on the `fd_set`s after the timeout expires as otherwise
+    /// internal retries and timeouts may not work as you'd think and want.
+    ///
+    /// If one of the sockets used by libcurl happens to be larger than what
+    /// can be set in an `fd_set`, which on POSIX systems means that the file
+    /// descriptor is larger than `FD_SETSIZE`, then libcurl will try to not
+    /// set it. Setting a too large file descriptor in an `fd_set` implies an out
+    /// of bounds write which can cause crashes, or worse. The effect of NOT
+    /// storing it will possibly save you from the crash, but will make your
+    /// program NOT wait for sockets it should wait for...
+    pub fn fdset(&self,
+                 read: Option<&mut fd_set>,
+                 write: Option<&mut fd_set>,
+                 except: Option<&mut fd_set>) -> Result<Option<i32>, MultiError> {
+        unsafe {
+            let mut ret = 0;
+            let read = read.map(|r| r as *mut _).unwrap_or(0 as *mut _);
+            let write = write.map(|r| r as *mut _).unwrap_or(0 as *mut _);
+            let except = except.map(|r| r as *mut _).unwrap_or(0 as *mut _);
+            try!(cvt(curl_sys::curl_multi_fdset(self.raw, read, write, except,
+                                                &mut ret)));
+            if ret == -1 {
+                Ok(None)
+            } else {
+                Ok(Some(ret))
+            }
         }
     }
 

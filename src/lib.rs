@@ -53,6 +53,8 @@ extern crate libc;
 
 #[cfg(all(unix, not(target_os = "macos")))]
 extern crate openssl_sys;
+#[cfg(windows)]
+extern crate winapi;
 
 use std::ffi::CStr;
 use std::str;

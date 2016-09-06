@@ -572,13 +572,13 @@ impl<'multi> Message<'multi> {
     /// represents a completion for.
     ///
     /// This function will return the token assigned with
-    /// `EasyHandle::set_token`. This reads the `CURLOPT_PRIVATE` field of the
+    /// `EasyHandle::set_token`. This reads the `CURLINFO_PRIVATE` field of the
     /// underlying `*mut CURL`.
     pub fn token(&self) -> Result<usize, Error> {
         unsafe {
             let mut p = 0usize;
             try!(::cvt(curl_sys::curl_easy_getinfo((*self.ptr).easy_handle,
-                                                   curl_sys::CURLOPT_PRIVATE,
+                                                   curl_sys::CURLINFO_PRIVATE,
                                                    &mut p)));
             Ok(p)
         }

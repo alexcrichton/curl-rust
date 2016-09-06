@@ -104,3 +104,11 @@ unsafe fn opt_str<'a>(ptr: *const libc::c_char) -> Option<&'a str> {
         Some(str::from_utf8(CStr::from_ptr(ptr).to_bytes()).unwrap())
     }
 }
+
+fn cvt(r: curl_sys::CURLcode) -> Result<(), Error> {
+    if r == curl_sys::CURLE_OK {
+        Ok(())
+    } else {
+        Err(Error::new(r))
+    }
+}

@@ -18,7 +18,7 @@ use std::time::Duration;
 use curl_sys;
 use libc::{self, c_long, c_int, c_char, c_void, size_t, c_double, c_ulong};
 
-use {Error, FormError};
+use {Error, FormError, cvt};
 use panic;
 
 // TODO: checked casts everywhere
@@ -309,14 +309,6 @@ pub enum WriteError {
 #[derive(Clone, Debug)]
 pub struct Auth {
     bits: c_long,
-}
-
-fn cvt(r: curl_sys::CURLcode) -> Result<(), Error> {
-    if r == curl_sys::CURLE_OK {
-        Ok(())
-    } else {
-        Err(Error::new(r))
-    }
 }
 
 impl Easy {
@@ -2119,11 +2111,10 @@ impl Easy {
     // pub fn set_private(&mut self, private: usize) -> Result<(), Error> {
     //     self.setopt_ptr(curl_sys::CURLOPT_PRIVATE, private as *const _)
     // }
-
+    //
     // /// Fetches this handle's private pointer-sized piece of data.
     // ///
-    // /// This corresponds to
-    // /// `CURLINFO_PRIVATE` and defaults to 0.
+    // /// This corresponds to `CURLINFO_PRIVATE` and defaults to 0.
     // pub fn private(&mut self) -> Result<usize, Error> {
     //     self.getopt_ptr(curl_sys::CURLINFO_PRIVATE).map(|p| p as usize)
     // }

@@ -1,5 +1,6 @@
 //! Multi - initiating multiple requests simultaneously
 
+use std::marker;
 use std::time::Duration;
 
 use libc::{c_int, c_char, c_void, c_long};
@@ -52,6 +53,8 @@ pub struct Message<'multi> {
 /// from the multi handle when desired.
 pub struct EasyHandle {
     easy: Easy,
+    // This is now effecitvely bound to a `Multi`, so it is no longer sendable.
+    _marker: marker::PhantomData<&'static Multi>,
 }
 
 /// Notification of the events that have happened on a socket.
@@ -271,6 +274,7 @@ impl Multi {
         }
         Ok(EasyHandle {
             easy: easy,
+            _marker: marker::PhantomData,
         })
     }
 
@@ -528,6 +532,20 @@ impl Drop for Multi {
     }
 }
 
+impl EasyHandle {
+    /// Sets an internal private token for this `EasyHandle`.
+    ///
+    /// This function will set the `CURLOPT_PRIVATE` field on the underlying
+    /// easy handle.
+    pub fn set_token(&mut self, token: usize) -> Result<(), Error> {
+        unsafe {
+            ::cvt(curl_sys::curl_easy_setopt(self.easy.raw(),
+                                             curl_sys::CURLOPT_PRIVATE,
+                                             token))
+        }
+    }
+}
+
 impl<'multi> Message<'multi> {
     /// If this message indicates that a transfer has finished, returns the
     /// result of the transfer in `Some`.
@@ -537,11 +555,7 @@ impl<'multi> Message<'multi> {
     pub fn result(&self) -> Option<Result<(), Error>> {
         unsafe {
             if (*self.ptr).msg == curl_sys::CURLMSG_DONE {
-                if (*self.ptr).data as curl_sys::CURLcode == curl_sys::CURLE_OK {
-                    Some(Ok(()))
-                } else {
-                    Some(Err(Error::new((*self.ptr).data as curl_sys::CURLcode)))
-                }
+                Some(::cvt((*self.ptr).data as curl_sys::CURLcode))
             } else {
                 None
             }
@@ -552,6 +566,22 @@ impl<'multi> Message<'multi> {
     /// not.
     pub fn is_for(&self, handle: &EasyHandle) -> bool {
         unsafe { (*self.ptr).easy_handle == handle.easy.raw() }
+    }
+
+    /// Returns the token associated with the easy handle that this message
+    /// represents a completion for.
+    ///
+    /// This function will return the token assigned with
+    /// `EasyHandle::set_token`. This reads the `CURLOPT_PRIVATE` field of the
+    /// underlying `*mut CURL`.
+    pub fn token(&self) -> Result<usize, Error> {
+        unsafe {
+            let mut p = 0usize;
+            try!(::cvt(curl_sys::curl_easy_getinfo((*self.ptr).easy_handle,
+                                                   curl_sys::CURLOPT_PRIVATE,
+                                                   &mut p)));
+            Ok(p)
+        }
     }
 }
 

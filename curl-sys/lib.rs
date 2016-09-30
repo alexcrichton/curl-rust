@@ -911,6 +911,8 @@ pub const CURLMOPT_TIMERDATA: CURLMoption = CURLOPTTYPE_OBJECTPOINT + 5;
 // pub const CURLMOPT_PIPELINING_SERVER_BL: CURLMoption = CURLOPTTYPE_OBJECTPOINT + 12;
 // pub const CURLMOPT_MAX_TOTAL_CONNECTIONS: CURLMoption = CURLOPTTYPE_LONG + 13;
 
+pub const CURL_ERROR_SIZE: usize = 256;
+
 extern {
     pub fn curl_formadd(httppost: *mut *mut curl_httppost,
                         last_post: *mut *mut curl_httppost,

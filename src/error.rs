@@ -12,12 +12,23 @@ use curl_sys;
 #[derive(Clone, PartialEq)]
 pub struct Error {
     code: curl_sys::CURLcode,
+    extra: Option<Box<str>>,
+}
+
+pub fn error_with_extra(code: curl_sys::CURLcode, extra: Box<str>) -> Error {
+    Error {
+        code: code,
+        extra: Some(extra),
+    }
 }
 
 impl Error {
     /// Creates a new error from the underlying code returned by libcurl.
     pub fn new(code: curl_sys::CURLcode) -> Error {
-        Error { code: code }
+        Error {
+            code: code,
+            extra: None,
+        }
     }
 
     /// Returns whether this error corresponds to CURLE_UNSUPPORTED_PROTOCOL.
@@ -279,19 +290,30 @@ impl Error {
     pub fn code(&self) -> curl_sys::CURLcode {
         self.code
     }
+
+    /// Returns the extra description of this error, if any is available.
+    pub fn extra_description(&self) -> Option<&str> {
+        self.extra.as_ref().map(|s| &**s)
+    }
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "[{}] {}", self.code(), error::Error::description(self))
+        let desc = error::Error::description(self);
+        match self.extra {
+            Some(ref s) => write!(f, "[{}] {} ({})", self.code(), desc, s),
+            None => write!(f, "[{}] {}", self.code(), desc),
+        }
     }
 }
 
 impl fmt::Debug for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Error {{ description: {:?}, code: {} }}",
-               error::Error::description(self),
-               self.code)
+        f.debug_struct("Error")
+         .field("description", &error::Error::description(self))
+         .field("code", &self.code)
+         .field("extra", &self.extra)
+         .finish()
     }
 }
 
@@ -547,7 +569,7 @@ impl error::Error for FormError {
 
 impl From<ffi::NulError> for Error {
     fn from(_: ffi::NulError) -> Error {
-        Error { code: curl_sys::CURLE_CONV_FAILED }
+        Error { code: curl_sys::CURLE_CONV_FAILED, extra: None }
     }
 }
 

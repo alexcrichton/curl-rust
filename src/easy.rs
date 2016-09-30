@@ -7,7 +7,7 @@
 //! Most simple usage of libcurl will likely use the `Easy` structure here, and
 //! you can find more docs about its usage on that struct.
 
-use std::cell::Cell;
+use std::cell::{RefCell, Cell};
 use std::ffi::{CString, CStr};
 use std::io::SeekFrom;
 use std::path::Path;
@@ -18,7 +18,7 @@ use std::time::Duration;
 use curl_sys;
 use libc::{self, c_long, c_int, c_char, c_void, size_t, c_double, c_ulong};
 
-use {Error, FormError, cvt};
+use {Error, FormError};
 use panic;
 
 // TODO: checked casts everywhere
@@ -121,6 +121,7 @@ struct EasyData {
     progress: Option<Box<FnMut(f64, f64, f64, f64) -> bool + Send>>,
     header_list: Option<List>,
     form: Option<Form>,
+    error_buf: RefCell<Vec<u8>>,
 }
 
 #[derive(Default)]
@@ -2332,9 +2333,10 @@ impl Easy {
     pub fn cookies(&mut self) -> Result<List, Error> {
         unsafe {
             let mut list = 0 as *mut _;
-            try!(cvt(curl_sys::curl_easy_getinfo(self.handle,
+            let rc = curl_sys::curl_easy_getinfo(self.handle,
                                                  curl_sys::CURLINFO_COOKIELIST,
-                                                 &mut list)));
+                                                 &mut list);
+            try!(self.cvt(rc));
             Ok(List { raw: list })
         }
     }
@@ -2371,7 +2373,7 @@ impl Easy {
 
         self.data.running.set(true);
         let ret = unsafe {
-            cvt(curl_sys::curl_easy_perform(self.handle))
+            self.cvt(curl_sys::curl_easy_perform(self.handle))
         };
         self.data.running.set(false);
         panic::propagate();
@@ -2433,6 +2435,7 @@ impl Easy {
             ref running,
             header_list: _,
             form: _,
+            error_buf: _,
         } = *self.data;
 
         // Can't reset while running, we'll detect this elsewhere
@@ -2484,9 +2487,9 @@ impl Easy {
     /// this function returns.
     pub fn unpause_read(&self) -> Result<(), Error> {
         unsafe {
-            try!(cvt(curl_sys::curl_easy_pause(self.handle,
-                                               curl_sys::CURLPAUSE_RECV_CONT)));
-            Ok(())
+            let rc = curl_sys::curl_easy_pause(self.handle,
+                                               curl_sys::CURLPAUSE_RECV_CONT);
+            self.cvt(rc)
         }
     }
 
@@ -2506,9 +2509,9 @@ impl Easy {
     /// paused.
     pub fn unpause_write(&self) -> Result<(), Error> {
         unsafe {
-            try!(cvt(curl_sys::curl_easy_pause(self.handle,
-                                               curl_sys::CURLPAUSE_SEND_CONT)));
-            Ok(())
+            let rc = curl_sys::curl_easy_pause(self.handle,
+                                               curl_sys::CURLPAUSE_SEND_CONT);
+            self.cvt(rc)
         }
     }
 
@@ -2629,11 +2632,12 @@ impl Easy {
     pub fn send(&mut self, data: &[u8]) -> Result<usize, Error> {
         unsafe {
             let mut n = 0;
-            cvt(curl_sys::curl_easy_send(self.handle,
-                                         data.as_ptr() as *const _,
-                                         data.len(),
-                                         &mut n))
-                .map(|()| n)
+            let rc = curl_sys::curl_easy_send(self.handle,
+                                              data.as_ptr() as *const _,
+                                              data.len(),
+                                              &mut n);
+            try!(self.cvt(rc));
+            Ok(n)
         }
     }
 
@@ -2665,7 +2669,7 @@ impl Easy {
                    opt: curl_sys::CURLoption,
                    val: c_long) -> Result<(), Error> {
         unsafe {
-            cvt(curl_sys::curl_easy_setopt(self.handle, opt, val))
+            self.cvt(curl_sys::curl_easy_setopt(self.handle, opt, val))
         }
     }
 
@@ -2679,7 +2683,7 @@ impl Easy {
                   opt: curl_sys::CURLoption,
                   val: *const c_char) -> Result<(), Error> {
         unsafe {
-            cvt(curl_sys::curl_easy_setopt(self.handle, opt, val))
+            self.cvt(curl_sys::curl_easy_setopt(self.handle, opt, val))
         }
     }
 
@@ -2687,7 +2691,8 @@ impl Easy {
                     opt: curl_sys::CURLoption,
                     val: curl_sys::curl_off_t) -> Result<(), Error> {
         unsafe {
-            cvt(curl_sys::curl_easy_setopt(self.handle, opt, val))
+            let rc = curl_sys::curl_easy_setopt(self.handle, opt, val);
+            self.cvt(rc)
         }
     }
 
@@ -2707,7 +2712,8 @@ impl Easy {
                   -> Result<*const c_char, Error> {
         unsafe {
             let mut p = 0 as *const c_char;
-            try!(cvt(curl_sys::curl_easy_getinfo(self.handle, opt, &mut p)));
+            let rc = curl_sys::curl_easy_getinfo(self.handle, opt, &mut p);
+            try!(self.cvt(rc));
             Ok(p)
         }
     }
@@ -2729,9 +2735,30 @@ impl Easy {
     fn getopt_long(&mut self, opt: curl_sys::CURLINFO) -> Result<c_long, Error> {
         unsafe {
             let mut p = 0;
-            try!(cvt(curl_sys::curl_easy_getinfo(self.handle, opt, &mut p)));
+            let rc = curl_sys::curl_easy_getinfo(self.handle, opt, &mut p);
+            try!(self.cvt(rc));
             Ok(p)
         }
+    }
+
+    fn cvt(&self, rc: curl_sys::CURLcode) -> Result<(), Error> {
+        if rc == curl_sys::CURLE_OK {
+            return Ok(())
+        }
+        let mut buf = self.data.error_buf.borrow_mut();
+        if buf[0] == 0 {
+            return Err(Error::new(rc))
+        }
+        let pos = buf.iter().position(|i| *i == 0).unwrap_or(buf.len());
+        let msg = str::from_utf8(&buf[..pos]).expect("non-utf8 error").to_owned();
+        buf[0] = 0;
+        Err(::error::error_with_extra(rc, msg.into_boxed_str()))
+    }
+
+    fn set_error_buf(&self) {
+        self.setopt_ptr(curl_sys::CURLOPT_ERRORBUFFER,
+                        self.data.error_buf.borrow().as_ptr() as *const _)
+            .expect("failed to set error buffer");
     }
 }
 
@@ -3101,6 +3128,9 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
 fn default_configure(handle: &mut Easy) {
     let _ = handle.signal(false);
     ssl_configure(handle);
+
+    handle.data.error_buf = RefCell::new(vec![0; curl_sys::CURL_ERROR_SIZE]);
+    handle.set_error_buf();
 }
 
 #[cfg(all(unix, not(target_os = "macos")))]

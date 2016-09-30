@@ -2754,12 +2754,6 @@ impl Easy {
         buf[0] = 0;
         Err(::error::error_with_extra(rc, msg.into_boxed_str()))
     }
-
-    fn set_error_buf(&self) {
-        self.setopt_ptr(curl_sys::CURLOPT_ERRORBUFFER,
-                        self.data.error_buf.borrow().as_ptr() as *const _)
-            .expect("failed to set error buffer");
-    }
 }
 
 extern fn easy_write_cb(ptr: *mut c_char,
@@ -3126,11 +3120,12 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
 }
 
 fn default_configure(handle: &mut Easy) {
+    handle.data.error_buf = RefCell::new(vec![0; curl_sys::CURL_ERROR_SIZE]);
+    handle.setopt_ptr(curl_sys::CURLOPT_ERRORBUFFER,
+                      handle.data.error_buf.borrow().as_ptr() as *const _)
+          .expect("failed to set error buffer");
     let _ = handle.signal(false);
     ssl_configure(handle);
-
-    handle.data.error_buf = RefCell::new(vec![0; curl_sys::CURL_ERROR_SIZE]);
-    handle.set_error_buf();
 }
 
 #[cfg(all(unix, not(target_os = "macos")))]

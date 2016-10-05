@@ -206,19 +206,14 @@ fn proxy() {
 GET http://example.com/ HTTP/1.1\r\n\
 Host: example.com\r\n\
 Accept: */*\r\n\
-Proxy-Connection: Keep-Alive\r\n\
 \r\n");
     s.send("\
 HTTP/1.1 200 OK\r\n\
 \r\n");
 
-    let mut header = List::new();
-    t!(header.append("Proxy-Connection: Keep-Alive"));
-
     let mut h = handle();
     t!(h.url("http://example.com/"));
     t!(h.proxy(&s.url("/")));
-    t!(h.http_headers(header));
     t!(h.perform());
 }
 

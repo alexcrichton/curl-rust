@@ -42,6 +42,10 @@ fn run(listener: &TcpListener, rx: &Receiver<Message>) {
                         let len = actual.split(": ").skip(1).next().unwrap();
                         expected_len = len.trim().parse().ok();
                     }
+                    // various versions of libcurl do different things here
+                    if actual == "Proxy-Connection: Keep-Alive\r\n" {
+                        continue
+                    }
                     if expected_headers.remove(&actual[..]) {
                         continue
                     }

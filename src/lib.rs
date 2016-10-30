@@ -79,7 +79,7 @@ pub fn init() {
     INIT.call_once(|| {
         platform_init();
         unsafe {
-            curl_sys::curl_global_init(curl_sys::CURL_GLOBAL_ALL);
+            assert_eq!(curl_sys::curl_global_init(curl_sys::CURL_GLOBAL_ALL), 0);
             libc::atexit(cleanup);
         }
     });

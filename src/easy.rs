@@ -646,7 +646,7 @@ impl Easy {
     /// called.
     ///
     /// By default this function calls an internal method and corresponds to
-    /// `CURLOPT_XFERINFOFUNCTION` and `CURLOPT_XFERINFODATA`.
+    /// `CURLOPT_PROGRESSFUNCTION` and `CURLOPT_PROGRESSDATA`.
     ///
     /// Note that the lifetime bound on this function is `'static`, but that
     /// is often too restrictive. To use stack data consider calling the

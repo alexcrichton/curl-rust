@@ -20,4 +20,4 @@ openssl-sys = "0.7.0"
 winapi = "0.2"
 
 [dev-dependencies]
-mio = "0.5"
+mio = "0.6"

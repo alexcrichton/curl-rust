@@ -69,6 +69,7 @@ pub struct Events {
 ///
 /// This type is yielded to the `socket_function` callback to indicate what
 /// events are requested on a socket.
+#[derive(Debug)]
 pub struct SocketEvents {
     bits: c_int,
 }

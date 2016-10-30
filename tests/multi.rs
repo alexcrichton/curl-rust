@@ -83,20 +83,21 @@ Accept: */*\r\n\
 fn upload_lots() {
     use curl::multi::{Socket, SocketEvents, Events};
 
+    #[derive(Debug)]
     enum Message {
         Timeout(Option<Duration>),
         Wait(Socket, SocketEvents, usize),
     }
 
     let mut m = Multi::new();
-    let mut l = t!(mio::EventLoop::new());
-    let io = l.channel();
+    let poll = t!(mio::Poll::new());
+    let (tx, rx) = mio::channel::channel();
+    let tx2 = tx.clone();
     t!(m.socket_function(move |socket, events, token| {
-        t!(io.send(Message::Wait(socket, events, token)));
+        t!(tx2.send(Message::Wait(socket, events, token)));
     }));
-    let io = l.channel();
     t!(m.timer_function(move |dur| {
-        t!(io.send(Message::Timeout(dur)));
+        t!(tx.send(Message::Timeout(dur)));
         true
     }));
 
@@ -127,15 +128,89 @@ HTTP/1.1 200 OK\r\n\
     t!(h.upload(true));
     t!(h.http_headers(list));
 
+    t!(poll.register(&rx,
+                     mio::Token(0),
+                     mio::Ready::all(),
+                     mio::PollOpt::level()));
+
     let e = t!(m.add(h));
 
     assert!(t!(m.perform()) > 0);
-    t!(l.run(&mut Handler {
-        multi: &m,
-        cur_timeout: None,
-        next_token: 1,
-        token_map: HashMap::new(),
-    }));
+    let mut next_token = 1;
+    let mut token_map = HashMap::new();
+    let mut cur_timeout = None;
+    let mut events = mio::Events::with_capacity(128);
+    let mut running = true;
+
+    while running {
+        let n = t!(poll.poll(&mut events, cur_timeout));
+
+        if n == 0 {
+            if t!(m.timeout()) == 0 {
+                running = false;
+            }
+        }
+
+        for event in events.iter() {
+            while event.token() == mio::Token(0) {
+                match rx.try_recv() {
+                    Ok(Message::Timeout(dur)) => cur_timeout = dur,
+                    Ok(Message::Wait(socket, events, token)) => {
+                        let evented = mio::unix::EventedFd(&socket);
+                        if events.remove() {
+                            t!(poll.deregister(&evented));
+                            token_map.remove(&token).unwrap();
+                        } else {
+                            let mut e = mio::Ready::none();
+                            if events.input() {
+                                e = e | mio::Ready::readable();
+                            }
+                            if events.output() {
+                                e = e | mio::Ready::writable();
+                            }
+                            if token == 0 {
+                                let token = next_token;
+                                next_token += 1;
+                                t!(m.assign(socket, token));
+                                token_map.insert(token, socket);
+                                t!(poll.register(&evented,
+                                                 mio::Token(token),
+                                                 e,
+                                                 mio::PollOpt::level()));
+                            } else {
+                                t!(poll.reregister(&evented,
+                                                   mio::Token(token),
+                                                   e,
+                                                   mio::PollOpt::level()));
+                            }
+                        }
+                    }
+                    Err(_) => break,
+                }
+            }
+
+            if event.token() == mio::Token(0) {
+                continue
+            }
+
+            let token = event.token();
+            let socket = token_map[&token.into()];
+            let mut e = Events::new();
+            if event.kind().is_readable() {
+                e.input(true);
+            }
+            if event.kind().is_writable() {
+                e.output(true);
+            }
+            if event.kind().is_error() {
+                e.error(true);
+            }
+            let remaining = t!(m.action(socket, &e));
+            if remaining == 0 {
+                running = false;
+            }
+        }
+    }
 
     let mut done = 0;
     m.messages(|m| {
@@ -146,92 +221,4 @@ HTTP/1.1 200 OK\r\n\
 
     let mut e = t!(m.remove(e));
     assert_eq!(t!(e.response_code()), 200);
-
-    struct Handler<'a> {
-        multi: &'a Multi,
-        cur_timeout: Option<mio::Timeout>,
-        next_token: usize,
-        token_map: HashMap<usize, Socket>,
-    }
-
-    impl<'a> mio::Handler for Handler<'a> {
-        type Timeout = ();
-        type Message = Message;
-
-        fn ready(&mut self,
-                 l: &mut mio::EventLoop<Handler<'a>>,
-                 token: mio::Token,
-                 events: mio::EventSet) {
-            let socket = self.token_map[&token.as_usize()];
-            let mut e = Events::new();
-            if events.is_readable() {
-                e.input(true);
-            }
-            if events.is_writable() {
-                e.output(true);
-            }
-            if events.is_error() {
-                e.error(true);
-            }
-            let remaining = t!(self.multi.action(socket, &e));
-            if remaining == 0 {
-                l.shutdown();
-            }
-        }
-
-        fn timeout(&mut self,
-                   l: &mut mio::EventLoop<Handler<'a>>,
-                   _msg: ()) {
-            if t!(self.multi.timeout()) == 0 {
-                l.shutdown();
-            }
-        }
-
-        fn notify(&mut self,
-                  l: &mut mio::EventLoop<Handler<'a>>,
-                  msg: Message) {
-            match msg {
-                Message::Timeout(dur) => {
-                    if let Some(t) = self.cur_timeout.take() {
-                        l.clear_timeout(t);
-                    }
-                    if let Some(dur) = dur {
-                        let ms = dur.as_secs() * 1_000 +
-                                 (dur.subsec_nanos() / 1_000_000) as u64;
-                        self.cur_timeout = Some(t!(l.timeout_ms((), ms)));
-                    }
-                }
-                Message::Wait(socket, events, token) => {
-                    let evented = mio::unix::EventedFd(&socket);
-                    if events.remove() {
-                        t!(l.deregister(&evented));
-                        self.token_map.remove(&token).unwrap();
-                    } else {
-                        let mut e = mio::EventSet::none();
-                        if events.input() {
-                            e = e | mio::EventSet::readable();
-                        }
-                        if events.output() {
-                            e = e | mio::EventSet::writable();
-                        }
-                        if token == 0 {
-                            let token = self.next_token;
-                            self.next_token += 1;
-                            t!(self.multi.assign(socket, token));
-                            self.token_map.insert(token, socket);
-                            t!(l.register(&evented,
-                                          mio::Token(token),
-                                          e,
-                                          mio::PollOpt::level()));
-                        } else {
-                            t!(l.reregister(&evented,
-                                            mio::Token(token),
-                                            e,
-                                            mio::PollOpt::level()));
-                        }
-                    }
-                }
-            }
-        }
-    }
 }

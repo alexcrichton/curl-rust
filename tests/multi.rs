@@ -158,7 +158,6 @@ HTTP/1.1 200 OK\r\n\
                     Ok(Message::Wait(socket, events, token)) => {
                         let evented = mio::unix::EventedFd(&socket);
                         if events.remove() {
-                            t!(poll.deregister(&evented));
                             token_map.remove(&token).unwrap();
                         } else {
                             let mut e = mio::Ready::none();

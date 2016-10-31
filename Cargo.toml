@@ -21,3 +21,6 @@ winapi = "0.2"
 
 [dev-dependencies]
 mio = "0.6"
+
+[workspace]
+members = ["systest"]

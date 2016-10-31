@@ -57,7 +57,8 @@ fn main() {
     println!("cargo:root={}", dst.display());
     println!("cargo:include={}/include", dst.display());
     if windows {
-        println!("cargo:rustc-flags=-l ws2_32");
+        println!("cargo:rustc-link-lib=ws2_32");
+        println!("cargo:rustc-link-lib=crypt32");
     }
 
     // MSVC builds are just totally different

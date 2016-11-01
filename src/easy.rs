@@ -119,6 +119,7 @@ struct EasyData {
     debug: Option<Box<FnMut(InfoType, &[u8]) + Send>>,
     header: Option<Box<FnMut(&[u8]) -> bool + Send>>,
     progress: Option<Box<FnMut(f64, f64, f64, f64) -> bool + Send>>,
+    ssl_ctx: Option<Box<FnMut(*mut c_void) -> Result<(), Error> + Send>>,
     header_list: Option<List>,
     form: Option<Form>,
     error_buf: RefCell<Vec<u8>>,
@@ -132,6 +133,7 @@ struct TransferData<'a> {
     debug: Option<Box<FnMut(InfoType, &[u8]) + 'a>>,
     header: Option<Box<FnMut(&[u8]) -> bool + 'a>>,
     progress: Option<Box<FnMut(f64, f64, f64, f64) -> bool + 'a>>,
+    ssl_ctx: Option<Box<FnMut(*mut c_void) -> Result<(), Error> + 'a>>,
 }
 
 // libcurl guarantees that a CURL handle is fine to be transferred so long as
@@ -667,6 +669,53 @@ impl Easy {
                                     ptr: *mut c_void) -> Result<(), Error> {
         try!(self.setopt_ptr(curl_sys::CURLOPT_PROGRESSFUNCTION, cb as *const _));
         try!(self.setopt_ptr(curl_sys::CURLOPT_PROGRESSDATA, ptr as *const _));
+        Ok(())
+    }
+
+    /// Callback to SSL context
+    ///
+    /// This callback function gets called by libcurl just before the
+    /// initialization of an SSL connection after having processed all
+    /// other SSL related options to give a last chance to an
+    /// application to modify the behaviour of the SSL
+    /// initialization. The `ssl_ctx` parameter is actually a pointer
+    /// to the SSL library's SSL_CTX. If an error is returned from the
+    /// callback no attempt to establish a connection is made and the
+    /// perform operation will return the callback's error code.
+    ///
+    /// This function will get called on all new connections made to a
+    /// server, during the SSL negotiation. The SSL_CTX pointer will
+    /// be a new one every time.
+    ///
+    /// To use this properly, a non-trivial amount of knowledge of
+    /// your SSL library is necessary. For example, you can use this
+    /// function to call library-specific callbacks to add additional
+    /// validation code for certificates, and even to change the
+    /// actual URI of a HTTPS request.
+    ///
+    /// By default this function calls an internal method and
+    /// corresponds to `CURLOPT_SSL_CTX_FUNCTION` and
+    /// `CURLOPT_SSL_CTX_DATA`.
+    ///
+    /// Note that the lifetime bound on this function is `'static`, but that
+    /// is often too restrictive. To use stack data consider calling the
+    /// `transfer` method and then using `progress_function` to configure a
+    /// callback that can reference stack-local data.
+    pub fn ssl_ctx_function<F>(&mut self, f: F) -> Result<(), Error>
+        where F: FnMut(*mut c_void) -> Result<(), Error> + Send + 'static
+    {
+        self.data.ssl_ctx = Some(Box::new(f));
+        unsafe {
+            self.set_ssl_ctx_function(easy_ssl_ctx_cb,
+                                      &*self.data as *const _ as *mut _)
+        }
+    }
+
+    unsafe fn set_ssl_ctx_function(&self,
+                                   cb: curl_sys::curl_ssl_ctx_callback,
+                                   ptr: *mut c_void) -> Result<(), Error> {
+        try!(self.setopt_ptr(curl_sys::CURLOPT_SSL_CTX_FUNCTION, cb as *const _));
+        try!(self.setopt_ptr(curl_sys::CURLOPT_SSL_CTX_DATA, ptr as *const _));
         Ok(())
     }
 
@@ -2432,6 +2481,7 @@ impl Easy {
             ref debug,
             ref header,
             ref progress,
+            ref ssl_ctx,
             ref running,
             header_list: _,
             form: _,
@@ -2457,6 +2507,7 @@ impl Easy {
         let debug = ptr(debug.is_some());
         let header = ptr(header.is_some());
         let progress = ptr(progress.is_some());
+        let ssl_ctx = ptr(ssl_ctx.is_some());
 
         let _ = self.set_write_function(easy_write_cb, write);
         let _ = self.set_read_function(easy_read_cb, read);
@@ -2464,6 +2515,7 @@ impl Easy {
         let _ = self.set_debug_function(easy_debug_cb, debug);
         let _ = self.set_header_function(easy_header_cb, header);
         let _ = self.set_progress_function(easy_progress_cb, progress);
+        let _ = self.set_ssl_ctx_function(easy_ssl_ctx_cb, ssl_ctx);
 
         // Clear out the post fields which may be referencing stale data.
         // curl_sys::curl_easy_setopt(easy,
@@ -2925,6 +2977,59 @@ fn progress_cb<F>(data: *mut c_void,
     }
 }
 
+extern fn easy_ssl_ctx_cb(handle: *mut curl_sys::CURL,
+                          ssl_ctx: *mut c_void,
+                          data: *mut c_void) -> curl_sys::CURLcode {
+
+    ssl_ctx_cb(handle, ssl_ctx, data, |ssl_ctx| unsafe {
+        match (*(data as *mut EasyData)).ssl_ctx.as_mut() {
+            Some(f) => f(ssl_ctx),
+            // If the callback isn't set we just tell CURL to
+            // continue.
+            None => Ok(()),
+        }
+    })
+}
+
+extern fn transfer_ssl_ctx_cb(handle: *mut curl_sys::CURL,
+                              ssl_ctx: *mut c_void,
+                              data: *mut c_void) -> curl_sys::CURLcode {
+
+    ssl_ctx_cb(handle, ssl_ctx, data, |ssl_ctx| unsafe {
+        match (*(data as *mut TransferData)).ssl_ctx.as_mut() {
+            Some(f) => f(ssl_ctx),
+            // If the callback isn't set we just tell CURL to
+            // continue.
+            None => Ok(()),
+        }
+    })
+}
+
+// TODO: same thing as `debug_cb`: can we expose `handle`?
+fn ssl_ctx_cb<F>(_handle: *mut curl_sys::CURL,
+                 ssl_ctx: *mut c_void,
+                 data: *mut c_void,
+                 f: F) -> curl_sys::CURLcode
+    where F: FnOnce(*mut c_void) -> Result<(), Error>
+{
+    if data.is_null() {
+        return curl_sys::CURLE_OK;
+    }
+
+    let result = panic::catch(|| {
+        f(ssl_ctx)
+    });
+
+    match result {
+        Some(Ok(())) => curl_sys::CURLE_OK,
+        Some(Err(e)) => e.code(),
+        // Default to a generic SSL error in case of panic. This
+        // shouldn't really matter since the error should be
+        // propagated later on but better safe than sorry...
+        None => curl_sys::CURLE_SSL_CONNECT_ERROR,
+    }
+}
+
 extern fn easy_debug_cb(handle: *mut curl_sys::CURL,
                         kind: curl_sys::curl_infotype,
                         data: *mut c_char,
@@ -3059,6 +3164,18 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
         self.data.progress = Some(Box::new(f));
         unsafe {
             self.easy.set_progress_function(transfer_progress_cb,
+                                            &*self.data as *const _ as *mut _)
+        }
+    }
+
+    /// Same as `Easy::ssl_ctx_function`, just takes a non `'static`
+    /// lifetime corresponding to the lifetime of this transfer.
+    pub fn ssl_ctx_function<F>(&mut self, f: F) -> Result<(), Error>
+        where F: FnMut(*mut c_void) -> Result<(), Error> + Send + 'data
+    {
+        self.data.ssl_ctx = Some(Box::new(f));
+        unsafe {
+            self.easy.set_ssl_ctx_function(transfer_ssl_ctx_cb,
                                             &*self.data as *const _ as *mut _)
         }
     }

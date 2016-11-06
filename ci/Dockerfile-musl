@@ -15,5 +15,4 @@ RUN \
   rm -rf openssl-1.0.2g
 
 ENV OPENSSL_STATIC=1 \
-    OPENSSL_LIB_DIR=/openssl/lib \
-    OPENSSL_INCLUDE_DIR=/openssl/include
+    OPENSSL_DIR=/openssl

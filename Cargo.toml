@@ -14,7 +14,8 @@ curl-sys = { path = "curl-sys", version = "0.2.3" }
 
 # Unix platforms use OpenSSL for now to provide SSL functionality
 [target."cfg(all(unix, not(target_os = \"macos\")))".dependencies]
-openssl-sys = "0.7.0"
+openssl-sys = "0.9.0"
+openssl-probe = "0.1"
 
 [target."cfg(windows)".dependencies]
 winapi = "0.2"

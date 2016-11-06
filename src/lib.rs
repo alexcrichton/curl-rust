@@ -53,6 +53,8 @@ extern crate libc;
 
 #[cfg(all(unix, not(target_os = "macos")))]
 extern crate openssl_sys;
+#[cfg(all(unix, not(target_os = "macos")))]
+extern crate openssl_probe;
 #[cfg(windows)]
 extern crate winapi;
 

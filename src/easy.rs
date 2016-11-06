@@ -3247,7 +3247,7 @@ fn default_configure(handle: &mut Easy) {
 
 #[cfg(all(unix, not(target_os = "macos")))]
 fn ssl_configure(handle: &mut Easy) {
-    let probe = ::openssl_sys::probe::probe();
+    let probe = ::openssl_probe::probe();
     if let Some(ref path) = probe.cert_file {
         let _ = handle.cainfo(path);
     }

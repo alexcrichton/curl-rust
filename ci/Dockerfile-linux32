@@ -4,4 +4,4 @@ RUN dpkg --add-architecture i386
 RUN apt-get update
 RUN apt-get install -y --no-install-recommends \
   gcc-multilib ca-certificates make libc6-dev \
-  libssl-dev:i386
+  libssl-dev:i386 pkg-config

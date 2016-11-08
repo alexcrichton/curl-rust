@@ -1,7 +1,7 @@
 [package]
 
 name = "curl"
-version = "0.3.10"
+version = "0.3.11"
 authors = ["Carl Lerche <me@carllerche.com>",
            "Alex Crichton <alex@alexcrichton.com>"]
 license = "MIT"
@@ -10,7 +10,7 @@ description = "Rust bindings to libcurl for making HTTP requests"
 
 [dependencies]
 libc = "0.2"
-curl-sys = { path = "curl-sys", version = "0.2.3" }
+curl-sys = { path = "curl-sys", version = "0.2.5" }
 
 # Unix platforms use OpenSSL for now to provide SSL functionality
 [target."cfg(all(unix, not(target_os = \"macos\")))".dependencies]

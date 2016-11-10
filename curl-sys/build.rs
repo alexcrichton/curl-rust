@@ -121,11 +121,20 @@ fn main() {
         // DEP_OPENSSL_ROOT was what cargo used to use via overrides, and
         // OPENSSL_ROOT_DIR is also used by libssh2 which cargo uses and can be
         // set by various build scripts.
-        let openssl_root = env::var("DEP_OPENSSL_ROOT").or_else(|_| {
-            env::var("OPENSSL_ROOT_DIR")
+        let openssl_root = env::var_os("DEP_OPENSSL_ROOT").or_else(|| {
+            env::var_os("OPENSSL_ROOT_DIR")
+        }).or_else(|| {
+            env::var_os("DEP_OPENSSL_INCLUDE").and_then(|include| {
+                let root = Path::new(&include).parent().unwrap();
+                if root.exists() {
+                    Some(root.as_os_str().to_owned())
+                } else {
+                    None
+                }
+            })
         });
-        if let Ok(s) = openssl_root {
-            cmd.arg(format!("--with-ssl={}", s));
+        if let Some(s) = openssl_root {
+            cmd.arg(format!("--with-ssl={}", s.to_str().unwrap()));
         }
     }
     cmd.arg("--enable-static=yes");

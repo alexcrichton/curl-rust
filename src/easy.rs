@@ -2802,7 +2802,7 @@ impl Easy {
             return Err(Error::new(rc))
         }
         let pos = buf.iter().position(|i| *i == 0).unwrap_or(buf.len());
-        let msg = str::from_utf8(&buf[..pos]).expect("non-utf8 error").to_owned();
+        let msg = String::from_utf8_lossy(&buf[..pos]).into_owned();
         buf[0] = 0;
         Err(::error::error_with_extra(rc, msg.into_boxed_str()))
     }

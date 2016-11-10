@@ -4,7 +4,7 @@ environment:
   # Ensure MinGW works, but we need to download the 32-bit MinGW compiler from a
   # custom location.
   - TARGET: i686-pc-windows-gnu
-    MINGW_URL: https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/4.9.2/threads-win32/dwarf/i686-4.9.2-release-win32-dwarf-rt_v4-rev4.7z/download
+    MINGW_URL: https://s3.amazonaws.com/rust-lang-ci
     MINGW_ARCHIVE: i686-4.9.2-release-win32-dwarf-rt_v4-rev4.7z
     MINGW_DIR: mingw32
   - TARGET: x86_64-pc-windows-gnu
@@ -35,9 +35,9 @@ install:
   - if defined MSYS_BITS set PATH=C:\msys64\mingw%MSYS_BITS%\bin;C:\msys64\usr\bin;%PATH%
 
   # download a custom compiler otherwise
-  - if defined MINGW_ARCHIVE appveyor DownloadFile "%MINGW_URL%" -FileName "%MINGW_ARCHIVE%"
-  - if defined MINGW_ARCHIVE 7z x -y "%MINGW_ARCHIVE%" > nul
-  - if defined MINGW_ARCHIVE set PATH=%CD%\%MINGW_DIR%\bin;C:\msys64\usr\bin;%PATH%
+  - if defined MINGW_URL appveyor DownloadFile %MINGW_URL%/%MINGW_ARCHIVE%
+  - if defined MINGW_URL 7z x -y %MINGW_ARCHIVE% > nul
+  - if defined MINGW_URL set PATH=C:\Python27;%CD%\%MINGW_DIR%\bin;C:\msys64\usr\bin;%PATH%
 
   # If we're pinning to a specific visual studio, do so now
   - if defined VS call "%VS%" %ARCH%

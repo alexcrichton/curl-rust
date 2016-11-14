@@ -66,6 +66,9 @@ fn main() {
         return build_msvc(&target);
     }
 
+    let openssl_root = register_dep("OPENSSL");
+    let zlib_root = register_dep("Z");
+
     let cfg = gcc::Config::new();
     let compiler = cfg.get_compiler();
 
@@ -117,11 +120,11 @@ fn main() {
     } else {
         cmd.arg("--without-ca-bundle");
         cmd.arg("--without-ca-path");
-        if let Some(root) = register_dep("OPENSSL") {
-            cmd.arg(format!("--with-ssl={}", root.display()));
-        }
     }
-    if let Some(root) = register_dep("Z") {
+    if let Some(root) = openssl_root {
+        cmd.arg(format!("--with-ssl={}", root.display()));
+    }
+    if let Some(root) = zlib_root {
         cmd.arg(format!("--with-zlib={}", root.display()));
     }
     cmd.arg("--enable-static=yes");

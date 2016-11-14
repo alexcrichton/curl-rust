@@ -117,29 +117,9 @@ fn main() {
     } else {
         cmd.arg("--without-ca-bundle");
         cmd.arg("--without-ca-path");
-
-        // DEP_OPENSSL_ROOT was what cargo used to use via overrides, and
-        // OPENSSL_ROOT_DIR is also used by libssh2 which cargo uses and can be
-        // set by various build scripts.
-        let openssl_root = env::var_os("DEP_OPENSSL_ROOT").or_else(|| {
-            env::var_os("OPENSSL_ROOT_DIR")
-        }).or_else(|| {
-            env::var_os("DEP_OPENSSL_INCLUDE").and_then(|include| {
-                let root = Path::new(&include).parent().unwrap();
-                if root.exists() {
-                    Some(root.as_os_str().to_owned())
-                } else {
-                    None
-                }
-            })
-        });
-        if let Some(s) = openssl_root {
-            cmd.arg(format!("--with-ssl={}", s.to_str().unwrap()));
-        }
+        register_dep("OPENSSL");
     }
-    if let Ok(root) = env::var("DEP_Z_ROOT") {
-        cmd.arg(format!("--with-zlib={}", root));
-    }
+    register_dep("Z");
     cmd.arg("--enable-static=yes");
     cmd.arg("--enable-shared=no");
     match &env::var("PROFILE").unwrap()[..] {
@@ -225,6 +205,29 @@ fn msys_compatible(path: &Path) -> String {
     }
     path.replace("C:\\", "/c/")
         .replace("\\", "/")
+}
+
+fn register_dep(dep: &str) {
+    if let Some(s) = env::var_os(&format!("DEP_{}_ROOT", dep)) {
+        prepend("PKG_CONFIG_PATH", Path::new(&s).join("lib/pkgconfig"));
+        return
+    }
+    if let Some(s) = env::var_os(&format!("DEP_{}_INCLUDE", dep)) {
+        let root = Path::new(&s).parent().unwrap();
+        env::set_var(&format!("DEP_{}_ROOT", dep), root);
+        let path = root.join("lib/pkgconfig");
+        if path.exists() {
+            prepend("PKG_CONFIG_PATH", path);
+            return
+        }
+    }
+
+    fn prepend(var: &str, val: PathBuf) {
+        let prefix = env::var(var).unwrap_or(String::new());
+        let mut v = vec![val];
+        v.extend(env::split_paths(&prefix));
+        env::set_var(var, &env::join_paths(v).unwrap());
+    }
 }
 
 fn build_msvc(target: &str) {

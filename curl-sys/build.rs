@@ -137,6 +137,9 @@ fn main() {
             cmd.arg(format!("--with-ssl={}", s.to_str().unwrap()));
         }
     }
+    if let Ok(root) = env::var("DEP_Z_ROOT") {
+        cmd.arg(format!("--with-zlib={}", root));
+    }
     cmd.arg("--enable-static=yes");
     cmd.arg("--enable-shared=no");
     match &env::var("PROFILE").unwrap()[..] {

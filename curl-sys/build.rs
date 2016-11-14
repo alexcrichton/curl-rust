@@ -117,9 +117,13 @@ fn main() {
     } else {
         cmd.arg("--without-ca-bundle");
         cmd.arg("--without-ca-path");
-        register_dep("OPENSSL");
+        if let Some(root) = register_dep("OPENSSL") {
+            cmd.arg(format!("--with-ssl={}", root.display()));
+        }
     }
-    register_dep("Z");
+    if let Some(root) = register_dep("Z") {
+        cmd.arg(format!("--with-zlib={}", root.display()));
+    }
     cmd.arg("--enable-static=yes");
     cmd.arg("--enable-shared=no");
     match &env::var("PROFILE").unwrap()[..] {
@@ -207,10 +211,10 @@ fn msys_compatible(path: &Path) -> String {
         .replace("\\", "/")
 }
 
-fn register_dep(dep: &str) {
+fn register_dep(dep: &str) -> Option<PathBuf> {
     if let Some(s) = env::var_os(&format!("DEP_{}_ROOT", dep)) {
         prepend("PKG_CONFIG_PATH", Path::new(&s).join("lib/pkgconfig"));
-        return
+        return Some(s.into())
     }
     if let Some(s) = env::var_os(&format!("DEP_{}_INCLUDE", dep)) {
         let root = Path::new(&s).parent().unwrap();
@@ -218,9 +222,11 @@ fn register_dep(dep: &str) {
         let path = root.join("lib/pkgconfig");
         if path.exists() {
             prepend("PKG_CONFIG_PATH", path);
-            return
+            return Some(root.to_path_buf())
         }
     }
+
+    return None;
 
     fn prepend(var: &str, val: PathBuf) {
         let prefix = env::var(var).unwrap_or(String::new());

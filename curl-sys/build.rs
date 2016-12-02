@@ -265,6 +265,12 @@ fn build_msvc(target: &str) {
        .arg("ENABLE_SSPI=yes")
        .arg(format!("MACHINE={}", machine));
 
+    let features = env::var("CARGO_CFG_TARGET_FEATURE")
+                      .unwrap_or(String::new());
+    if features.contains("crt-static") {
+        cmd.arg("RTLIBCFG=static");
+    }
+
     if let Some(inc) = env::var_os("DEP_Z_ROOT") {
         let inc = PathBuf::from(inc);
         let mut s = OsString::from("WITH_DEVEL=");

@@ -122,10 +122,10 @@ fn main() {
         cmd.arg("--without-ca-path");
     }
     if let Some(root) = openssl_root {
-        cmd.arg(format!("--with-ssl={}", root.display()));
+        cmd.arg(format!("--with-ssl={}", msys_compatible(&root)));
     }
     if let Some(root) = zlib_root {
-        cmd.arg(format!("--with-zlib={}", root.display()));
+        cmd.arg(format!("--with-zlib={}", msys_compatible(&root)));
     }
     cmd.arg("--enable-static=yes");
     cmd.arg("--enable-shared=no");

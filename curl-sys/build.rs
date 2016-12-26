@@ -143,7 +143,8 @@ fn main() {
 
     if target != host &&
        (!target.contains("windows") || !host.contains("windows")) {
-        cmd.arg(format!("--host={}", host));
+        cmd.arg(format!("--build={}", host));
+        cmd.arg(format!("--host={}", target));
         cmd.arg(format!("--target={}", target));
     }
 

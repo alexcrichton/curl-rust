@@ -85,13 +85,10 @@ fn main() {
     // Windows-style paths (those starting with C:\), but it chokes on those.
     // For that reason we build up a shell script with paths converted to
     // posix versions hopefully...
-    //
-    // Also apparently the buildbots choke unless we manually set LD, who knows
-    // why?!
     cmd.env("CC", compiler.path())
        .env("CFLAGS", cflags)
-       .env("LD", &which("ld").unwrap())
        .env("VERBOSE", "1")
+       .env("LD", msys_compatible(&which("ld").unwrap()))
        .current_dir(&dst.join("build"))
        .arg(msys_compatible(&src.join("curl/configure")));
 

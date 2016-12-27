@@ -82,13 +82,18 @@ pub fn init() {
         platform_init();
         unsafe {
             assert_eq!(curl_sys::curl_global_init(curl_sys::CURL_GLOBAL_ALL), 0);
-            libc::atexit(cleanup);
         }
-    });
 
-    extern fn cleanup() {
-        unsafe { curl_sys::curl_global_cleanup(); }
-    }
+        // Note that we explicitly don't schedule a call to
+        // `curl_global_cleanup`. The documentation for that function says
+        //
+        // > You must not call it when any other thread in the program (i.e. a
+        // > thread sharing the same memory) is running. This doesn't just mean
+        // > no other thread that is using libcurl.
+        //
+        // We can't ever be sure of that, so unfortunately we can't call the
+        // function.
+    });
 
     #[cfg(all(unix, not(target_os = "macos")))]
     fn platform_init() {

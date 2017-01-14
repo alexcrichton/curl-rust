@@ -375,6 +375,10 @@ pub const CURLGSSAPI_DELEGATION_FLAG: c_ulong = 1 << 1;
 //                                          curl_khmatch,
 //                                          *mut c_void) -> c_int;
 
+pub const CURL_NETRC_IGNORED: c_ulong = 0;
+pub const CURL_NETRC_OPTIONAL: c_ulong = 1;
+pub const CURL_NETRC_REQUIRED: c_ulong = 2;
+
 pub type curl_usessl = __enum_ty;
 pub const CURLUSESSL_NONE: curl_usessl = 0;
 pub const CURLUSESSL_TRY: curl_usessl = 1;

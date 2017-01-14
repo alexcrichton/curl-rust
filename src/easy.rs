@@ -307,6 +307,24 @@ pub enum WriteError {
     __Nonexhaustive,
 }
 
+/// Options for `.netrc` parsing.
+pub enum NetRc {
+    /// Ignoring `.netrc` file and use information from url
+    ///
+    /// This option is default
+    Ignored = curl_sys::CURL_NETRC_IGNORED as isize,
+
+    /// The  use of your `~/.netrc` file is optional, and information in the URL is to be
+    /// preferred. The file will be scanned for the host and user name (to find the password only)
+    /// or for the host only, to find the first user name and password after that machine, which
+    /// ever information is not specified in the URL.
+    Optional = curl_sys::CURL_NETRC_OPTIONAL as isize,
+
+    /// This value tells the library that use of the file is required, to ignore the information in
+    /// the URL, and to search the file for the host only.
+    Required = curl_sys::CURL_NETRC_REQUIRED as isize,
+}
+
 /// Structure which stores possible authentication methods to get passed to
 /// `http_auth` and `proxy_auth`.
 #[derive(Clone, Debug)]
@@ -1125,6 +1143,13 @@ impl Easy {
     /// By default this value is basic and corresponds to `CURLOPT_PROXYAUTH`.
     pub fn proxy_auth(&mut self, auth: &Auth) -> Result<(), Error> {
         self.setopt_long(curl_sys::CURLOPT_PROXYAUTH, auth.bits)
+    }
+
+    /// Enable .netrc parsing
+    ///
+    /// By default the .netrc file is ignored and corresponds to `CURL_NETRC_IGNORED`.
+    pub fn netrc(&mut self, netrc: NetRc) -> Result<(), Error> {
+        self.setopt_long(curl_sys::CURLOPT_NETRC, netrc as c_long)
     }
 
     // =========================================================================

@@ -3556,8 +3556,8 @@ impl<'form, 'data> Part<'form, 'data> {
 
     /// Attempts to add this part to the `Form` that it was created from.
     ///
-    /// If any error happens while adding that error is returned, otherwise if
-    /// the part was successfully appended then `Ok(())` is returned.
+    /// If any error happens while adding, that error is returned, otherwise
+    /// `Ok(())` is returned.
     pub fn add(&mut self) -> Result<(), FormError> {
         if let Some(err) = self.error.clone() {
             return Err(err)

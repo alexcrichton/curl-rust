@@ -103,7 +103,7 @@ pub struct Easy {
 /// created by the `Easy::transfer` method, is used for this sort of request.
 ///
 /// The callbacks attached to a `Transfer` are only active for that one transfer
-/// object, and they're allows to elide both the `Send` and `'static` bounds to
+/// object, and they allow to elide both the `Send` and `'static` bounds to
 /// close over stack-local information.
 pub struct Transfer<'easy, 'data> {
     easy: &'easy mut Easy,

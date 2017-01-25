@@ -5,7 +5,7 @@ libcurl bindings for Rust
 [![Build Status](https://travis-ci.org/alexcrichton/curl-rust.svg?branch=master)](https://travis-ci.org/alexcrichton/curl-rust)
 [![Build status](https://ci.appveyor.com/api/projects/status/lx98wtbxhhhajpr9?svg=true)](https://ci.appveyor.com/project/alexcrichton/curl-rust)
 
-[Documentation](http://alexcrichton.com/curl-rust)
+[Documentation](https://docs.rs/curl)
 
 ## Quick Start
 

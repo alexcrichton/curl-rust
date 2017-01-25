@@ -68,6 +68,7 @@ fn main() {
 
     let openssl_root = register_dep("OPENSSL");
     let zlib_root = register_dep("Z");
+    let nghttp2_root = register_dep("NGHTTP2");
 
     let cfg = gcc::Config::new();
     let compiler = cfg.get_compiler();
@@ -146,10 +147,15 @@ fn main() {
         cmd.arg(format!("--target={}", target));
     }
 
+    if let Some(root) = nghttp2_root {
+        cmd.arg(format!("--with-nghttp2={}", msys_compatible(&root)));
+    } else {
+        cmd.arg("--without-nghttp2");
+    }
+
     cmd.arg("--without-librtmp");
     cmd.arg("--without-libidn");
     cmd.arg("--without-libssh2");
-    cmd.arg("--without-nghttp2");
     cmd.arg("--disable-ldap");
     cmd.arg("--disable-ldaps");
     cmd.arg("--disable-ftp");

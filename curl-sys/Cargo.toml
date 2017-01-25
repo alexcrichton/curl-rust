@@ -1,13 +1,19 @@
 [package]
 name = "curl-sys"
-version = "0.3.6"
+version = "0.3.7"
 authors = ["Carl Lerche <me@carllerche.com>",
            "Alex Crichton <alex@alexcrichton.com>"]
 links = "curl"
 build = "build.rs"
 license = "MIT"
-repository = "https://github.com/carllerche/curl-rust"
+repository = "https://github.com/alexcrichton/curl-rust"
 description = "Native bindings to the libcurl library"
+documentation = "https://docs.rs/curl-sys"
+categories = ["external-ffi-bindings"]
+
+[badges]
+travis-ci = { repository = "alexcrichton/curl-rust" }
+appveyor = { repository = "alexcrichton/curl-rust" }
 
 [build-dependencies]
 pkg-config = "0.3"

@@ -1,4 +1,5 @@
 #![allow(bad_style)]
+#![doc(html_root_url = "https://docs.rs/curl-sys/0.3")]
 
 extern crate libc;
 #[cfg(not(target_env = "msvc"))]

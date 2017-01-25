@@ -5,12 +5,19 @@ version = "0.4.3"
 authors = ["Carl Lerche <me@carllerche.com>",
            "Alex Crichton <alex@alexcrichton.com>"]
 license = "MIT"
-repository = "https://github.com/carllerche/curl-rust"
+repository = "https://github.com/alexcrichton/curl-rust"
+homepage = "https://github.com/alexcrichton/curl-rust"
+documentation = "https://docs.rs/curl"
 description = "Rust bindings to libcurl for making HTTP requests"
+categories = ["api-bindings", "web-programming::http-client"]
+
+[badges]
+travis-ci = { repository = "alexcrichton/curl-rust" }
+appveyor = { repository = "alexcrichton/curl-rust" }
 
 [dependencies]
 libc = "0.2"
-curl-sys = { path = "curl-sys", version = "0.3" }
+curl-sys = { path = "curl-sys", version = "0.3.7" }
 
 # Unix platforms use OpenSSL for now to provide SSL functionality
 [target."cfg(all(unix, not(target_os = \"macos\")))".dependencies]

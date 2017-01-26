@@ -43,5 +43,9 @@ fn main() {
     cfg.skip_signededness(|s| {
         s.ends_with("callback") || s.ends_with("function")
     });
+
+    // Disable HTTP/2 checking if feature not enabled
+    #[cfg(not(feature = "http2"))]
+    cfg.skip_const(|s| s.starts_with("CURL_HTTP_VERSION_2"));
     cfg.generate("../curl-sys/lib.rs", "all.rs");
 }

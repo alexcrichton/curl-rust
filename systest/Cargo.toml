@@ -10,3 +10,6 @@ libc = "0.2"
 
 [build-dependencies]
 ctest = "0.1"
+
+[features]
+http2 = []

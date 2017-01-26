@@ -1646,7 +1646,7 @@ impl Easy {
     /// In unix-like systems, this might cause signals to be used unless
     /// `nosignal` is set.
     ///
-    /// Since this puts a hard limit for how long time a request is allowed to
+    /// Since this puts a hard limit for how long a request is allowed to
     /// take, it has limited use in dynamic use cases with varying transfer
     /// times. You are then advised to explore `low_speed_limit`,
     /// `low_speed_time` or using `progress_function` to implement your own

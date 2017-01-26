@@ -615,13 +615,13 @@ pub const CURL_HTTP_VERSION_1_0: c_int = 1;
 /// Please use HTTP 1.1 in the request
 pub const CURL_HTTP_VERSION_1_1: c_int = 2;
 /// Please use HTTP 2 in the request
-#[cfg(feature = "http2")]
+/// (Added in CURL 7.33.0)
 pub const CURL_HTTP_VERSION_2_0: c_int = 3;
 /// Use version 2 for HTTPS, version 1.1 for HTTP
-#[cfg(feature = "http2")]
+/// (Added in CURL 7.47.0)
 pub const CURL_HTTP_VERSION_2TLS: c_int = 4;
 /// Please use HTTP 2 without HTTP/1.1 Upgrade
-#[cfg(feature = "http2")]
+/// (Added in CURL 7.49.0)
 pub const CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE: c_int = 5;
 
 // Note that the type here is wrong, it's just intended to just be an enum.

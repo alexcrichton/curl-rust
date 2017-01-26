@@ -26,7 +26,3 @@ openssl-sys = "0.9"
 
 [target."cfg(windows)".dependencies]
 winapi = "0.2"
-
-[features]
-default = []
-http2 = []

@@ -204,7 +204,6 @@ pub enum IpResolve {
 }
 
 /// Possible values to pass to the `http_version` method.
-#[cfg(feature = "http2")]
 pub enum HttpVersion {
     /// We don't care what http version to use, and we'd like the library to 
     /// choose the best possible for us.
@@ -217,32 +216,16 @@ pub enum HttpVersion {
     V11 = curl_sys::CURL_HTTP_VERSION_1_1 as isize,
 
     /// Please use HTTP 2 in the request
+    /// (Added in CURL 7.33.0)
     V2 = curl_sys::CURL_HTTP_VERSION_2_0 as isize,
 
     /// Use version 2 for HTTPS, version 1.1 for HTTP
+    /// (Added in CURL 7.47.0)
     V2TLS = curl_sys::CURL_HTTP_VERSION_2TLS as isize,
 
     /// Please use HTTP 2 without HTTP/1.1 Upgrade
+    /// (Added in CURL 7.49.0)
     V2PriorKnowledge = curl_sys::CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE as isize,
-
-    /// Hidden variant to indicate that this enum should not be matched on, it
-    /// may grow over time.
-    #[doc(hidden)]
-    __Nonexhaustive = 500,
-}
-
-/// Possible values to pass to the `http_version` method.
-#[cfg(not(feature = "http2"))]
-pub enum HttpVersion {
-    /// We don't care what http version to use, and we'd like the library to 
-    /// choose the best possible for us.
-    Any = curl_sys::CURL_HTTP_VERSION_NONE as isize,
-
-    /// Please use HTTP 1.0 in the request
-    V10 = curl_sys::CURL_HTTP_VERSION_1_0 as isize,
-
-    /// Please use HTTP 1.1 in the request
-    V11 = curl_sys::CURL_HTTP_VERSION_1_1 as isize,
 
     /// Hidden variant to indicate that this enum should not be matched on, it
     /// may grow over time.

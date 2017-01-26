@@ -25,7 +25,3 @@ mio = "0.6"
 
 [workspace]
 members = ["systest"]
-
-[features]
-default = []
-http2 = ["curl-sys/http2"]

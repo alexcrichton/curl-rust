@@ -116,6 +116,7 @@ struct EasyData {
     write: Option<Box<FnMut(&[u8]) -> Result<usize, WriteError> + Send>>,
     read: Option<Box<FnMut(&mut [u8]) -> Result<usize, ReadError> + Send>>,
     seek: Option<Box<FnMut(SeekFrom) -> SeekResult + Send>>,
+    debug_set: bool,
     debug: Option<Box<FnMut(InfoType, &[u8]) + Send>>,
     header: Option<Box<FnMut(&[u8]) -> bool + Send>>,
     progress: Option<Box<FnMut(f64, f64, f64, f64) -> bool + Send>>,
@@ -754,6 +755,7 @@ impl Easy {
         where F: FnMut(InfoType, &[u8]) + Send + 'static
     {
         self.data.debug = Some(Box::new(f));
+        self.data.debug_set = true;
         unsafe {
             self.set_debug_function(easy_debug_cb,
                                     &*self.data as *const _ as *mut _)
@@ -2508,6 +2510,7 @@ impl Easy {
             ref progress,
             ref ssl_ctx,
             ref running,
+            debug_set,
             header_list: _,
             form: _,
             error_buf: _,
@@ -2537,10 +2540,15 @@ impl Easy {
         let _ = self.set_write_function(easy_write_cb, write);
         let _ = self.set_read_function(easy_read_cb, read);
         let _ = self.set_seek_function(easy_seek_cb, seek);
-        let _ = self.set_debug_function(easy_debug_cb, debug);
         let _ = self.set_header_function(easy_header_cb, header);
         let _ = self.set_progress_function(easy_progress_cb, progress);
         let _ = self.set_ssl_ctx_function(easy_ssl_ctx_cb, ssl_ctx);
+
+        // Don't reset the debug callback if we haven't set it yet to preserve
+        // the default behavior.
+        if debug_set {
+            let _ = self.set_debug_function(easy_debug_cb, debug);
+        }
 
         // Clear out the post fields which may be referencing stale data.
         // curl_sys::curl_easy_setopt(easy,
@@ -3211,6 +3219,7 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
         where F: FnMut(InfoType, &[u8]) + 'data
     {
         self.data.debug = Some(Box::new(f));
+        self.easy.data.debug_set = true;
         unsafe {
             self.easy.set_debug_function(transfer_debug_cb,
                                          &*self.data as *const _ as *mut _)

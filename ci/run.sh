@@ -9,3 +9,8 @@ if [ -z "$NO_RUN" ]; then
     cargo doc --no-deps
     cargo doc --no-deps -p curl-sys
 fi
+
+if [ -n "$FEATURES" ]
+then
+	cargo run --manifest-path systest/Cargo.toml --target $TARGET --features "$FEATURES"
+fi

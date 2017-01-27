@@ -606,6 +606,25 @@ pub const CURL_IPRESOLVE_WHATEVER: c_int = 0;
 pub const CURL_IPRESOLVE_V4: c_int = 1;
 pub const CURL_IPRESOLVE_V6: c_int = 2;
 
+/// These enums are for use with the CURLOPT_HTTP_VERSION option.
+///
+/// Setting this means we don't care, and that we'd like the library to choose 
+/// the best possible for us!
+pub const CURL_HTTP_VERSION_NONE: c_int = 0;
+/// Please use HTTP 1.0 in the request
+pub const CURL_HTTP_VERSION_1_0: c_int = 1;
+/// Please use HTTP 1.1 in the request
+pub const CURL_HTTP_VERSION_1_1: c_int = 2;
+/// Please use HTTP 2 in the request
+/// (Added in CURL 7.33.0)
+pub const CURL_HTTP_VERSION_2_0: c_int = 3;
+/// Use version 2 for HTTPS, version 1.1 for HTTP
+/// (Added in CURL 7.47.0)
+pub const CURL_HTTP_VERSION_2TLS: c_int = 4;
+/// Please use HTTP 2 without HTTP/1.1 Upgrade
+/// (Added in CURL 7.49.0)
+pub const CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE: c_int = 5;
+
 // Note that the type here is wrong, it's just intended to just be an enum.
 pub const CURL_SSLVERSION_DEFAULT: CURLoption = 0;
 pub const CURL_SSLVERSION_TLSv1: CURLoption = 1;

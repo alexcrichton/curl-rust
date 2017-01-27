@@ -204,6 +204,36 @@ pub enum IpResolve {
     __Nonexhaustive = 500,
 }
 
+/// Possible values to pass to the `http_version` method.
+pub enum HttpVersion {
+    /// We don't care what http version to use, and we'd like the library to 
+    /// choose the best possible for us.
+    Any = curl_sys::CURL_HTTP_VERSION_NONE as isize,
+
+    /// Please use HTTP 1.0 in the request
+    V10 = curl_sys::CURL_HTTP_VERSION_1_0 as isize,
+
+    /// Please use HTTP 1.1 in the request
+    V11 = curl_sys::CURL_HTTP_VERSION_1_1 as isize,
+
+    /// Please use HTTP 2 in the request
+    /// (Added in CURL 7.33.0)
+    V2 = curl_sys::CURL_HTTP_VERSION_2_0 as isize,
+
+    /// Use version 2 for HTTPS, version 1.1 for HTTP
+    /// (Added in CURL 7.47.0)
+    V2TLS = curl_sys::CURL_HTTP_VERSION_2TLS as isize,
+
+    /// Please use HTTP 2 without HTTP/1.1 Upgrade
+    /// (Added in CURL 7.49.0)
+    V2PriorKnowledge = curl_sys::CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE as isize,
+
+    /// Hidden variant to indicate that this enum should not be matched on, it
+    /// may grow over time.
+    #[doc(hidden)]
+    __Nonexhaustive = 500,
+}
+
 /// Possible values to pass to the `ip_resolve` method.
 #[allow(missing_docs)]
 pub enum SslVersion {
@@ -1967,6 +1997,14 @@ impl Easy {
     // pub fn ssl_false_start(&mut self, enable: bool) -> Result<(), Error> {
     //     self.setopt_long(curl_sys::CURLOPT_SSLENGINE_DEFAULT, enable as c_long)
     // }
+
+    /// Set preferred HTTP version.
+    ///
+    /// By default this option is not set and corresponds to
+    /// `CURLOPT_HTTP_VERSION`.
+    pub fn http_version(&mut self, version: HttpVersion) -> Result<(), Error> {
+        self.setopt_long(curl_sys::CURLOPT_HTTP_VERSION, version as c_long)
+    }
 
     /// Set preferred TLS/SSL version.
     ///

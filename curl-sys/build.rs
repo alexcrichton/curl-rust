@@ -21,10 +21,11 @@ fn main() {
     let src = env::current_dir().unwrap();
     let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
     let windows = target.contains("windows");
-
+    let want_static = env::var("CURL_STATIC").unwrap_or(String::new()) == "1";
+    
     // OSX ships libcurl by default, so we just use that version
     // unconditionally.
-    if target.contains("apple") {
+    if !want_static && target.contains("apple") {
         return println!("cargo:rustc-flags=-l curl");
     }
 
@@ -34,7 +35,7 @@ fn main() {
     }
 
     // Next, fall back and try to use pkg-config if its available.
-    if !target.contains("windows") {
+    if !want_static && !target.contains("windows") {
         match pkg_config::find_library("libcurl") {
             Ok(lib) => {
                 for path in lib.include_paths.iter() {

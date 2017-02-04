@@ -14,6 +14,7 @@ use std::path::Path;
 use std::slice;
 use std::str;
 use std::time::Duration;
+use std::mem::transmute;
 
 use curl_sys;
 use libc::{self, c_long, c_int, c_char, c_void, size_t, c_double, c_ulong};
@@ -2310,6 +2311,99 @@ impl Easy {
         })
     }
 
+    /// Get total time of previous transfer
+    ///
+    /// Returns the total time for the previous transfer, 
+    /// including name resolving, TCP connect etc.
+    ///
+    /// Corresponds to `CURLINFO_TOTAL_TIME` and may return an error if the
+    /// option isn't supported.
+    pub fn total_time(&mut self) -> Result<Duration, Error> {
+        self.getopt_double(curl_sys::CURLINFO_TOTAL_TIME)
+            .map(double_seconds_to_duration)
+    }
+
+    /// Get the name lookup time 
+    ///
+    /// Returns the total time from the start 
+    /// until the name resolving was completed.
+    ///
+    /// Corresponds to `CURLINFO_NAMELOOKUP_TIME` and may return an error if the
+    /// option isn't supported.
+    pub fn namelookup_time(&mut self) -> Result<Duration, Error> {
+        self.getopt_double(curl_sys::CURLINFO_NAMELOOKUP_TIME)
+            .map(double_seconds_to_duration)
+    }
+
+    /// Get the time until connect 
+    ///
+    /// Returns the total time from the start 
+    /// until the connection to the remote host (or proxy) was completed. 
+    ///
+    /// Corresponds to `CURLINFO_CONNECT_TIME` and may return an error if the
+    /// option isn't supported.
+    pub fn connect_time(&mut self) -> Result<Duration, Error> {
+        self.getopt_double(curl_sys::CURLINFO_CONNECT_TIME)
+            .map(double_seconds_to_duration)
+    }
+
+    /// Get the time until the SSL/SSH handshake is completed 
+    ///
+    /// Returns the total time it took from the start until the SSL/SSH
+    /// connect/handshake to the remote host was completed. This time is most often 
+    /// very near to the `pretransfer_time` time, except for cases such as 
+    /// HTTP pipelining where the pretransfer time can be delayed due to waits in 
+    /// line for the pipeline and more. 
+    ///
+    /// Corresponds to `CURLINFO_APPCONNECT_TIME` and may return an error if the
+    /// option isn't supported.
+    pub fn appconnect_time(&mut self) -> Result<Duration, Error> {
+        self.getopt_double(curl_sys::CURLINFO_APPCONNECT_TIME)
+            .map(double_seconds_to_duration)
+    }
+
+    /// Get the time until the file transfer start 
+    ///
+    /// Returns the total time it took from the start until the file 
+    /// transfer is just about to begin. This includes all pre-transfer commands 
+    /// and negotiations that are specific to the particular protocol(s) involved. 
+    /// It does not involve the sending of the protocol- specific request that 
+    /// triggers a transfer. 
+    ///
+    /// Corresponds to `CURLINFO_PRETRANSFER_TIME` and may return an error if the
+    /// option isn't supported.
+    pub fn pretransfer_time(&mut self) -> Result<Duration, Error> {
+        self.getopt_double(curl_sys::CURLINFO_PRETRANSFER_TIME)
+            .map(double_seconds_to_duration)
+    }
+
+    /// Get the time until the first byte is received 
+    ///
+    /// Returns the total time it took from the start until the first 
+    /// byte is received by libcurl. This includes `pretransfer_time` and 
+    /// also the time the server needs to calculate the result. 
+    ///
+    /// Corresponds to `CURLINFO_STARTTRANSFER_TIME` and may return an error if the
+    /// option isn't supported.
+    pub fn starttransfer_time(&mut self) -> Result<Duration, Error> {
+        self.getopt_double(curl_sys::CURLINFO_STARTTRANSFER_TIME)
+            .map(double_seconds_to_duration)
+    }
+
+    /// Get the time for all redirection steps
+    ///
+    /// Returns the total time it took for all redirection steps 
+    /// include name lookup, connect, pretransfer and transfer before final 
+    /// transaction was started. `redirect_time` contains the complete 
+    /// execution time for multiple redirections.
+    ///
+    /// Corresponds to `CURLINFO_REDIRECT_TIME` and may return an error if the
+    /// option isn't supported.
+    pub fn redirect_time(&mut self) -> Result<Duration, Error> {
+        self.getopt_double(curl_sys::CURLINFO_REDIRECT_TIME)
+            .map(double_seconds_to_duration)
+    }
+
     /// Get the number of redirects
     ///
     /// Corresponds to `CURLINFO_REDIRECT_COUNT` and may return an error if the
@@ -2864,6 +2958,11 @@ impl Easy {
         }
     }
 
+    fn getopt_double(&mut self, opt: curl_sys::CURLINFO) -> Result<c_double, Error> {
+        self.getopt_ptr(opt)
+            .map(|p| unsafe {transmute::<_, c_double>(p as u64)})
+    }
+
     fn cvt(&self, rc: curl_sys::CURLcode) -> Result<(), Error> {
         if rc == curl_sys::CURLE_OK {
             return Ok(())
@@ -3306,6 +3405,33 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
     pub fn unpause_write(&self) -> Result<(), Error> {
         self.easy.unpause_write()
     }
+}
+
+fn double_seconds_to_duration(seconds: f64) -> Duration {
+    let whole_seconds = seconds.trunc() as u64;
+    let nanos = seconds.fract() * 1_000_000_000f64;
+    Duration::new(whole_seconds, nanos as u32)
+}
+
+#[test]
+fn double_seconds_to_duration_whole_second() {
+    let dur = double_seconds_to_duration(1.0);
+    assert_eq!(dur.as_secs(), 1);
+    assert_eq!(dur.subsec_nanos(), 0);
+}
+
+#[test]
+fn double_seconds_to_duration_sub_second1() {
+    let dur = double_seconds_to_duration(0.0);
+    assert_eq!(dur.as_secs(), 0);
+    assert_eq!(dur.subsec_nanos(), 0);
+}
+
+#[test]
+fn double_seconds_to_duration_sub_second2() {
+    let dur = double_seconds_to_duration(0.5);
+    assert_eq!(dur.as_secs(), 0);
+    assert_eq!(dur.subsec_nanos(), 500_000_000);
 }
 
 fn default_configure(handle: &mut Easy) {

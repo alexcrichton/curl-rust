@@ -14,7 +14,6 @@ use std::path::Path;
 use std::slice;
 use std::str;
 use std::time::Duration;
-use std::mem::transmute;
 
 use curl_sys;
 use libc::{self, c_long, c_int, c_char, c_void, size_t, c_double, c_ulong};
@@ -2959,8 +2958,12 @@ impl Easy {
     }
 
     fn getopt_double(&mut self, opt: curl_sys::CURLINFO) -> Result<c_double, Error> {
-        self.getopt_ptr(opt)
-            .map(|p| unsafe {transmute::<_, c_double>(p as u64)})
+        unsafe {
+            let mut p = 0 as c_double;
+            let rc = curl_sys::curl_easy_getinfo(self.handle, opt, &mut p);
+            try!(self.cvt(rc));
+            Ok(p)
+        }
     }
 
     fn cvt(&self, rc: curl_sys::CURLcode) -> Result<(), Error> {

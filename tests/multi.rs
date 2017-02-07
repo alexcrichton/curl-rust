@@ -36,7 +36,7 @@ Accept: */*\r\n\
     t!(e.url(&s.url("/")));
     let _e = t!(m.add(e));
     while t!(m.perform()) > 0 {
-        t!(m.wait(1000));
+        t!(m.wait(Duration::from_secs(1)));
     }
 }
 
@@ -68,7 +68,7 @@ Accept: */*\r\n\
     let _e2 = t!(m.add(e2));
 
     while t!(m.perform()) > 0 {
-        t!(m.wait(1000));
+        t!(m.wait(Duration::from_secs(1)));
     }
 
     let mut done = 0;

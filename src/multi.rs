@@ -412,7 +412,8 @@ impl Multi {
 
     /// Block until activity is detected or a timeout passes.
     ///
-    /// The timeout is given in milliseconds.
+    /// The timeout is used in millisecond-precision. Large durations are
+    /// clamped at the maximum value curl accepts.
     ///
     /// The returned integer will contain the number of internal file
     /// descriptors on which interesting events occured.
@@ -424,19 +425,29 @@ impl Multi {
     ///
     /// ```
     /// use curl::multi::Multi;
+    /// use std::time::Duration;
     ///
     /// let m = Multi::new();
     ///
     /// // Add some Easy handles...
     ///
     /// while m.perform().unwrap() > 0 {
-    ///     m.wait(1000).unwrap();
+    ///     m.wait(Duration::from_secs(1)).unwrap();
     /// }
     /// ```
-    pub fn wait(&self, timeout: i32) -> Result<u32, MultiError> {
+    pub fn wait(&self, timeout: Duration) -> Result<u32, MultiError> {
+        let timeout_ms = {
+            let secs = timeout.as_secs();
+            if secs > (i32::max_value() / 1000) as u64 {
+                // Duration too large, clamp at maximum value.
+                i32::max_value()
+            } else {
+                secs as i32 * 1000 + timeout.subsec_nanos() as i32 / 1000_000
+            }
+        };
         unsafe {
             let mut ret = 0;
-            try!(cvt(curl_sys::curl_multi_wait(self.raw, ptr::null_mut(), 0, timeout, &mut ret)));
+            try!(cvt(curl_sys::curl_multi_wait(self.raw, ptr::null_mut(), 0, timeout_ms, &mut ret)));
             Ok(ret as u32)
         }
     }

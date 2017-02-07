@@ -2,6 +2,7 @@
 
 use std::marker;
 use std::time::Duration;
+use std::ptr;
 
 use libc::{c_int, c_char, c_void, c_long};
 use curl_sys;
@@ -406,6 +407,37 @@ impl Multi {
             } else {
                 Ok(Some(Duration::from_millis(ms as u64)))
             }
+        }
+    }
+
+    /// Block until activity is detected or a timeout passes.
+    ///
+    /// The timeout is given in milliseconds.
+    ///
+    /// The returned integer will contain the number of internal file
+    /// descriptors on which interesting events occured.
+    ///
+    /// This function is a simpler alternative to using `fdset()` and `select()`
+    /// and does not suffer from file descriptor limits.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use curl::multi::Multi;
+    ///
+    /// let m = Multi::new();
+    ///
+    /// // Add some Easy handles...
+    ///
+    /// while m.perform().unwrap() > 0 {
+    ///     m.wait(1000).unwrap();
+    /// }
+    /// ```
+    pub fn wait(&self, timeout: i32) -> Result<u32, MultiError> {
+        unsafe {
+            let mut ret = 0;
+            try!(cvt(curl_sys::curl_multi_wait(self.raw, ptr::null_mut(), 0, timeout, &mut ret)));
+            Ok(ret as u32)
         }
     }
 

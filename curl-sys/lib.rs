@@ -9,7 +9,7 @@ extern crate openssl_sys;
 #[cfg(windows)]
 extern crate winapi;
 
-use libc::{c_int, c_char, c_uint, c_long, c_double, c_void, size_t, time_t};
+use libc::{c_int, c_char, c_uint, c_short, c_long, c_double, c_void, size_t, time_t};
 use libc::c_ulong;
 
 #[cfg(unix)]
@@ -890,16 +890,16 @@ pub struct CURLMsg {
     pub data: *mut c_void,
 }
 
-// pub const CURL_WAIT_POLLIN: c_short = 0x1;
-// pub const CURL_WAIT_POLLPRI: c_short = 0x2;
-// pub const CURL_WAIT_POLLOUT: c_short = 0x4;
+pub const CURL_WAIT_POLLIN: c_short = 0x1;
+pub const CURL_WAIT_POLLPRI: c_short = 0x2;
+pub const CURL_WAIT_POLLOUT: c_short = 0x4;
 
-// #[repr(C)]
-// pub struct curl_waitfd {
-//     pub fd: curl_socket_t,
-//     pub events: c_short,
-//     pub revents: c_short,
-// }
+#[repr(C)]
+pub struct curl_waitfd {
+    pub fd: curl_socket_t,
+    pub events: c_short,
+    pub revents: c_short,
+}
 
 pub const CURL_POLL_NONE: c_int = 0;
 pub const CURL_POLL_IN: c_int = 1;
@@ -1010,11 +1010,11 @@ extern {
                             write_fd_set: *mut fd_set,
                             exc_fd_set: *mut fd_set,
                             max_fd: *mut c_int) -> CURLMcode;
-    // pub fn curl_multi_wait(multi_handle: *mut CURLM,
-    //                        extra_fds: *mut curl_waitfd,
-    //                        extra_nfds: c_uint,
-    //                        timeout_ms: c_int,
-    //                        ret: *mut c_int) -> CURLMcode;
+    pub fn curl_multi_wait(multi_handle: *mut CURLM,
+                           extra_fds: *mut curl_waitfd,
+                           extra_nfds: c_uint,
+                           timeout_ms: c_int,
+                           ret: *mut c_int) -> CURLMcode;
     pub fn curl_multi_perform(multi_handle: *mut CURLM,
                               running_handles: *mut c_int) -> CURLMcode;
     pub fn curl_multi_cleanup(multi_handle: *mut CURLM) -> CURLMcode;

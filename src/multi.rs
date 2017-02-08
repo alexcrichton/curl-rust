@@ -2,15 +2,14 @@
 
 use std::marker;
 use std::time::Duration;
-use std::ptr;
 
-use libc::{c_int, c_char, c_void, c_long};
+use libc::{c_int, c_char, c_void, c_long, c_short};
 use curl_sys;
 
 #[cfg(windows)]
 use winapi::fd_set;
 #[cfg(unix)]
-use libc::fd_set;
+use libc::{fd_set, pollfd, POLLIN, POLLPRI, POLLOUT};
 
 use {MultiError, Error};
 use easy::Easy;
@@ -77,6 +76,11 @@ pub struct SocketEvents {
 
 /// Raw underlying socket type that the multi handles use
 pub type Socket = curl_sys::curl_socket_t;
+
+/// File descriptor to wait on for use with the `wait` method on a multi handle.
+pub struct WaitFd {
+    inner: curl_sys::curl_waitfd,
+}
 
 impl Multi {
     /// Creates a new multi session through which multiple HTTP transfers can be
@@ -432,10 +436,10 @@ impl Multi {
     /// // Add some Easy handles...
     ///
     /// while m.perform().unwrap() > 0 {
-    ///     m.wait(Duration::from_secs(1)).unwrap();
+    ///     m.wait(&mut [], Duration::from_secs(1)).unwrap();
     /// }
     /// ```
-    pub fn wait(&self, timeout: Duration) -> Result<u32, MultiError> {
+    pub fn wait(&self, waitfds: &mut [WaitFd], timeout: Duration) -> Result<u32, MultiError> {
         let timeout_ms = {
             let secs = timeout.as_secs();
             if secs > (i32::max_value() / 1000) as u64 {
@@ -447,7 +451,7 @@ impl Multi {
         };
         unsafe {
             let mut ret = 0;
-            try!(cvt(curl_sys::curl_multi_wait(self.raw, ptr::null_mut(), 0, timeout_ms, &mut ret)));
+            try!(cvt(curl_sys::curl_multi_wait(self.raw, waitfds.as_mut_ptr() as *mut curl_sys::curl_waitfd, waitfds.len() as u32, timeout_ms, &mut ret)));
             Ok(ret as u32)
         }
     }
@@ -681,5 +685,97 @@ impl SocketEvents {
     /// The specified socket/file descriptor is no longer used by libcurl.
     pub fn remove(&self) -> bool {
         self.bits & curl_sys::CURL_POLL_REMOVE == curl_sys::CURL_POLL_REMOVE
+    }
+}
+
+impl WaitFd {
+    /// Constructs an empty (invalid) WaitFd.
+    pub fn new() -> WaitFd {
+        WaitFd {
+            inner: curl_sys::curl_waitfd {
+                fd: 0,
+                events: 0,
+                revents: 0,
+            }
+        }
+    }
+
+    /// Set the file descriptor to wait for.
+    pub fn set_fd(&mut self, fd: Socket) {
+        self.inner.fd = fd;
+    }
+
+    /// Indicate that the socket should poll on read events such as new data
+    /// received.
+    ///
+    /// Corresponds to `CURL_WAIT_POLLIN`.
+    pub fn poll_on_read(&mut self, val: bool) -> &mut WaitFd {
+        self.flag(curl_sys::CURL_WAIT_POLLIN, val)
+    }
+
+    /// Indicate that the socket should poll on high priority read events such
+    /// as out of band data.
+    ///
+    /// Corresponds to `CURL_WAIT_POLLPRI`.
+    pub fn poll_on_priority_read(&mut self, val: bool) -> &mut WaitFd {
+        self.flag(curl_sys::CURL_WAIT_POLLPRI, val)
+    }
+
+    /// Indicate that the socket should poll on write events such as the socket
+    /// being clear to write without blocking.
+    ///
+    /// Corresponds to `CURL_WAIT_POLLOUT`.
+    pub fn poll_on_write(&mut self, val: bool) -> &mut WaitFd {
+        self.flag(curl_sys::CURL_WAIT_POLLOUT, val)
+    }
+
+    fn flag(&mut self, flag: c_short, val: bool) -> &mut WaitFd {
+        if val {
+            self.inner.events |= flag;
+        } else {
+            self.inner.events &= !flag;
+        }
+        self
+    }
+
+    /// After a call to `wait`, returns `true` if `poll_on_read` was set and a
+    /// read event occured.
+    pub fn received_read(&self) -> bool {
+        self.inner.revents & curl_sys::CURL_WAIT_POLLIN == curl_sys::CURL_WAIT_POLLIN
+    }
+
+    /// After a call to `wait`, returns `true` if `poll_on_priority_read` was set and a
+    /// priority read event occured.
+    pub fn received_priority_read(&self) -> bool {
+        self.inner.revents & curl_sys::CURL_WAIT_POLLPRI == curl_sys::CURL_WAIT_POLLPRI
+    }
+
+    /// After a call to `wait`, returns `true` if `poll_on_write` was set and a
+    /// write event occured.
+    pub fn received_write(&self) -> bool {
+        self.inner.revents & curl_sys::CURL_WAIT_POLLOUT == curl_sys::CURL_WAIT_POLLOUT
+    }
+}
+
+#[cfg(unix)]
+impl From<pollfd> for WaitFd {
+    fn from(pfd: pollfd) -> WaitFd {
+        let mut events = 0;
+        if pfd.events & POLLIN == POLLIN {
+            events |= curl_sys::CURL_WAIT_POLLIN;
+        }
+        if pfd.events & POLLPRI == POLLPRI {
+            events |= curl_sys::CURL_WAIT_POLLPRI;
+        }
+        if pfd.events & POLLOUT == POLLOUT {
+            events |= curl_sys::CURL_WAIT_POLLOUT;
+        }
+        WaitFd {
+            inner: curl_sys::curl_waitfd {
+                fd: pfd.fd,
+                events: events,
+                revents: 0,
+            }
+        }
     }
 }

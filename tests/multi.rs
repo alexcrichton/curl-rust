@@ -36,7 +36,7 @@ Accept: */*\r\n\
     t!(e.url(&s.url("/")));
     let _e = t!(m.add(e));
     while t!(m.perform()) > 0 {
-        t!(m.wait(Duration::from_secs(1)));
+        t!(m.wait(&mut [], Duration::from_secs(1)));
     }
 }
 
@@ -68,7 +68,7 @@ Accept: */*\r\n\
     let _e2 = t!(m.add(e2));
 
     while t!(m.perform()) > 0 {
-        t!(m.wait(Duration::from_secs(1)));
+        t!(m.wait(&mut [], Duration::from_secs(1)));
     }
 
     let mut done = 0;
@@ -220,4 +220,30 @@ HTTP/1.1 200 OK\r\n\
 
     let mut e = t!(m.remove(e));
     assert_eq!(t!(e.response_code()), 200);
+}
+
+#[cfg(unix)]
+#[test]
+fn waitfds() {
+    use std::fs::File;
+    use std::os::unix::io::AsRawFd;
+    use curl::multi::WaitFd;
+
+    let filenames = ["/dev/null", "/dev/zero", "/dev/urandom"];
+    let files: Vec<File> = filenames.iter()
+        .map(|filename| File::open(filename).unwrap())
+        .collect();
+    let mut waitfds: Vec<WaitFd> = files.iter().map(|f| {
+        let mut waitfd = WaitFd::new();
+        waitfd.set_fd(f.as_raw_fd());
+        waitfd.poll_on_read(true);
+        waitfd
+    }).collect();
+
+    let m = Multi::new();
+    let events = t!(m.wait(&mut waitfds, Duration::from_secs(1)));
+    assert_eq!(events, 3);
+    for waitfd in waitfds {
+        assert!(waitfd.received_read());
+    }
 }

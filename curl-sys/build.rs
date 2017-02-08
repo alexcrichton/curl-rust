@@ -143,9 +143,20 @@ fn main() {
 
     if target != host &&
        (!target.contains("windows") || !host.contains("windows")) {
-        cmd.arg(format!("--build={}", host));
-        cmd.arg(format!("--host={}", target));
-        cmd.arg(format!("--target={}", target));
+        // NOTE GNU terminology
+        // BUILD = machine where we are (cross) compiling curl
+        // HOST = machine where the compiled curl will be used
+        // TARGET = only relevant when compiling compilers
+        if target.contains("windows") {
+            // curl's configure can't parse `-windows-` triples when used
+            // as `--host`s. In those cases we use this combination of
+            // `host` and `target` that appears to do the right thing.
+            cmd.arg(format!("--host={}", host));
+            cmd.arg(format!("--target={}", target));
+        } else {
+            cmd.arg(format!("--build={}", host));
+            cmd.arg(format!("--host={}", target));
+        }
     }
 
     if let Some(root) = nghttp2_root {

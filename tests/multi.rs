@@ -222,7 +222,10 @@ HTTP/1.1 200 OK\r\n\
     assert_eq!(t!(e.response_code()), 200);
 }
 
-#[cfg(unix)]
+// Tests passing raw file descriptors to Multi::wait. The test is limited to Linux only as the
+// semantics of the underlying poll(2) system call used by curl apparently differ on other
+// platforms, making the test fail.
+#[cfg(target_os = "linux")]
 #[test]
 fn waitfds() {
     use std::fs::File;

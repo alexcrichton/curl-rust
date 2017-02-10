@@ -439,7 +439,8 @@ impl Multi {
     ///     m.wait(&mut [], Duration::from_secs(1)).unwrap();
     /// }
     /// ```
-    pub fn wait(&self, waitfds: &mut [WaitFd], timeout: Duration) -> Result<u32, MultiError> {
+    pub fn wait(&self, waitfds: &mut [WaitFd], timeout: Duration)
+                -> Result<u32, MultiError> {
         let timeout_ms = {
             let secs = timeout.as_secs();
             if secs > (i32::max_value() / 1000) as u64 {
@@ -451,7 +452,11 @@ impl Multi {
         };
         unsafe {
             let mut ret = 0;
-            try!(cvt(curl_sys::curl_multi_wait(self.raw, waitfds.as_mut_ptr() as *mut curl_sys::curl_waitfd, waitfds.len() as u32, timeout_ms, &mut ret)));
+            try!(cvt(curl_sys::curl_multi_wait(self.raw,
+                                               waitfds.as_mut_ptr() as *mut _,
+                                               waitfds.len() as u32,
+                                               timeout_ms,
+                                               &mut ret)));
             Ok(ret as u32)
         }
     }

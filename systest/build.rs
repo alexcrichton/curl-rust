@@ -44,14 +44,18 @@ fn main() {
         s.ends_with("callback") || s.ends_with("function")
     });
 
-    // Ubuntu Xenial 16.04 ships with version 7.47.0 of curl, so explicitly
-    // skip constants introduced after that.
-    // CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE was introduced in 7.49.0
-    cfg.skip_const(|s| s == "CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE");
+    cfg.skip_const(|s| {
+        // Ubuntu Xenial 16.04 ships with version 7.47.0 of curl, so explicitly
+        // skip constants introduced after that.
+        // CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE was introduced in 7.49.0
+        s == "CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE" ||
 
-    // Disable HTTP/2 checking if feature not enabled
-    #[cfg(not(feature = "http2"))]
-    cfg.skip_const(|s| s.starts_with("CURL_HTTP_VERSION_2"));
+        // OSX doesn't have this yet
+        s == "CURLSSLOPT_NO_REVOKE" ||
+
+        // Disable HTTP/2 checking if feature not enabled
+        (cfg!(feature = "http2") && s.starts_with("CURL_HTTP_VERSION_2"))
+    });
 
     cfg.generate("../curl-sys/lib.rs", "all.rs");
 }

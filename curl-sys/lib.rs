@@ -592,7 +592,7 @@ pub const CURLOPT_GSSAPI_DELEGATION: CURLoption = CURLOPTTYPE_LONG + 210;
 // pub const CURLOPT_TCP_KEEPALIVE: CURLoption = CURLOPTTYPE_LONG + 213;
 // pub const CURLOPT_TCP_KEEPIDLE: CURLoption = CURLOPTTYPE_LONG + 214;
 // pub const CURLOPT_TCP_KEEPINTVL: CURLoption = CURLOPTTYPE_LONG + 215;
-// pub const CURLOPT_SSL_OPTIONS: CURLoption = CURLOPTTYPE_LONG + 216;
+pub const CURLOPT_SSL_OPTIONS: CURLoption = CURLOPTTYPE_LONG + 216;
 // pub const CURLOPT_MAIL_AUTH: CURLoption = CURLOPTTYPE_OBJECTPOINT + 217;
 // pub const CURLOPT_SASL_IR: CURLoption = CURLOPTTYPE_LONG + 218;
 // pub const CURLOPT_XFERINFOFUNCTION: CURLoption = CURLOPTTYPE_FUNCTIONPOINT + 219;
@@ -606,9 +606,12 @@ pub const CURL_IPRESOLVE_WHATEVER: c_int = 0;
 pub const CURL_IPRESOLVE_V4: c_int = 1;
 pub const CURL_IPRESOLVE_V6: c_int = 2;
 
+pub const CURLSSLOPT_ALLOW_BEAST: c_long = 1 << 0;
+pub const CURLSSLOPT_NO_REVOKE: c_long = 1 << 1;
+
 /// These enums are for use with the CURLOPT_HTTP_VERSION option.
 ///
-/// Setting this means we don't care, and that we'd like the library to choose 
+/// Setting this means we don't care, and that we'd like the library to choose
 /// the best possible for us!
 pub const CURL_HTTP_VERSION_NONE: c_int = 0;
 /// Please use HTTP 1.0 in the request

@@ -206,7 +206,7 @@ pub enum IpResolve {
 
 /// Possible values to pass to the `http_version` method.
 pub enum HttpVersion {
-    /// We don't care what http version to use, and we'd like the library to 
+    /// We don't care what http version to use, and we'd like the library to
     /// choose the best possible for us.
     Any = curl_sys::CURL_HTTP_VERSION_NONE as isize,
 
@@ -360,6 +360,12 @@ pub enum NetRc {
 /// `http_auth` and `proxy_auth`.
 #[derive(Clone, Debug)]
 pub struct Auth {
+    bits: c_long,
+}
+
+/// Structure which stores possible ssl options to pass to `ssl_options`.
+#[derive(Clone, Debug)]
+pub struct SslOpt {
     bits: c_long,
 }
 
@@ -2218,6 +2224,24 @@ impl Easy {
                          enable as c_long)
     }
 
+    /// Set SSL behavior options
+    ///
+    /// Inform libcurl about SSL specific behaviors.
+    ///
+    /// This corresponds to the `CURLOPT_SSL_OPTIONS` option.
+    pub fn ssl_options(&mut self, bits: &SslOpt) -> Result<(), Error> {
+        self.setopt_long(curl_sys::CURLOPT_SSL_OPTIONS, bits.bits)
+    }
+
+    // /// Set SSL behavior options for proxies
+    // ///
+    // /// Inform libcurl about SSL specific behaviors.
+    // ///
+    // /// This corresponds to the `CURLOPT_PROXY_SSL_OPTIONS` option.
+    // pub fn proxy_ssl_options(&mut self, bits: &SslOpt) -> Result<(), Error> {
+    //     self.setopt_long(curl_sys::CURLOPT_PROXY_SSL_OPTIONS, bits.bits)
+    // }
+
     // /// Stores a private pointer-sized piece of data.
     // ///
     // /// This can be retrieved through the `private` function and otherwise
@@ -2312,7 +2336,7 @@ impl Easy {
 
     /// Get total time of previous transfer
     ///
-    /// Returns the total time for the previous transfer, 
+    /// Returns the total time for the previous transfer,
     /// including name resolving, TCP connect etc.
     ///
     /// Corresponds to `CURLINFO_TOTAL_TIME` and may return an error if the
@@ -2322,9 +2346,9 @@ impl Easy {
             .map(double_seconds_to_duration)
     }
 
-    /// Get the name lookup time 
+    /// Get the name lookup time
     ///
-    /// Returns the total time from the start 
+    /// Returns the total time from the start
     /// until the name resolving was completed.
     ///
     /// Corresponds to `CURLINFO_NAMELOOKUP_TIME` and may return an error if the
@@ -2334,10 +2358,10 @@ impl Easy {
             .map(double_seconds_to_duration)
     }
 
-    /// Get the time until connect 
+    /// Get the time until connect
     ///
-    /// Returns the total time from the start 
-    /// until the connection to the remote host (or proxy) was completed. 
+    /// Returns the total time from the start
+    /// until the connection to the remote host (or proxy) was completed.
     ///
     /// Corresponds to `CURLINFO_CONNECT_TIME` and may return an error if the
     /// option isn't supported.
@@ -2346,13 +2370,13 @@ impl Easy {
             .map(double_seconds_to_duration)
     }
 
-    /// Get the time until the SSL/SSH handshake is completed 
+    /// Get the time until the SSL/SSH handshake is completed
     ///
     /// Returns the total time it took from the start until the SSL/SSH
-    /// connect/handshake to the remote host was completed. This time is most often 
-    /// very near to the `pretransfer_time` time, except for cases such as 
-    /// HTTP pipelining where the pretransfer time can be delayed due to waits in 
-    /// line for the pipeline and more. 
+    /// connect/handshake to the remote host was completed. This time is most often
+    /// very near to the `pretransfer_time` time, except for cases such as
+    /// HTTP pipelining where the pretransfer time can be delayed due to waits in
+    /// line for the pipeline and more.
     ///
     /// Corresponds to `CURLINFO_APPCONNECT_TIME` and may return an error if the
     /// option isn't supported.
@@ -2361,13 +2385,13 @@ impl Easy {
             .map(double_seconds_to_duration)
     }
 
-    /// Get the time until the file transfer start 
+    /// Get the time until the file transfer start
     ///
-    /// Returns the total time it took from the start until the file 
-    /// transfer is just about to begin. This includes all pre-transfer commands 
-    /// and negotiations that are specific to the particular protocol(s) involved. 
-    /// It does not involve the sending of the protocol- specific request that 
-    /// triggers a transfer. 
+    /// Returns the total time it took from the start until the file
+    /// transfer is just about to begin. This includes all pre-transfer commands
+    /// and negotiations that are specific to the particular protocol(s) involved.
+    /// It does not involve the sending of the protocol- specific request that
+    /// triggers a transfer.
     ///
     /// Corresponds to `CURLINFO_PRETRANSFER_TIME` and may return an error if the
     /// option isn't supported.
@@ -2376,11 +2400,11 @@ impl Easy {
             .map(double_seconds_to_duration)
     }
 
-    /// Get the time until the first byte is received 
+    /// Get the time until the first byte is received
     ///
-    /// Returns the total time it took from the start until the first 
-    /// byte is received by libcurl. This includes `pretransfer_time` and 
-    /// also the time the server needs to calculate the result. 
+    /// Returns the total time it took from the start until the first
+    /// byte is received by libcurl. This includes `pretransfer_time` and
+    /// also the time the server needs to calculate the result.
     ///
     /// Corresponds to `CURLINFO_STARTTRANSFER_TIME` and may return an error if the
     /// option isn't supported.
@@ -2391,9 +2415,9 @@ impl Easy {
 
     /// Get the time for all redirection steps
     ///
-    /// Returns the total time it took for all redirection steps 
-    /// include name lookup, connect, pretransfer and transfer before final 
-    /// transaction was started. `redirect_time` contains the complete 
+    /// Returns the total time it took for all redirection steps
+    /// include name lookup, connect, pretransfer and transfer before final
+    /// transaction was started. `redirect_time` contains the complete
     /// execution time for multiple redirections.
     ///
     /// Corresponds to `CURLINFO_REDIRECT_TIME` and may return an error if the
@@ -3873,6 +3897,48 @@ impl Auth {
     }
 
     fn flag(&mut self, bit: c_ulong, on: bool) -> &mut Auth {
+        if on {
+            self.bits |= bit as c_long;
+        } else {
+            self.bits &= !bit as c_long;
+        }
+        self
+    }
+}
+
+impl SslOpt {
+    /// Creates a new set of SSL options.
+    pub fn new() -> SslOpt {
+        SslOpt { bits: 0 }
+    }
+
+    /// Tells libcurl to disable certificate revocation checks for those SSL
+    /// backends where such behavior is present.
+    ///
+    /// Currently this option is only supported for WinSSL (the native Windows
+    /// SSL library), with an exception in the case of Windows' Untrusted
+    /// Publishers blacklist which it seems can't be bypassed. This option may
+    /// have broader support to accommodate other SSL backends in the future.
+    /// https://curl.haxx.se/docs/ssl-compared.html
+    pub fn no_revoke(&mut self, on: bool) -> &mut SslOpt {
+        self.flag(curl_sys::CURLSSLOPT_NO_REVOKE, on)
+    }
+
+    /// Tells libcurl to not attempt to use any workarounds for a security flaw
+    /// in the SSL3 and TLS1.0 protocols.
+    ///
+    /// If this option isn't used or this bit is set to 0, the SSL layer libcurl
+    /// uses may use a work-around for this flaw although it might cause
+    /// interoperability problems with some (older) SSL implementations.
+    ///
+    /// > WARNING: avoiding this work-around lessens the security, and by
+    /// > setting this option to 1 you ask for exactly that. This option is only
+    /// > supported for DarwinSSL, NSS and OpenSSL.
+    pub fn allow_beast(&mut self, on: bool) -> &mut SslOpt {
+        self.flag(curl_sys::CURLSSLOPT_ALLOW_BEAST, on)
+    }
+
+    fn flag(&mut self, bit: c_long, on: bool) -> &mut SslOpt {
         if on {
             self.bits |= bit as c_long;
         } else {

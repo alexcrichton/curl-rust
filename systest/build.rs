@@ -54,7 +54,7 @@ fn main() {
         s == "CURLSSLOPT_NO_REVOKE" ||
 
         // Disable HTTP/2 checking if feature not enabled
-        (cfg!(feature = "http2") && s.starts_with("CURL_HTTP_VERSION_2"))
+        (!cfg!(feature = "http2") && s.starts_with("CURL_HTTP_VERSION_2"))
     });
 
     cfg.generate("../curl-sys/lib.rs", "all.rs");

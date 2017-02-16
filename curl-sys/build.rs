@@ -182,6 +182,11 @@ fn main() {
     cmd.arg("--disable-manual");
     cmd.arg("--disable-smb");
     cmd.arg("--disable-sspi");
+    cmd.arg("--disable-manual");
+    cmd.arg("--disable-unix-sockets");
+    cmd.arg("--disable-versioned-symbols");
+    cmd.arg("--enable-hidden-symbols");
+    cmd.arg("--disable-libcurl-option");
 
     run(&mut cmd, "sh");
     run(Command::new(make())

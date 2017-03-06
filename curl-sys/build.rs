@@ -304,7 +304,7 @@ fn build_msvc(target: &str) {
         // zlib_a.lib, so make sure it's named correctly (where libz-sys just
         // produces zlib.lib)
         let _ = fs::remove_file(&inc.join("lib/zlib_a.lib"));
-        t!(fs::hard_link(inc.join("lib/zlib.lib"), inc.join("lib/zlib_a.lib")));
+        t!(fs::copy(inc.join("lib/zlib.lib"), inc.join("lib/zlib_a.lib")));
     }
     run(&mut cmd, "nmake");
 

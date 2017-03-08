@@ -863,6 +863,7 @@ pub const CURL_VERSION_CURLDEBUG: c_int = 1 << 13;
 pub const CURL_VERSION_TLSAUTH_SRP: c_int = 1 << 14;
 pub const CURL_VERSION_NTLM_WB: c_int = 1 << 15;
 // pub const CURL_VERSION_HTTP2: c_int = 1 << 16;
+pub const CURL_VERSION_UNIX_SOCKETS: c_int = 1 << 19;
 
 pub const CURLPAUSE_RECV: c_int = 1 << 0;
 pub const CURLPAUSE_RECV_CONT: c_int = 0;

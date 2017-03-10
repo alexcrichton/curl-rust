@@ -46,7 +46,7 @@ impl Version {
     /// Returns a numeric representation of the version number
     ///
     /// This is a 24 bit number made up of the major number, minor, and then
-    /// patch number. For example 7.9.8 willr eturn 0x070908.
+    /// patch number. For example 7.9.8 will return 0x070908.
     pub fn version_num(&self) -> u32 {
         unsafe {
             (*self.inner).version_num as u32
@@ -144,7 +144,6 @@ impl Version {
     // pub fn feature_http2(&self) -> bool {
     //     self.flag(curl_sys::CURL_VERSION_HTTP2)
     // }
-
     fn flag(&self, flag: c_int) -> bool {
         unsafe {
             (*self.inner).features & flag != 0

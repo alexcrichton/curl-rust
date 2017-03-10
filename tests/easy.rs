@@ -664,3 +664,11 @@ b");
     }));
     t!(h.borrow().perform());
 }
+
+// Stupid test to check if unix_socket is callable
+#[test]
+fn check_unix_socket() {
+    let mut h = handle();
+    h.unix_socket("/var/something.socks").is_ok();
+}
+

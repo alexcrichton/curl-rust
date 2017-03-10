@@ -463,6 +463,19 @@ impl Easy {
         self.setopt_long(curl_sys::CURLOPT_WILDCARDMATCH, m as c_long)
     }
 
+    /// Provides the unix domain socket which this handle will work with.
+    ///
+    /// The string provided must be unix domain socket -encoded with the format:
+    ///
+    /// ```text
+    /// /path/file.sock
+    /// ```
+    pub fn unix_socket(&mut self, unix_domain_socket: &str) -> Result<(), Error> {
+        let socket = try!(CString::new(unix_domain_socket));
+        self.setopt_str(curl_sys::CURLOPT_UNIX_SOCKET_PATH, &socket)
+    }
+
+
     // =========================================================================
     // Callback options
 

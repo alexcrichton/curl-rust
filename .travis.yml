@@ -8,10 +8,10 @@ matrix:
   include:
     - os: linux
       rust: stable
-      env: TARGET=x86_64-unknown-linux-gnu DOCKER=linux64
+      env: TARGET=x86_64-unknown-linux-gnu DOCKER=linux64 NO_ADD=1
     - os: linux
       rust: stable
-      env: TARGET=i686-unknown-linux-gnu DOCKER=linux32
+      env: TARGET=i686-unknown-linux-gnu DOCKER=linux32 NO_ADD=1
     - os: linux
       rust: stable
       env: TARGET=x86_64-unknown-linux-musl DOCKER=musl
@@ -20,24 +20,23 @@ matrix:
       env: TARGET=x86_64-pc-windows-gnu NO_RUN=1 DOCKER=mingw
     - os: linux
       rust: stable
-      env: TARGET=x86_64-unknown-linux-gnu DOCKER=linux64-curl
+      env: TARGET=x86_64-unknown-linux-gnu DOCKER=linux64-curl NO_ADD=1
     - os: osx
       rust: stable
-      env: TARGET=x86_64-apple-darwin
+      env: TARGET=x86_64-apple-darwin NO_ADD=1
     - os: osx
       rust: stable
       env: TARGET=i686-apple-darwin
     - os: linux
       rust: beta
-      env: TARGET=x86_64-unknown-linux-gnu DOCKER=linux64
+      env: TARGET=x86_64-unknown-linux-gnu DOCKER=linux64 NO_ADD=1
     - os: linux
       rust: nightly
-      env: TARGET=x86_64-unknown-linux-gnu DOCKER=linux64
+      env: TARGET=x86_64-unknown-linux-gnu DOCKER=linux64 NO_ADD=1
 sudo: false
 before_script:
   - pip install 'travis-cargo<0.2' --user && export PATH=$HOME/.local/bin:$PATH
-  - curl https://static.rust-lang.org/rustup.sh |
-    sh -s -- --add-target=$TARGET --disable-sudo -y --prefix=`rustc --print sysroot`
+  - if [ -z "$NO_ADD" ]; then rustup target add $TARGET; fi
 script:
   - curl --version
   - cargo generate-lockfile

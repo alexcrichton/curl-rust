@@ -1,5 +1,6 @@
 //! Multi - initiating multiple requests simultaneously
 
+use std::fmt;
 use std::marker;
 use std::time::Duration;
 
@@ -69,7 +70,6 @@ pub struct Events {
 ///
 /// This type is yielded to the `socket_function` callback to indicate what
 /// events are requested on a socket.
-#[derive(Debug)]
 pub struct SocketEvents {
     bits: c_int,
 }
@@ -579,6 +579,14 @@ fn cvt(code: curl_sys::CURLMcode) -> Result<(), MultiError> {
     }
 }
 
+impl fmt::Debug for Multi {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("Multi")
+         .field("raw", &self.raw)
+         .finish()
+    }
+}
+
 impl Drop for Multi {
     fn drop(&mut self) {
         let _ = self.close();
@@ -596,6 +604,12 @@ impl EasyHandle {
                                              curl_sys::CURLOPT_PRIVATE,
                                              token))
         }
+    }
+}
+
+impl fmt::Debug for EasyHandle {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.easy.fmt(f)
     }
 }
 
@@ -638,6 +652,14 @@ impl<'multi> Message<'multi> {
     }
 }
 
+impl<'a> fmt::Debug for Message<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("Message")
+         .field("ptr", &self.ptr)
+         .finish()
+    }
+}
+
 impl Events {
     /// Creates a new blank event bit mask.
     pub fn new() -> Events {
@@ -670,6 +692,16 @@ impl Events {
     }
 }
 
+impl fmt::Debug for Events {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("Events")
+         .field("input", &(self.bits & curl_sys::CURL_CSELECT_IN != 0))
+         .field("output", &(self.bits & curl_sys::CURL_CSELECT_IN != 0))
+         .field("error", &(self.bits & curl_sys::CURL_CSELECT_IN != 0))
+         .finish()
+    }
+}
+
 impl SocketEvents {
     /// Wait for incoming data. For the socket to become readable.
     pub fn input(&self) -> bool {
@@ -690,6 +722,16 @@ impl SocketEvents {
     /// The specified socket/file descriptor is no longer used by libcurl.
     pub fn remove(&self) -> bool {
         self.bits & curl_sys::CURL_POLL_REMOVE == curl_sys::CURL_POLL_REMOVE
+    }
+}
+
+impl fmt::Debug for SocketEvents {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("Events")
+         .field("input", &self.input())
+         .field("output", &self.output())
+         .field("remove", &self.remove())
+         .finish()
     }
 }
 
@@ -782,5 +824,15 @@ impl From<pollfd> for WaitFd {
                 revents: 0,
             }
         }
+    }
+}
+
+impl fmt::Debug for WaitFd {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("WaitFd")
+         .field("fd", &self.inner.fd)
+         .field("events", &self.inner.fd)
+         .field("revents", &self.inner.fd)
+         .finish()
     }
 }

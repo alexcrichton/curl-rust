@@ -46,7 +46,7 @@
 //! capabilities. Robust programs may wish to inspect `Version::get()` to test
 //! what features are implemented in the linked build of libcurl at runtime.
 
-#![deny(missing_docs)]
+#![deny(missing_docs, missing_debug_implementations)]
 #![doc(html_root_url = "https://docs.rs/curl/0.4")]
 
 extern crate curl_sys;

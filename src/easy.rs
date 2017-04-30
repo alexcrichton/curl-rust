@@ -9,6 +9,7 @@
 
 use std::cell::{RefCell, Cell};
 use std::ffi::{CString, CStr};
+use std::fmt;
 use std::io::SeekFrom;
 use std::path::Path;
 use std::slice;
@@ -163,6 +164,7 @@ pub struct Part<'form, 'data> {
 
 /// Possible proxy types that libcurl currently understands.
 #[allow(missing_docs)]
+#[derive(Debug)]
 pub enum ProxyType {
     Http = curl_sys::CURLPROXY_HTTP as isize,
     Http1 = curl_sys::CURLPROXY_HTTP_1_0 as isize,
@@ -179,6 +181,7 @@ pub enum ProxyType {
 
 /// Possible conditions for the `time_condition` method.
 #[allow(missing_docs)]
+#[derive(Debug)]
 pub enum TimeCondition {
     None = curl_sys::CURL_TIMECOND_NONE as isize,
     IfModifiedSince = curl_sys::CURL_TIMECOND_IFMODSINCE as isize,
@@ -193,6 +196,7 @@ pub enum TimeCondition {
 
 /// Possible values to pass to the `ip_resolve` method.
 #[allow(missing_docs)]
+#[derive(Debug)]
 pub enum IpResolve {
     V4 = curl_sys::CURL_IPRESOLVE_V4 as isize,
     V6 = curl_sys::CURL_IPRESOLVE_V6 as isize,
@@ -205,6 +209,7 @@ pub enum IpResolve {
 }
 
 /// Possible values to pass to the `http_version` method.
+#[derive(Debug)]
 pub enum HttpVersion {
     /// We don't care what http version to use, and we'd like the library to
     /// choose the best possible for us.
@@ -236,6 +241,7 @@ pub enum HttpVersion {
 
 /// Possible values to pass to the `ip_resolve` method.
 #[allow(missing_docs)]
+#[derive(Debug)]
 pub enum SslVersion {
     Default = curl_sys::CURL_SSLVERSION_DEFAULT as isize,
     Tlsv1 = curl_sys::CURL_SSLVERSION_TLSv1 as isize,
@@ -252,6 +258,7 @@ pub enum SslVersion {
 }
 
 /// Possible return values from the `seek_function` callback.
+#[derive(Debug)]
 pub enum SeekResult {
     /// Indicates that the seek operation was a success
     Ok = curl_sys::CURL_SEEKFUNC_OK as isize,
@@ -272,6 +279,7 @@ pub enum SeekResult {
 
 /// Possible data chunks that can be witnessed as part of the `debug_function`
 /// callback.
+#[derive(Debug)]
 pub enum InfoType {
     /// The data is informational text.
     Text,
@@ -306,6 +314,7 @@ pub struct List {
 }
 
 /// An iterator over `List`
+#[derive(Clone)]
 pub struct Iter<'a> {
     _me: &'a List,
     cur: *mut curl_sys::curl_slist,
@@ -314,6 +323,7 @@ pub struct Iter<'a> {
 unsafe impl Send for List {}
 
 /// Possible error codes that can be returned from the `read_function` callback.
+#[derive(Debug)]
 pub enum ReadError {
     /// Indicates that the connection should be aborted immediately
     Abort,
@@ -328,6 +338,7 @@ pub enum ReadError {
 }
 
 /// Possible error codes that can be returned from the `write_function` callback.
+#[derive(Debug)]
 pub enum WriteError {
     /// Indicates that reading should be paused until `unpause` is called.
     Pause,
@@ -339,6 +350,7 @@ pub enum WriteError {
 }
 
 /// Options for `.netrc` parsing.
+#[derive(Debug)]
 pub enum NetRc {
     /// Ignoring `.netrc` file and use information from url
     ///
@@ -358,13 +370,13 @@ pub enum NetRc {
 
 /// Structure which stores possible authentication methods to get passed to
 /// `http_auth` and `proxy_auth`.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Auth {
     bits: c_long,
 }
 
 /// Structure which stores possible ssl options to pass to `ssl_options`.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct SslOpt {
     bits: c_long,
 }
@@ -3447,6 +3459,14 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
     }
 }
 
+impl<'easy, 'data> fmt::Debug for Transfer<'easy, 'data> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("Transfer")
+         .field("easy", &self.easy)
+         .finish()
+    }
+}
+
 fn double_seconds_to_duration(seconds: f64) -> Duration {
     let whole_seconds = seconds.trunc() as u64;
     let nanos = seconds.fract() * 1_000_000_000f64;
@@ -3497,6 +3517,14 @@ fn ssl_configure(handle: &mut Easy) {
 #[cfg(not(all(unix, not(target_os = "macos"))))]
 fn ssl_configure(_handle: &mut Easy) {}
 
+impl fmt::Debug for Easy {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("Easy")
+         .field("handle", &self.handle)
+         .finish()
+    }
+}
+
 impl Drop for Easy {
     fn drop(&mut self) {
         unsafe {
@@ -3528,6 +3556,23 @@ impl List {
     }
 }
 
+impl fmt::Debug for List {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_list()
+         .entries(self.iter().map(String::from_utf8_lossy))
+         .finish()
+    }
+}
+
+impl<'a> IntoIterator for &'a List {
+    type IntoIter = Iter<'a>;
+    type Item = &'a [u8];
+
+    fn into_iter(self) -> Iter<'a> {
+        self.iter()
+    }
+}
+
 impl Drop for List {
     fn drop(&mut self) {
         unsafe {
@@ -3549,6 +3594,14 @@ impl<'a> Iterator for Iter<'a> {
             self.cur = (*self.cur).next;
             return ret
         }
+    }
+}
+
+impl<'a> fmt::Debug for Iter<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_list()
+         .entries(self.clone().map(String::from_utf8_lossy))
+         .finish()
     }
 }
 
@@ -3578,6 +3631,15 @@ impl Form {
                 value: 0 as *mut _,
             }],
         }
+    }
+}
+
+impl fmt::Debug for Form {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // TODO: fill this out more
+        f.debug_struct("Form")
+         .field("fields", &"...")
+         .finish()
     }
 }
 
@@ -3825,6 +3887,16 @@ impl<'form, 'data> Part<'form, 'data> {
     }
 }
 
+impl<'form, 'data> fmt::Debug for Part<'form, 'data> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // TODO: fill this out more
+        f.debug_struct("Part")
+         .field("name", &self.name)
+         .field("form", &self.form)
+         .finish()
+    }
+}
+
 impl Auth {
     /// Creates a new set of authentications with no members.
     ///
@@ -3919,6 +3991,20 @@ impl Auth {
     }
 }
 
+impl fmt::Debug for Auth {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let bits = self.bits as c_ulong;
+        f.debug_struct("Auth")
+         .field("basic", &(bits & curl_sys::CURLAUTH_BASIC != 0))
+         .field("digest", &(bits & curl_sys::CURLAUTH_DIGEST != 0))
+         .field("digest_ie", &(bits & curl_sys::CURLAUTH_DIGEST_IE != 0))
+         .field("gssnegotiate", &(bits & curl_sys::CURLAUTH_GSSNEGOTIATE != 0))
+         .field("ntlm", &(bits & curl_sys::CURLAUTH_NTLM != 0))
+         .field("ntlm_wb", &(bits & curl_sys::CURLAUTH_NTLM_WB != 0))
+         .finish()
+    }
+}
+
 impl SslOpt {
     /// Creates a new set of SSL options.
     pub fn new() -> SslOpt {
@@ -3958,5 +4044,14 @@ impl SslOpt {
             self.bits &= !bit as c_long;
         }
         self
+    }
+}
+
+impl fmt::Debug for SslOpt {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("SslOpt")
+         .field("no_revoke", &(self.bits & curl_sys::CURLSSLOPT_NO_REVOKE != 0))
+         .field("allow_beast", &(self.bits & curl_sys::CURLSSLOPT_ALLOW_BEAST != 0))
+         .finish()
     }
 }

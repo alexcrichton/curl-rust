@@ -1,4 +1,5 @@
 use std::ffi::CStr;
+use std::fmt;
 use std::str;
 
 use curl_sys;
@@ -13,6 +14,7 @@ unsafe impl Send for Version {}
 unsafe impl Sync for Version {}
 
 /// An iterator over the list of protocols a version supports.
+#[derive(Clone)]
 pub struct Protocols<'a> {
     cur: *const *const c_char,
     _inner: &'a Version,
@@ -231,6 +233,52 @@ impl Version {
     }
 }
 
+impl fmt::Debug for Version {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut f = f.debug_struct("Version");
+        f.field("version", &self.version())
+         .field("host", &self.host())
+         .field("feature_ipv6", &self.feature_ipv6())
+         .field("feature_ssl", &self.feature_ssl())
+         .field("feature_libz", &self.feature_libz())
+         .field("feature_ntlm", &self.feature_ntlm())
+         .field("feature_gss_negotiate", &self.feature_gss_negotiate())
+         .field("feature_debug", &self.feature_debug())
+         .field("feature_spnego", &self.feature_debug())
+         .field("feature_largefile", &self.feature_debug())
+         .field("feature_idn", &self.feature_debug())
+         .field("feature_sspi", &self.feature_debug())
+         .field("feature_async_dns", &self.feature_debug())
+         .field("feature_conv", &self.feature_debug())
+         .field("feature_tlsauth_srp", &self.feature_debug())
+         .field("feature_ntlm_wb", &self.feature_debug())
+         .field("feature_unix_domain_socket", &self.feature_debug());
+
+        if let Some(s) = self.ssl_version() {
+            f.field("ssl_version", &s);
+        }
+        if let Some(s) = self.libz_version() {
+            f.field("libz_version", &s);
+        }
+        if let Some(s) = self.ares_version() {
+            f.field("ares_version", &s);
+        }
+        if let Some(s) = self.libidn_version() {
+            f.field("libidn_version", &s);
+        }
+        if let Some(s) = self.iconv_version_num() {
+            f.field("iconv_version_num", &format!("{:x}", s));
+        }
+        if let Some(s) = self.libssh_version() {
+            f.field("libssh_version", &s);
+        }
+
+        f.field("protocols", &self.protocols().collect::<Vec<_>>());
+
+        f.finish()
+    }
+}
+
 impl<'a> Iterator for Protocols<'a> {
     type Item = &'a str;
 
@@ -243,5 +291,13 @@ impl<'a> Iterator for Protocols<'a> {
             self.cur = self.cur.offset(1);
             Some(ret)
         }
+    }
+}
+
+impl<'a> fmt::Debug for Protocols<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_list()
+         .entries(self.clone())
+         .finish()
     }
 }

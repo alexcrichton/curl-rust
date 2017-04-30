@@ -712,7 +712,7 @@ impl Easy {
     /// called during periods of idleness unless you call the appropriate
     /// libcurl function that performs transfers.
     ///
-    /// `noprogress` must be set to 0 to make this function actually get
+    /// `progress` must be set to `true` to make this function actually get
     /// called.
     ///
     /// By default this function calls an internal method and corresponds to

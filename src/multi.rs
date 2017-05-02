@@ -13,7 +13,7 @@ use winapi::fd_set;
 use libc::{fd_set, pollfd, POLLIN, POLLPRI, POLLOUT};
 
 use {MultiError, Error};
-use easy::Easy;
+use easy::{Easy, Easy2};
 use panic;
 
 /// A multi handle for initiating multiple connections simultaneously.
@@ -54,6 +54,17 @@ pub struct Message<'multi> {
 /// from the multi handle when desired.
 pub struct EasyHandle {
     easy: Easy,
+    // This is now effecitvely bound to a `Multi`, so it is no longer sendable.
+    _marker: marker::PhantomData<&'static Multi>,
+}
+
+/// Wrapper around an easy handle while it's owned by a multi handle.
+///
+/// Once an easy handle has been added to a multi handle then it can no longer
+/// be used via `perform`. This handle is also used to remove the easy handle
+/// from the multi handle when desired.
+pub struct Easy2Handle<H> {
+    easy: Easy2<H>,
     // This is now effecitvely bound to a `Multi`, so it is no longer sendable.
     _marker: marker::PhantomData<&'static Multi>,
 }
@@ -284,6 +295,17 @@ impl Multi {
         })
     }
 
+    /// Same as `add`, but works with the `Easy2` type.
+    pub fn add2<H>(&self, easy: Easy2<H>) -> Result<Easy2Handle<H>, MultiError> {
+        unsafe {
+            try!(cvt(curl_sys::curl_multi_add_handle(self.raw, easy.raw())));
+        }
+        Ok(Easy2Handle {
+            easy: easy,
+            _marker: marker::PhantomData,
+        })
+    }
+
     /// Remove an easy handle from this multi session
     ///
     /// Removes the easy handle from this multi handle. This will make the
@@ -296,6 +318,15 @@ impl Multi {
     /// effectively halt the transfer in progress involving that easy handle.
     /// All other easy handles and transfers will remain unaffected.
     pub fn remove(&self, easy: EasyHandle) -> Result<Easy, MultiError> {
+        unsafe {
+            try!(cvt(curl_sys::curl_multi_remove_handle(self.raw,
+                                                        easy.easy.raw())));
+        }
+        Ok(easy.easy)
+    }
+
+    /// Same as `remove`, but for `Easy2Handle`.
+    pub fn remove2<H>(&self, easy: Easy2Handle<H>) -> Result<Easy2<H>, MultiError> {
         unsafe {
             try!(cvt(curl_sys::curl_multi_remove_handle(self.raw,
                                                         easy.easy.raw())));
@@ -613,6 +644,23 @@ impl fmt::Debug for EasyHandle {
     }
 }
 
+impl<H> Easy2Handle<H> {
+    /// Same as `EasyHandle::set_token`
+    pub fn set_token(&mut self, token: usize) -> Result<(), Error> {
+        unsafe {
+            ::cvt(curl_sys::curl_easy_setopt(self.easy.raw(),
+                                             curl_sys::CURLOPT_PRIVATE,
+                                             token))
+        }
+    }
+}
+
+impl<H: fmt::Debug> fmt::Debug for Easy2Handle<H> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.easy.fmt(f)
+    }
+}
+
 impl<'multi> Message<'multi> {
     /// If this message indicates that a transfer has finished, returns the
     /// result of the transfer in `Some`.
@@ -632,6 +680,11 @@ impl<'multi> Message<'multi> {
     /// Returns whether this easy message was for the specified easy handle or
     /// not.
     pub fn is_for(&self, handle: &EasyHandle) -> bool {
+        unsafe { (*self.ptr).easy_handle == handle.easy.raw() }
+    }
+
+    /// Same as `is_for`, but for `Easy2Handle`.
+    pub fn is_for2<H>(&self, handle: &Easy2Handle<H>) -> bool {
         unsafe { (*self.ptr).easy_handle == handle.easy.raw() }
     }
 

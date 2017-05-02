@@ -1,39 +1,31 @@
-use std::cell::{RefCell, Cell};
-use std::ffi::{CString, CStr};
+use std::cell::Cell;
 use std::fmt;
 use std::io::SeekFrom;
 use std::path::Path;
-use std::slice;
+use std::ptr;
 use std::str;
 use std::time::Duration;
 
 use curl_sys;
-use libc::{self, c_long, c_int, c_char, c_void, size_t, c_double, c_ulong};
+use libc::c_void;
 
 use Error;
-use panic;
-
-// TODO: checked casts everywhere
+use easy::{Form, List};
+use easy::handler::{self, InfoType, SeekResult, ReadError, WriteError};
+use easy::handler::{TimeCondition, IpResolve, HttpVersion, SslVersion};
+use easy::handler::{SslOpt, NetRc, Auth, ProxyType};
+use easy::{Easy2, Handler};
 
 /// Raw bindings to a libcurl "easy session".
 ///
-/// This type corresponds to the `CURL` type in libcurl, and is probably what
-/// you want for just sending off a simple HTTP request and fetching a response.
-/// Each easy handle can be thought of as a large builder before calling the
-/// final `perform` function.
+/// This type is the same as the `Easy2` type in this library except that it
+/// does not contain a type parameter. Callbacks from curl are all controlled
+/// via closures on this `Easy` type, and this type namely has a `transfer`
+/// method as well for ergonomic management of these callbacks.
 ///
-/// There are many many configuration options for each `Easy` handle, and they
-/// should all have their own documentation indicating what it affects and how
-/// it interacts with other options. Some implementations of libcurl can use
-/// this handle to interact with many different protocols, although by default
-/// this crate only guarantees the HTTP/HTTPS protocols working.
-///
-/// Note that almost all methods on this structure which configure various
-/// properties return a `Result`. This is largely used to detect whether the
-/// underlying implementation of libcurl actually implements the option being
-/// requested. If you're linked to a version of libcurl which doesn't support
-/// the option, then an error will be returned. Some options also perform some
-/// validation when they're set, and the error is returned through this vector.
+/// There's not necessarily a right answer for which type is correct to use, but
+/// as a general rule of thumb `Easy` is typically a reasonable choice for
+/// synchronous I/O and `Easy2` is a good choice for asynchronous I/O.
 ///
 /// ## Examples
 ///
@@ -81,9 +73,9 @@ use panic;
 ///
 /// More examples of various properties of an HTTP request can be found on the
 /// specific methods as well.
+#[derive(Debug)]
 pub struct Easy {
-    handle: *mut curl_sys::CURL,
-    data: Box<EasyData>,
+    inner: Easy2<EasyData>,
 }
 
 /// A scoped transfer of information which borrows an `Easy` and allows
@@ -99,27 +91,19 @@ pub struct Easy {
 /// close over stack-local information.
 pub struct Transfer<'easy, 'data> {
     easy: &'easy mut Easy,
-    data: Box<TransferData<'data>>,
+    data: Box<Callbacks<'data>>,
 }
 
-#[derive(Default)]
-struct EasyData {
+pub struct EasyData {
     running: Cell<bool>,
-    write: Option<Box<FnMut(&[u8]) -> Result<usize, WriteError> + Send>>,
-    read: Option<Box<FnMut(&mut [u8]) -> Result<usize, ReadError> + Send>>,
-    seek: Option<Box<FnMut(SeekFrom) -> SeekResult + Send>>,
-    debug_set: bool,
-    debug: Option<Box<FnMut(InfoType, &[u8]) + Send>>,
-    header: Option<Box<FnMut(&[u8]) -> bool + Send>>,
-    progress: Option<Box<FnMut(f64, f64, f64, f64) -> bool + Send>>,
-    ssl_ctx: Option<Box<FnMut(*mut c_void) -> Result<(), Error> + Send>>,
-    header_list: Option<List>,
-    form: Option<Form>,
-    error_buf: RefCell<Vec<u8>>,
+    owned: Callbacks<'static>,
+    borrowed: Cell<*mut Callbacks<'static>>,
 }
 
+unsafe impl Send for EasyData {}
+
 #[derive(Default)]
-struct TransferData<'a> {
+struct Callbacks<'a> {
     write: Option<Box<FnMut(&[u8]) -> Result<usize, WriteError> + 'a>>,
     read: Option<Box<FnMut(&mut [u8]) -> Result<usize, ReadError> + 'a>>,
     seek: Option<Box<FnMut(SeekFrom) -> SeekResult + 'a>>,
@@ -127,215 +111,6 @@ struct TransferData<'a> {
     header: Option<Box<FnMut(&[u8]) -> bool + 'a>>,
     progress: Option<Box<FnMut(f64, f64, f64, f64) -> bool + 'a>>,
     ssl_ctx: Option<Box<FnMut(*mut c_void) -> Result<(), Error> + 'a>>,
-}
-
-// libcurl guarantees that a CURL handle is fine to be transferred so long as
-// it's not used concurrently, and we do that correctly ourselves.
-unsafe impl Send for Easy {}
-
-/// Possible proxy types that libcurl currently understands.
-#[allow(missing_docs)]
-#[derive(Debug)]
-pub enum ProxyType {
-    Http = curl_sys::CURLPROXY_HTTP as isize,
-    Http1 = curl_sys::CURLPROXY_HTTP_1_0 as isize,
-    Socks4 = curl_sys::CURLPROXY_SOCKS4 as isize,
-    Socks5 = curl_sys::CURLPROXY_SOCKS5 as isize,
-    Socks4a = curl_sys::CURLPROXY_SOCKS4A as isize,
-    Socks5Hostname = curl_sys::CURLPROXY_SOCKS5_HOSTNAME as isize,
-
-    /// Hidden variant to indicate that this enum should not be matched on, it
-    /// may grow over time.
-    #[doc(hidden)]
-    __Nonexhaustive,
-}
-
-/// Possible conditions for the `time_condition` method.
-#[allow(missing_docs)]
-#[derive(Debug)]
-pub enum TimeCondition {
-    None = curl_sys::CURL_TIMECOND_NONE as isize,
-    IfModifiedSince = curl_sys::CURL_TIMECOND_IFMODSINCE as isize,
-    IfUnmodifiedSince = curl_sys::CURL_TIMECOND_IFUNMODSINCE as isize,
-    LastModified = curl_sys::CURL_TIMECOND_LASTMOD as isize,
-
-    /// Hidden variant to indicate that this enum should not be matched on, it
-    /// may grow over time.
-    #[doc(hidden)]
-    __Nonexhaustive,
-}
-
-/// Possible values to pass to the `ip_resolve` method.
-#[allow(missing_docs)]
-#[derive(Debug)]
-pub enum IpResolve {
-    V4 = curl_sys::CURL_IPRESOLVE_V4 as isize,
-    V6 = curl_sys::CURL_IPRESOLVE_V6 as isize,
-    Any = curl_sys::CURL_IPRESOLVE_WHATEVER as isize,
-
-    /// Hidden variant to indicate that this enum should not be matched on, it
-    /// may grow over time.
-    #[doc(hidden)]
-    __Nonexhaustive = 500,
-}
-
-/// Possible values to pass to the `http_version` method.
-#[derive(Debug)]
-pub enum HttpVersion {
-    /// We don't care what http version to use, and we'd like the library to
-    /// choose the best possible for us.
-    Any = curl_sys::CURL_HTTP_VERSION_NONE as isize,
-
-    /// Please use HTTP 1.0 in the request
-    V10 = curl_sys::CURL_HTTP_VERSION_1_0 as isize,
-
-    /// Please use HTTP 1.1 in the request
-    V11 = curl_sys::CURL_HTTP_VERSION_1_1 as isize,
-
-    /// Please use HTTP 2 in the request
-    /// (Added in CURL 7.33.0)
-    V2 = curl_sys::CURL_HTTP_VERSION_2_0 as isize,
-
-    /// Use version 2 for HTTPS, version 1.1 for HTTP
-    /// (Added in CURL 7.47.0)
-    V2TLS = curl_sys::CURL_HTTP_VERSION_2TLS as isize,
-
-    /// Please use HTTP 2 without HTTP/1.1 Upgrade
-    /// (Added in CURL 7.49.0)
-    V2PriorKnowledge = curl_sys::CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE as isize,
-
-    /// Hidden variant to indicate that this enum should not be matched on, it
-    /// may grow over time.
-    #[doc(hidden)]
-    __Nonexhaustive = 500,
-}
-
-/// Possible values to pass to the `ip_resolve` method.
-#[allow(missing_docs)]
-#[derive(Debug)]
-pub enum SslVersion {
-    Default = curl_sys::CURL_SSLVERSION_DEFAULT as isize,
-    Tlsv1 = curl_sys::CURL_SSLVERSION_TLSv1 as isize,
-    Sslv2 = curl_sys::CURL_SSLVERSION_SSLv2 as isize,
-    Sslv3 = curl_sys::CURL_SSLVERSION_SSLv3 as isize,
-    // Tlsv10 = curl_sys::CURL_SSLVERSION_TLSv1_0 as isize,
-    // Tlsv11 = curl_sys::CURL_SSLVERSION_TLSv1_1 as isize,
-    // Tlsv12 = curl_sys::CURL_SSLVERSION_TLSv1_2 as isize,
-
-    /// Hidden variant to indicate that this enum should not be matched on, it
-    /// may grow over time.
-    #[doc(hidden)]
-    __Nonexhaustive = 500,
-}
-
-/// Possible return values from the `seek_function` callback.
-#[derive(Debug)]
-pub enum SeekResult {
-    /// Indicates that the seek operation was a success
-    Ok = curl_sys::CURL_SEEKFUNC_OK as isize,
-
-    /// Indicates that the seek operation failed, and the entire request should
-    /// fail as a result.
-    Fail = curl_sys::CURL_SEEKFUNC_FAIL as isize,
-
-    /// Indicates that although the seek failed libcurl should attempt to keep
-    /// working if possible (for example "seek" through reading).
-    CantSeek = curl_sys::CURL_SEEKFUNC_CANTSEEK as isize,
-
-    /// Hidden variant to indicate that this enum should not be matched on, it
-    /// may grow over time.
-    #[doc(hidden)]
-    __Nonexhaustive = 500,
-}
-
-/// Possible data chunks that can be witnessed as part of the `debug_function`
-/// callback.
-#[derive(Debug)]
-pub enum InfoType {
-    /// The data is informational text.
-    Text,
-
-    /// The data is header (or header-like) data received from the peer.
-    HeaderIn,
-
-    /// The data is header (or header-like) data sent to the peer.
-    HeaderOut,
-
-    /// The data is protocol data received from the peer.
-    DataIn,
-
-    /// The data is protocol data sent to the peer.
-    DataOut,
-
-    /// The data is SSL/TLS (binary) data received from the peer.
-    SslDataIn,
-
-    /// The data is SSL/TLS (binary) data sent to the peer.
-    SslDataOut,
-
-    /// Hidden variant to indicate that this enum should not be matched on, it
-    /// may grow over time.
-    #[doc(hidden)]
-    __Nonexhaustive,
-}
-
-/// Possible error codes that can be returned from the `read_function` callback.
-#[derive(Debug)]
-pub enum ReadError {
-    /// Indicates that the connection should be aborted immediately
-    Abort,
-
-    /// Indicates that reading should be paused until `unpause` is called.
-    Pause,
-
-    /// Hidden variant to indicate that this enum should not be matched on, it
-    /// may grow over time.
-    #[doc(hidden)]
-    __Nonexhaustive,
-}
-
-/// Possible error codes that can be returned from the `write_function` callback.
-#[derive(Debug)]
-pub enum WriteError {
-    /// Indicates that reading should be paused until `unpause` is called.
-    Pause,
-
-    /// Hidden variant to indicate that this enum should not be matched on, it
-    /// may grow over time.
-    #[doc(hidden)]
-    __Nonexhaustive,
-}
-
-/// Options for `.netrc` parsing.
-#[derive(Debug)]
-pub enum NetRc {
-    /// Ignoring `.netrc` file and use information from url
-    ///
-    /// This option is default
-    Ignored = curl_sys::CURL_NETRC_IGNORED as isize,
-
-    /// The  use of your `~/.netrc` file is optional, and information in the URL is to be
-    /// preferred. The file will be scanned for the host and user name (to find the password only)
-    /// or for the host only, to find the first user name and password after that machine, which
-    /// ever information is not specified in the URL.
-    Optional = curl_sys::CURL_NETRC_OPTIONAL as isize,
-
-    /// This value tells the library that use of the file is required, to ignore the information in
-    /// the URL, and to search the file for the host only.
-    Required = curl_sys::CURL_NETRC_REQUIRED as isize,
-}
-
-/// Structure which stores possible authentication methods to get passed to
-/// `http_auth` and `proxy_auth`.
-#[derive(Clone)]
-pub struct Auth {
-    bits: c_long,
-}
-
-/// Structure which stores possible ssl options to pass to `ssl_options`.
-#[derive(Clone)]
-pub struct SslOpt {
-    bits: c_long,
 }
 
 impl Easy {
@@ -347,103 +122,47 @@ impl Easy {
     /// `perform` and need to be reset manually (or via the `reset` method) if
     /// this is not desired.
     pub fn new() -> Easy {
-        ::init();
-        unsafe {
-            let handle = curl_sys::curl_easy_init();
-            assert!(!handle.is_null());
-            let mut ret = Easy {
-                handle: handle,
-                data: Default::default(),
-            };
-            default_configure(&mut ret);
-            return ret
+        Easy {
+            inner: Easy2::new(EasyData {
+                running: Cell::new(false),
+                owned: Callbacks::default(),
+                borrowed: Cell::new(ptr::null_mut()),
+            }),
         }
     }
 
     // =========================================================================
     // Behavior options
 
-    /// Configures this handle to have verbose output to help debug protocol
-    /// information.
-    ///
-    /// By default output goes to stderr, but the `stderr` function on this type
-    /// can configure that. You can also use the `debug_function` method to get
-    /// all protocol data sent and received.
-    ///
-    /// By default, this option is `false`.
+    /// Same as [`Easy2::verbose`](struct.Easy2.html#method.verbose)
     pub fn verbose(&mut self, verbose: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_VERBOSE, verbose as c_long)
+        self.inner.verbose(verbose)
     }
 
-    /// Indicates whether header information is streamed to the output body of
-    /// this request.
-    ///
-    /// This option is only relevant for protocols which have header metadata
-    /// (like http or ftp). It's not generally possible to extract headers
-    /// from the body if using this method, that use case should be intended for
-    /// the `header_function` method.
-    ///
-    /// To set HTTP headers, use the `http_header` method.
-    ///
-    /// By default, this option is `false` and corresponds to
-    /// `CURLOPT_HEADER`.
+    /// Same as [`Easy2::show_header`](struct.Easy2.html#method.show_header)
     pub fn show_header(&mut self, show: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_HEADER, show as c_long)
+        self.inner.show_header(show)
     }
 
-    /// Indicates whether a progress meter will be shown for requests done with
-    /// this handle.
-    ///
-    /// This will also prevent the `progress_function` from being called.
-    ///
-    /// By default this option is `false` and corresponds to
-    /// `CURLOPT_NOPROGRESS`.
+    /// Same as [`Easy2::progress`](struct.Easy2.html#method.progress)
     pub fn progress(&mut self, progress: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_NOPROGRESS,
-                         (!progress) as c_long)
+        self.inner.progress(progress)
     }
 
-    /// Inform libcurl whether or not it should install signal handlers or
-    /// attempt to use signals to perform library functions.
-    ///
-    /// If this option is disabled then timeouts during name resolution will not
-    /// work unless libcurl is built against c-ares. Note that enabling this
-    /// option, however, may not cause libcurl to work with multiple threads.
-    ///
-    /// By default this option is `false` and corresponds to `CURLOPT_NOSIGNAL`.
-    /// Note that this default is **different than libcurl** as it is intended
-    /// that this library is threadsafe by default. See the [libcurl docs] for
-    /// some more information.
-    ///
-    /// [libcurl docs]: https://curl.haxx.se/libcurl/c/threadsafe.html
+    /// Same as [`Easy2::signal`](struct.Easy2.html#method.signal)
     pub fn signal(&mut self, signal: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_NOSIGNAL,
-                         (!signal) as c_long)
+        self.inner.signal(signal)
     }
 
-    /// Indicates whether multiple files will be transferred based on the file
-    /// name pattern.
-    ///
-    /// The last part of a filename uses fnmatch-like pattern matching.
-    ///
-    /// By default this option is `false` and corresponds to
-    /// `CURLOPT_WILDCARDMATCH`.
+    /// Same as [`Easy2::wildcard_match`](struct.Easy2.html#method.wildcard_match)
     pub fn wildcard_match(&mut self, m: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_WILDCARDMATCH, m as c_long)
+        self.inner.wildcard_match(m)
     }
 
-    /// Provides the unix domain socket which this handle will work with.
-    ///
-    /// The string provided must be unix domain socket -encoded with the format:
-    ///
-    /// ```text
-    /// /path/file.sock
-    /// ```
+    /// Same as [`Easy2::unix_socket`](struct.Easy2.html#method.unix_socket)
     pub fn unix_socket(&mut self, unix_domain_socket: &str) -> Result<(), Error> {
-        let socket = try!(CString::new(unix_domain_socket));
-        self.setopt_str(curl_sys::CURLOPT_UNIX_SOCKET_PATH, &socket)
+        self.inner.unix_socket(unix_domain_socket)
     }
-
 
     // =========================================================================
     // Callback options
@@ -514,20 +233,8 @@ impl Easy {
     pub fn write_function<F>(&mut self, f: F) -> Result<(), Error>
         where F: FnMut(&[u8]) -> Result<usize, WriteError> + Send + 'static
     {
-        self.data.write = Some(Box::new(f));
-        unsafe {
-            return self.set_write_function(easy_write_cb,
-                                           &*self.data as *const _ as *mut _)
-        }
-    }
-
-    unsafe fn set_write_function(&self,
-                                 cb: curl_sys::curl_write_callback,
-                                 ptr: *mut c_void)
-                                 -> Result<(), Error> {
-        try!(self.setopt_ptr(curl_sys::CURLOPT_WRITEFUNCTION, cb as *const _));
-        try!(self.setopt_ptr(curl_sys::CURLOPT_WRITEDATA, ptr as *const _));
-        return Ok(());
+        self.inner.get_mut().owned.write = Some(Box::new(f));
+        Ok(())
     }
 
     /// Read callback for data uploads.
@@ -597,19 +304,8 @@ impl Easy {
     pub fn read_function<F>(&mut self, f: F) -> Result<(), Error>
         where F: FnMut(&mut [u8]) -> Result<usize, ReadError> + Send + 'static
     {
-        self.data.read = Some(Box::new(f));
-        unsafe {
-            self.set_read_function(easy_read_cb,
-                                   &*self.data as *const _ as *mut _)
-        }
-    }
-
-    unsafe fn set_read_function(&self,
-                                cb: curl_sys::curl_read_callback,
-                                ptr: *mut c_void) -> Result<(), Error> {
-        try!(self.setopt_ptr(curl_sys::CURLOPT_READFUNCTION, cb as *const _));
-        try!(self.setopt_ptr(curl_sys::CURLOPT_READDATA, ptr as *const _));
-        return Ok(());
+        self.inner.get_mut().owned.read = Some(Box::new(f));
+        Ok(())
     }
 
     /// User callback for seeking in input stream.
@@ -639,19 +335,7 @@ impl Easy {
     pub fn seek_function<F>(&mut self, f: F) -> Result<(), Error>
         where F: FnMut(SeekFrom) -> SeekResult + Send + 'static
     {
-        self.data.seek = Some(Box::new(f));
-        unsafe {
-            self.set_seek_function(easy_seek_cb,
-                                   &*self.data as *const _ as *mut _)
-        }
-    }
-
-    unsafe fn set_seek_function(&self,
-                                cb: curl_sys::curl_seek_callback,
-                                ptr: *mut c_void) -> Result<(), Error> {
-        let cb = cb as curl_sys::curl_seek_callback;
-        try!(self.setopt_ptr(curl_sys::CURLOPT_SEEKFUNCTION, cb as *const _));
-        try!(self.setopt_ptr(curl_sys::CURLOPT_SEEKDATA, ptr as *const _));
+        self.inner.get_mut().owned.seek = Some(Box::new(f));
         Ok(())
     }
 
@@ -694,18 +378,7 @@ impl Easy {
     pub fn progress_function<F>(&mut self, f: F) -> Result<(), Error>
         where F: FnMut(f64, f64, f64, f64) -> bool + Send + 'static
     {
-        self.data.progress = Some(Box::new(f));
-        unsafe {
-            self.set_progress_function(easy_progress_cb,
-                                       &*self.data as *const _ as *mut _)
-        }
-    }
-
-    unsafe fn set_progress_function(&self,
-                                    cb: curl_sys::curl_progress_callback,
-                                    ptr: *mut c_void) -> Result<(), Error> {
-        try!(self.setopt_ptr(curl_sys::CURLOPT_PROGRESSFUNCTION, cb as *const _));
-        try!(self.setopt_ptr(curl_sys::CURLOPT_PROGRESSDATA, ptr as *const _));
+        self.inner.get_mut().owned.progress = Some(Box::new(f));
         Ok(())
     }
 
@@ -741,18 +414,7 @@ impl Easy {
     pub fn ssl_ctx_function<F>(&mut self, f: F) -> Result<(), Error>
         where F: FnMut(*mut c_void) -> Result<(), Error> + Send + 'static
     {
-        self.data.ssl_ctx = Some(Box::new(f));
-        unsafe {
-            self.set_ssl_ctx_function(easy_ssl_ctx_cb,
-                                      &*self.data as *const _ as *mut _)
-        }
-    }
-
-    unsafe fn set_ssl_ctx_function(&self,
-                                   cb: curl_sys::curl_ssl_ctx_callback,
-                                   ptr: *mut c_void) -> Result<(), Error> {
-        try!(self.setopt_ptr(curl_sys::CURLOPT_SSL_CTX_FUNCTION, cb as *const _));
-        try!(self.setopt_ptr(curl_sys::CURLOPT_SSL_CTX_DATA, ptr as *const _));
+        self.inner.get_mut().owned.ssl_ctx = Some(Box::new(f));
         Ok(())
     }
 
@@ -772,20 +434,8 @@ impl Easy {
     pub fn debug_function<F>(&mut self, f: F) -> Result<(), Error>
         where F: FnMut(InfoType, &[u8]) + Send + 'static
     {
-        self.data.debug = Some(Box::new(f));
-        self.data.debug_set = true;
-        unsafe {
-            self.set_debug_function(easy_debug_cb,
-                                    &*self.data as *const _ as *mut _)
-        }
-    }
-
-    unsafe fn set_debug_function(&self,
-                                 cb: curl_sys::curl_debug_callback,
-                                 ptr: *mut c_void) -> Result<(), Error> {
-        try!(self.setopt_ptr(curl_sys::CURLOPT_DEBUGFUNCTION, cb as *const _));
-        try!(self.setopt_ptr(curl_sys::CURLOPT_DEBUGDATA, ptr as *const _));
-        return Ok(());
+        self.inner.get_mut().owned.debug = Some(Box::new(f));
+        Ok(())
     }
 
     /// Callback that receives header data
@@ -868,22 +518,7 @@ impl Easy {
     pub fn header_function<F>(&mut self, f: F) -> Result<(), Error>
         where F: FnMut(&[u8]) -> bool + Send + 'static
     {
-        self.data.header = Some(Box::new(f));
-        unsafe {
-            self.set_header_function(easy_header_cb,
-                                     &*self.data as *const _ as *mut _)
-        }
-    }
-
-    // TODO: shouldn't there be a libcurl typedef for this?
-    unsafe fn set_header_function(&self,
-                                  cb: extern fn(*mut c_char,
-                                                size_t,
-                                                size_t,
-                                                *mut c_void) -> size_t,
-                                  ptr: *mut c_void) -> Result<(), Error> {
-        try!(self.setopt_ptr(curl_sys::CURLOPT_HEADERFUNCTION, cb as *const _));
-        try!(self.setopt_ptr(curl_sys::CURLOPT_HEADERDATA, ptr as *const _));
+        self.inner.get_mut().owned.header = Some(Box::new(f));
         Ok(())
     }
 
@@ -892,1705 +527,614 @@ impl Easy {
 
     // TODO: error buffer and stderr
 
-    /// Indicates whether this library will fail on HTTP response codes >= 400.
-    ///
-    /// This method is not fail-safe especially when authentication is involved.
-    ///
-    /// By default this option is `false` and corresponds to
-    /// `CURLOPT_FAILONERROR`.
+    /// Same as [`Easy2::fail_on_error`](struct.Easy2.html#method.fail_on_error)
     pub fn fail_on_error(&mut self, fail: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_FAILONERROR, fail as c_long)
+        self.inner.fail_on_error(fail)
     }
 
     // =========================================================================
     // Network options
 
-    /// Provides the URL which this handle will work with.
-    ///
-    /// The string provided must be URL-encoded with the format:
-    ///
-    /// ```text
-    /// scheme://host:port/path
-    /// ```
-    ///
-    /// The syntax is not validated as part of this function and that is
-    /// deferred until later.
-    ///
-    /// By default this option is not set and `perform` will not work until it
-    /// is set. This option corresponds to `CURLOPT_URL`.
+    /// Same as [`Easy2::url`](struct.Easy2.html#method.url)
     pub fn url(&mut self, url: &str) -> Result<(), Error> {
-        let url = try!(CString::new(url));
-        self.setopt_str(curl_sys::CURLOPT_URL, &url)
+        self.inner.url(url)
     }
 
-    /// Configures the port number to connect to, instead of the one specified
-    /// in the URL or the default of the protocol.
+    /// Same as [`Easy2::port`](struct.Easy2.html#method.port)
     pub fn port(&mut self, port: u16) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_PORT, port as c_long)
+        self.inner.port(port)
     }
 
-    // /// Indicates whether sequences of `/../` and `/./` will be squashed or not.
-    // ///
-    // /// By default this option is `false` and corresponds to
-    // /// `CURLOPT_PATH_AS_IS`.
-    // pub fn path_as_is(&mut self, as_is: bool) -> Result<(), Error> {
-    // }
-
-    /// Provide the URL of a proxy to use.
-    ///
-    /// By default this option is not set and corresponds to `CURLOPT_PROXY`.
+    /// Same as [`Easy2::proxy`](struct.Easy2.html#method.proxy)
     pub fn proxy(&mut self, url: &str) -> Result<(), Error> {
-        let url = try!(CString::new(url));
-        self.setopt_str(curl_sys::CURLOPT_PROXY, &url)
+        self.inner.proxy(url)
     }
 
-    /// Provide port number the proxy is listening on.
-    ///
-    /// By default this option is not set (the default port for the proxy
-    /// protocol is used) and corresponds to `CURLOPT_PROXYPORT`.
+    /// Same as [`Easy2::proxy_port`](struct.Easy2.html#method.proxy_port)
     pub fn proxy_port(&mut self, port: u16) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_PROXYPORT, port as c_long)
+        self.inner.proxy_port(port)
     }
 
-    /// Indicates the type of proxy being used.
-    ///
-    /// By default this option is `ProxyType::Http` and corresponds to
-    /// `CURLOPT_PROXYTYPE`.
+    /// Same as [`Easy2::proxy_type`](struct.Easy2.html#method.proxy_type)
     pub fn proxy_type(&mut self, kind: ProxyType) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_PROXYTYPE, kind as c_long)
+        self.inner.proxy_type(kind)
     }
 
-    /// Provide a list of hosts that should not be proxied to.
-    ///
-    /// This string is a comma-separated list of hosts which should not use the
-    /// proxy specified for connections. A single `*` character is also accepted
-    /// as a wildcard for all hosts.
-    ///
-    /// By default this option is not set and corresponds to
-    /// `CURLOPT_NOPROXY`.
+    /// Same as [`Easy2::noproxy`](struct.Easy2.html#method.noproxy)
     pub fn noproxy(&mut self, skip: &str) -> Result<(), Error> {
-        let skip = try!(CString::new(skip));
-        self.setopt_str(curl_sys::CURLOPT_PROXYTYPE, &skip)
+        self.inner.noproxy(skip)
     }
 
-    /// Inform curl whether it should tunnel all operations through the proxy.
-    ///
-    /// This essentially means that a `CONNECT` is sent to the proxy for all
-    /// outbound requests.
-    ///
-    /// By default this option is `false` and corresponds to
-    /// `CURLOPT_HTTPPROXYTUNNEL`.
+    /// Same as [`Easy2::http_proxy_tunnel`](struct.Easy2.html#method.http_proxy_tunnel)
     pub fn http_proxy_tunnel(&mut self, tunnel: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_HTTPPROXYTUNNEL,
-                         tunnel as c_long)
+        self.inner.http_proxy_tunnel(tunnel)
     }
 
-    /// Tell curl which interface to bind to for an outgoing network interface.
-    ///
-    /// The interface name, IP address, or host name can be specified here.
-    ///
-    /// By default this option is not set and corresponds to
-    /// `CURLOPT_INTERFACE`.
+    /// Same as [`Easy2::interface`](struct.Easy2.html#method.interface)
     pub fn interface(&mut self, interface: &str) -> Result<(), Error> {
-        let s = try!(CString::new(interface));
-        self.setopt_str(curl_sys::CURLOPT_INTERFACE, &s)
+        self.inner.interface(interface)
     }
 
-    /// Indicate which port should be bound to locally for this connection.
-    ///
-    /// By default this option is 0 (any port) and corresponds to
-    /// `CURLOPT_LOCALPORT`.
+    /// Same as [`Easy2::set_local_port`](struct.Easy2.html#method.set_local_port)
     pub fn set_local_port(&mut self, port: u16) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_LOCALPORT, port as c_long)
+        self.inner.set_local_port(port)
     }
 
-    /// Indicates the number of attempts libcurl will perform to find a working
-    /// port number.
-    ///
-    /// By default this option is 1 and corresponds to
-    /// `CURLOPT_LOCALPORTRANGE`.
+    /// Same as [`Easy2::local_port_range`](struct.Easy2.html#method.local_port_range)
     pub fn local_port_range(&mut self, range: u16) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_LOCALPORTRANGE,
-                         range as c_long)
+        self.inner.local_port_range(range)
     }
 
-    /// Sets the timeout of how long name resolves will be kept in memory.
-    ///
-    /// This is distinct from DNS TTL options and is entirely speculative.
-    ///
-    /// By default this option is 60s and corresponds to
-    /// `CURLOPT_DNS_CACHE_TIMEOUT`.
+    /// Same as [`Easy2::dns_cache_timeout`](struct.Easy2.html#method.dns_cache_timeout)
     pub fn dns_cache_timeout(&mut self, dur: Duration) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_DNS_CACHE_TIMEOUT,
-                         dur.as_secs() as c_long)
+        self.inner.dns_cache_timeout(dur)
     }
 
-    /// Specify the preferred receive buffer size, in bytes.
-    ///
-    /// This is treated as a request, not an order, and the main point of this
-    /// is that the write callback may get called more often with smaller
-    /// chunks.
-    ///
-    /// By default this option is the maximum write size and corresopnds to
-    /// `CURLOPT_BUFFERSIZE`.
+    /// Same as [`Easy2::buffer_size`](struct.Easy2.html#method.buffer_size)
     pub fn buffer_size(&mut self, size: usize) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_BUFFERSIZE, size as c_long)
+        self.inner.buffer_size(size)
     }
 
-    // /// Enable or disable TCP Fast Open
-    // ///
-    // /// By default this options defaults to `false` and corresponds to
-    // /// `CURLOPT_TCP_FASTOPEN`
-    // pub fn fast_open(&mut self, enable: bool) -> Result<(), Error> {
-    // }
-
-    /// Configures whether the TCP_NODELAY option is set, or Nagle's algorithm
-    /// is disabled.
-    ///
-    /// The purpose of Nagle's algorithm is to minimize the number of small
-    /// packet's on the network, and disabling this may be less efficient in
-    /// some situations.
-    ///
-    /// By default this option is `false` and corresponds to
-    /// `CURLOPT_TCP_NODELAY`.
+    /// Same as [`Easy2::tcp_nodelay`](struct.Easy2.html#method.tcp_nodelay)
     pub fn tcp_nodelay(&mut self, enable: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_TCP_NODELAY, enable as c_long)
+        self.inner.tcp_nodelay(enable)
     }
 
-    // /// Configures whether TCP keepalive probes will be sent.
-    // ///
-    // /// The delay and frequency of these probes is controlled by `tcp_keepidle`
-    // /// and `tcp_keepintvl`.
-    // ///
-    // /// By default this option is `false` and corresponds to
-    // /// `CURLOPT_TCP_KEEPALIVE`.
-    // pub fn tcp_keepalive(&mut self, enable: bool) -> Result<(), Error> {
-    //     self.setopt_long(curl_sys::CURLOPT_TCP_KEEPALIVE, enable as c_long)
-    // }
-
-    // /// Configures the TCP keepalive idle time wait.
-    // ///
-    // /// This is the delay, after which the connection is idle, keepalive probes
-    // /// will be sent. Not all operating systems support this.
-    // ///
-    // /// By default this corresponds to `CURLOPT_TCP_KEEPIDLE`.
-    // pub fn tcp_keepidle(&mut self, amt: Duration) -> Result<(), Error> {
-    //     self.setopt_long(curl_sys::CURLOPT_TCP_KEEPIDLE,
-    //                      amt.as_secs() as c_long)
-    // }
-    //
-    // /// Configures the delay between keepalive probes.
-    // ///
-    // /// By default this corresponds to `CURLOPT_TCP_KEEPINTVL`.
-    // pub fn tcp_keepintvl(&mut self, amt: Duration) -> Result<(), Error> {
-    //     self.setopt_long(curl_sys::CURLOPT_TCP_KEEPINTVL,
-    //                      amt.as_secs() as c_long)
-    // }
-
-    /// Configures the scope for local IPv6 addresses.
-    ///
-    /// Sets the scope_id value to use when connecting to IPv6 or link-local
-    /// addresses.
-    ///
-    /// By default this value is 0 and corresponds to `CURLOPT_ADDRESS_SCOPE`
+    /// Same as [`Easy2::address_scope`](struct.Easy2.html#method.address_scope)
     pub fn address_scope(&mut self, scope: u32) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_ADDRESS_SCOPE,
-                         scope as c_long)
+        self.inner.address_scope(scope)
     }
 
     // =========================================================================
     // Names and passwords
 
-    /// Configures the username to pass as authentication for this connection.
-    ///
-    /// By default this value is not set and corresponds to `CURLOPT_USERNAME`.
+    /// Same as [`Easy2::username`](struct.Easy2.html#method.username)
     pub fn username(&mut self, user: &str) -> Result<(), Error> {
-        let user = try!(CString::new(user));
-        self.setopt_str(curl_sys::CURLOPT_USERNAME, &user)
+        self.inner.username(user)
     }
 
-    /// Configures the password to pass as authentication for this connection.
-    ///
-    /// By default this value is not set and corresponds to `CURLOPT_PASSWORD`.
+    /// Same as [`Easy2::password`](struct.Easy2.html#method.password)
     pub fn password(&mut self, pass: &str) -> Result<(), Error> {
-        let pass = try!(CString::new(pass));
-        self.setopt_str(curl_sys::CURLOPT_PASSWORD, &pass)
+        self.inner.password(pass)
     }
 
-    /// Set HTTP server authentication methods to try
-    ///
-    /// If more than one method is set, libcurl will first query the site to see
-    /// which authentication methods it supports and then pick the best one you
-    /// allow it to use. For some methods, this will induce an extra network
-    /// round-trip. Set the actual name and password with the `password` and
-    /// `username` methods.
-    ///
-    /// For authentication with a proxy, see `proxy_auth`.
-    ///
-    /// By default this value is basic and corresponds to `CURLOPT_HTTPAUTH`.
+    /// Same as [`Easy2::http_auth`](struct.Easy2.html#method.http_auth)
     pub fn http_auth(&mut self, auth: &Auth) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_HTTPAUTH, auth.bits)
+        self.inner.http_auth(auth)
     }
 
-    /// Configures the proxy username to pass as authentication for this
-    /// connection.
-    ///
-    /// By default this value is not set and corresponds to
-    /// `CURLOPT_PROXYUSERNAME`.
+    /// Same as [`Easy2::proxy_username`](struct.Easy2.html#method.proxy_username)
     pub fn proxy_username(&mut self, user: &str) -> Result<(), Error> {
-        let user = try!(CString::new(user));
-        self.setopt_str(curl_sys::CURLOPT_PROXYUSERNAME, &user)
+        self.inner.proxy_username(user)
     }
 
-    /// Configures the proxy password to pass as authentication for this
-    /// connection.
-    ///
-    /// By default this value is not set and corresponds to
-    /// `CURLOPT_PROXYPASSWORD`.
+    /// Same as [`Easy2::proxy_password`](struct.Easy2.html#method.proxy_password)
     pub fn proxy_password(&mut self, pass: &str) -> Result<(), Error> {
-        let pass = try!(CString::new(pass));
-        self.setopt_str(curl_sys::CURLOPT_PROXYPASSWORD, &pass)
+        self.inner.proxy_password(pass)
     }
 
-    /// Set HTTP proxy authentication methods to try
-    ///
-    /// If more than one method is set, libcurl will first query the site to see
-    /// which authentication methods it supports and then pick the best one you
-    /// allow it to use. For some methods, this will induce an extra network
-    /// round-trip. Set the actual name and password with the `proxy_password`
-    /// and `proxy_username` methods.
-    ///
-    /// By default this value is basic and corresponds to `CURLOPT_PROXYAUTH`.
+    /// Same as [`Easy2::proxy_auth`](struct.Easy2.html#method.proxy_auth)
     pub fn proxy_auth(&mut self, auth: &Auth) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_PROXYAUTH, auth.bits)
+        self.inner.proxy_auth(auth)
     }
 
-    /// Enable .netrc parsing
-    ///
-    /// By default the .netrc file is ignored and corresponds to `CURL_NETRC_IGNORED`.
+    /// Same as [`Easy2::netrc`](struct.Easy2.html#method.netrc)
     pub fn netrc(&mut self, netrc: NetRc) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_NETRC, netrc as c_long)
+        self.inner.netrc(netrc)
     }
 
     // =========================================================================
     // HTTP Options
 
-    /// Indicates whether the referer header is automatically updated
-    ///
-    /// By default this option is `false` and corresponds to
-    /// `CURLOPT_AUTOREFERER`.
+    /// Same as [`Easy2::autoreferer`](struct.Easy2.html#method.autoreferer)
     pub fn autoreferer(&mut self, enable: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_AUTOREFERER, enable as c_long)
+        self.inner.autoreferer(enable)
     }
 
-    /// Enables automatic decompression of HTTP downloads.
-    ///
-    /// Sets the contents of the Accept-Encoding header sent in an HTTP request.
-    /// This enables decoding of a response with Content-Encoding.
-    ///
-    /// Currently supported encoding are `identity`, `zlib`, and `gzip`. A
-    /// zero-length string passed in will send all accepted encodings.
-    ///
-    /// By default this option is not set and corresponds to
-    /// `CURLOPT_ACCEPT_ENCODING`.
+    /// Same as [`Easy2::accept_encoding`](struct.Easy2.html#method.accept_encoding)
     pub fn accept_encoding(&mut self, encoding: &str) -> Result<(), Error> {
-        let encoding = try!(CString::new(encoding));
-        self.setopt_str(curl_sys::CURLOPT_ACCEPT_ENCODING, &encoding)
+        self.inner.accept_encoding(encoding)
     }
 
-    /// Request the HTTP Transfer Encoding.
-    ///
-    /// By default this option is `false` and corresponds to
-    /// `CURLOPT_TRANSFER_ENCODING`.
+    /// Same as [`Easy2::transfer_encoding`](struct.Easy2.html#method.transfer_encoding)
     pub fn transfer_encoding(&mut self, enable: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_TRANSFER_ENCODING, enable as c_long)
+        self.inner.transfer_encoding(enable)
     }
 
-    /// Follow HTTP 3xx redirects.
-    ///
-    /// Indicates whether any `Location` headers in the response should get
-    /// followed.
-    ///
-    /// By default this option is `false` and corresponds to
-    /// `CURLOPT_FOLLOWLOCATION`.
+    /// Same as [`Easy2::follow_location`](struct.Easy2.html#method.follow_location)
     pub fn follow_location(&mut self, enable: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_FOLLOWLOCATION, enable as c_long)
+        self.inner.follow_location(enable)
     }
 
-    /// Send credentials to hosts other than the first as well.
-    ///
-    /// Sends username/password credentials even when the host changes as part
-    /// of a redirect.
-    ///
-    /// By default this option is `false` and corresponds to
-    /// `CURLOPT_UNRESTRICTED_AUTH`.
+    /// Same as [`Easy2::unrestricted_auth`](struct.Easy2.html#method.unrestricted_auth)
     pub fn unrestricted_auth(&mut self, enable: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_UNRESTRICTED_AUTH, enable as c_long)
+        self.inner.unrestricted_auth(enable)
     }
 
-    /// Set the maximum number of redirects allowed.
-    ///
-    /// A value of 0 will refuse any redirect.
-    ///
-    /// By default this option is `-1` (unlimited) and corresponds to
-    /// `CURLOPT_MAXREDIRS`.
+    /// Same as [`Easy2::max_redirections`](struct.Easy2.html#method.max_redirections)
     pub fn max_redirections(&mut self, max: u32) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_MAXREDIRS, max as c_long)
+        self.inner.max_redirections(max)
     }
 
-    // TODO: post_redirections
-
-    /// Make an HTTP PUT request.
-    ///
-    /// By default this option is `false` and corresponds to `CURLOPT_PUT`.
+    /// Same as [`Easy2::put`](struct.Easy2.html#method.put)
     pub fn put(&mut self, enable: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_PUT, enable as c_long)
+        self.inner.put(enable)
     }
 
-    /// Make an HTTP POST request.
-    ///
-    /// This will also make the library use the
-    /// `Content-Type: application/x-www-form-urlencoded` header.
-    ///
-    /// POST data can be specified through `post_fields` or by specifying a read
-    /// function.
-    ///
-    /// By default this option is `false` and corresponds to `CURLOPT_POST`.
+    /// Same as [`Easy2::post`](struct.Easy2.html#method.post)
     pub fn post(&mut self, enable: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_POST, enable as c_long)
+        self.inner.post(enable)
     }
 
-    /// Configures the data that will be uploaded as part of a POST.
-    ///
-    /// Note that the data is copied into this handle and if that's not desired
-    /// then the read callbacks can be used instead.
-    ///
-    /// By default this option is not set and corresponds to
-    /// `CURLOPT_COPYPOSTFIELDS`.
+    /// Same as [`Easy2::post_field_copy`](struct.Easy2.html#method.post_field_copy)
     pub fn post_fields_copy(&mut self, data: &[u8]) -> Result<(), Error> {
-        // Set the length before the pointer so libcurl knows how much to read
-        try!(self.post_field_size(data.len() as u64));
-        self.setopt_ptr(curl_sys::CURLOPT_COPYPOSTFIELDS,
-                        data.as_ptr() as *const _)
+        self.inner.post_fields_copy(data)
     }
 
-    /// Configures the size of data that's going to be uploaded as part of a
-    /// POST operation.
-    ///
-    /// This is called automaticsally as part of `post_fields` and should only
-    /// be called if data is being provided in a read callback (and even then
-    /// it's optional).
-    ///
-    /// By default this option is not set and corresponds to
-    /// `CURLOPT_POSTFIELDSIZE_LARGE`.
+    /// Same as [`Easy2::post_field_size`](struct.Easy2.html#method.post_field_size)
     pub fn post_field_size(&mut self, size: u64) -> Result<(), Error> {
-        // Clear anything previous to ensure we don't read past a buffer
-        try!(self.setopt_ptr(curl_sys::CURLOPT_POSTFIELDS, 0 as *const _));
-        self.setopt_off_t(curl_sys::CURLOPT_POSTFIELDSIZE_LARGE,
-                          size as curl_sys::curl_off_t)
+        self.inner.post_field_size(size)
     }
 
-    /// Tells libcurl you want a multipart/formdata HTTP POST to be made and you
-    /// instruct what data to pass on to the server in the `form` argument.
-    ///
-    /// By default this option is set to null and corresponds to
-    /// `CURLOPT_HTTPPOST`.
+    /// Same as [`Easy2::httppost`](struct.Easy2.html#method.httppost)
     pub fn httppost(&mut self, form: Form) -> Result<(), Error> {
-        try!(self.setopt_ptr(curl_sys::CURLOPT_HTTPPOST,
-                             form::raw(&form) as *const _));
-        self.data.form = Some(form);
-        Ok(())
+        self.inner.httppost(form)
     }
 
-    /// Sets the HTTP referer header
-    ///
-    /// By default this option is not set and corresponds to `CURLOPT_REFERER`.
+    /// Same as [`Easy2::referer`](struct.Easy2.html#method.referer)
     pub fn referer(&mut self, referer: &str) -> Result<(), Error> {
-        let referer = try!(CString::new(referer));
-        self.setopt_str(curl_sys::CURLOPT_REFERER, &referer)
+        self.inner.referer(referer)
     }
 
-    /// Sets the HTTP user-agent header
-    ///
-    /// By default this option is not set and corresponds to
-    /// `CURLOPT_USERAGENT`.
+    /// Same as [`Easy2::useragent`](struct.Easy2.html#method.useragent)
     pub fn useragent(&mut self, useragent: &str) -> Result<(), Error> {
-        let useragent = try!(CString::new(useragent));
-        self.setopt_str(curl_sys::CURLOPT_USERAGENT, &useragent)
+        self.inner.useragent(useragent)
     }
 
-    /// Add some headers to this HTTP request.
-    ///
-    /// If you add a header that is otherwise used internally, the value here
-    /// takes precedence. If a header is added with no content (like `Accept:`)
-    /// the internally the header will get disabled. To add a header with no
-    /// content, use the form `MyHeader;` (not the trailing semicolon).
-    ///
-    /// Headers must not be CRLF terminated. Many replaced headers have common
-    /// shortcuts which should be prefered.
-    ///
-    /// By default this option is not set and corresponds to
-    /// `CURLOPT_HTTPHEADER`
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use curl::easy::{Easy, List};
-    ///
-    /// let mut list = List::new();
-    /// list.append("Foo: bar").unwrap();
-    /// list.append("Bar: baz").unwrap();
-    ///
-    /// let mut handle = Easy::new();
-    /// handle.url("https://www.rust-lang.org/").unwrap();
-    /// handle.http_headers(list).unwrap();
-    /// handle.perform().unwrap();
-    /// ```
+    /// Same as [`Easy2::http_headers`](struct.Easy2.html#method.http_headers)
     pub fn http_headers(&mut self, list: List) -> Result<(), Error> {
-        let ptr = list::raw(&list);
-        self.data.header_list = Some(list);
-        self.setopt_ptr(curl_sys::CURLOPT_HTTPHEADER, ptr as *const _)
+        self.inner.http_headers(list)
     }
 
-    // /// Add some headers to send to the HTTP proxy.
-    // ///
-    // /// This function is essentially the same as `http_headers`.
-    // ///
-    // /// By default this option is not set and corresponds to
-    // /// `CURLOPT_PROXYHEADER`
-    // pub fn proxy_headers(&mut self, list: &'a List) -> Result<(), Error> {
-    //     self.setopt_ptr(curl_sys::CURLOPT_PROXYHEADER, list.raw as *const _)
-    // }
-
-    /// Set the contents of the HTTP Cookie header.
-    ///
-    /// Pass a string of the form `name=contents` for one cookie value or
-    /// `name1=val1; name2=val2` for multiple values.
-    ///
-    /// Using this option multiple times will only make the latest string
-    /// override the previous ones. This option will not enable the cookie
-    /// engine, use `cookie_file` or `cookie_jar` to do that.
-    ///
-    /// By default this option is not set and corresponds to `CURLOPT_COOKIE`.
+    /// Same as [`Easy2::cookie`](struct.Easy2.html#method.cookie)
     pub fn cookie(&mut self, cookie: &str) -> Result<(), Error> {
-        let cookie = try!(CString::new(cookie));
-        self.setopt_str(curl_sys::CURLOPT_COOKIE, &cookie)
+        self.inner.cookie(cookie)
     }
 
-    /// Set the file name to read cookies from.
-    ///
-    /// The cookie data can be in either the old Netscape / Mozilla cookie data
-    /// format or just regular HTTP headers (Set-Cookie style) dumped to a file.
-    ///
-    /// This also enables the cookie engine, making libcurl parse and send
-    /// cookies on subsequent requests with this handle.
-    ///
-    /// Given an empty or non-existing file or by passing the empty string ("")
-    /// to this option, you can enable the cookie engine without reading any
-    /// initial cookies.
-    ///
-    /// If you use this option multiple times, you just add more files to read.
-    /// Subsequent files will add more cookies.
-    ///
-    /// By default this option is not set and corresponds to
-    /// `CURLOPT_COOKIEFILE`.
+    /// Same as [`Easy2::cookie_file`](struct.Easy2.html#method.cookie_file)
     pub fn cookie_file<P: AsRef<Path>>(&mut self, file: P) -> Result<(), Error> {
-        self.setopt_path(curl_sys::CURLOPT_COOKIEFILE, file.as_ref())
+        self.inner.cookie_file(file)
     }
 
-    /// Set the file name to store cookies to.
-    ///
-    /// This will make libcurl write all internally known cookies to the file
-    /// when this handle is dropped. If no cookies are known, no file will be
-    /// created. Specify "-" as filename to instead have the cookies written to
-    /// stdout. Using this option also enables cookies for this session, so if
-    /// you for example follow a location it will make matching cookies get sent
-    /// accordingly.
-    ///
-    /// Note that libcurl doesn't read any cookies from the cookie jar. If you
-    /// want to read cookies from a file, use `cookie_file`.
-    ///
-    /// By default this option is not set and corresponds to
-    /// `CURLOPT_COOKIEJAR`.
+    /// Same as [`Easy2::cookie_jar`](struct.Easy2.html#method.cookie_jar)
     pub fn cookie_jar<P: AsRef<Path>>(&mut self, file: P) -> Result<(), Error> {
-        self.setopt_path(curl_sys::CURLOPT_COOKIEJAR, file.as_ref())
+        self.inner.cookie_jar(file)
     }
 
-    /// Start a new cookie session
-    ///
-    /// Marks this as a new cookie "session". It will force libcurl to ignore
-    /// all cookies it is about to load that are "session cookies" from the
-    /// previous session. By default, libcurl always stores and loads all
-    /// cookies, independent if they are session cookies or not. Session cookies
-    /// are cookies without expiry date and they are meant to be alive and
-    /// existing for this "session" only.
-    ///
-    /// By default this option is `false` and corresponds to
-    /// `CURLOPT_COOKIESESSION`.
+    /// Same as [`Easy2::cookie_session`](struct.Easy2.html#method.cookie_session)
     pub fn cookie_session(&mut self, session: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_COOKIESESSION, session as c_long)
+        self.inner.cookie_session(session)
     }
 
-    /// Add to or manipulate cookies held in memory.
-    ///
-    /// Such a cookie can be either a single line in Netscape / Mozilla format
-    /// or just regular HTTP-style header (Set-Cookie: ...) format. This will
-    /// also enable the cookie engine. This adds that single cookie to the
-    /// internal cookie store.
-    ///
-    /// Exercise caution if you are using this option and multiple transfers may
-    /// occur. If you use the Set-Cookie format and don't specify a domain then
-    /// the cookie is sent for any domain (even after redirects are followed)
-    /// and cannot be modified by a server-set cookie. If a server sets a cookie
-    /// of the same name (or maybe you've imported one) then both will be sent
-    /// on a future transfer to that server, likely not what you intended.
-    /// address these issues set a domain in Set-Cookie or use the Netscape
-    /// format.
-    ///
-    /// Additionally, there are commands available that perform actions if you
-    /// pass in these exact strings:
-    ///
-    /// * "ALL" - erases all cookies held in memory
-    /// * "SESS" - erases all session cookies held in memory
-    /// * "FLUSH" - write all known cookies to the specified cookie jar
-    /// * "RELOAD" - reread all cookies from the cookie file
-    ///
-    /// By default this options corresponds to `CURLOPT_COOKIELIST`
+    /// Same as [`Easy2::cookie_list`](struct.Easy2.html#method.cookie_list)
     pub fn cookie_list(&mut self, cookie: &str) -> Result<(), Error> {
-        let cookie = try!(CString::new(cookie));
-        self.setopt_str(curl_sys::CURLOPT_COOKIELIST, &cookie)
+        self.inner.cookie_list(cookie)
     }
 
-    /// Ask for a HTTP GET request.
-    ///
-    /// By default this option is `false` and corresponds to `CURLOPT_HTTPGET`.
+    /// Same as [`Easy2::get`](struct.Easy2.html#method.get)
     pub fn get(&mut self, enable: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_HTTPGET, enable as c_long)
+        self.inner.get(enable)
     }
 
-    // /// Ask for a HTTP GET request.
-    // ///
-    // /// By default this option is `false` and corresponds to `CURLOPT_HTTPGET`.
-    // pub fn http_version(&mut self, vers: &str) -> Result<(), Error> {
-    //     self.setopt_long(curl_sys::CURLOPT_HTTPGET, enable as c_long)
-    // }
-
-    /// Ignore the content-length header.
-    ///
-    /// By default this option is `false` and corresponds to
-    /// `CURLOPT_IGNORE_CONTENT_LENGTH`.
+    /// Same as [`Easy2::ignore_content_length`](struct.Easy2.html#method.ignore_content_length)
     pub fn ignore_content_length(&mut self, ignore: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_IGNORE_CONTENT_LENGTH,
-                         ignore as c_long)
+        self.inner.ignore_content_length(ignore)
     }
 
-    /// Enable or disable HTTP content decoding.
-    ///
-    /// By default this option is `true` and corresponds to
-    /// `CURLOPT_HTTP_CONTENT_DECODING`.
+    /// Same as [`Easy2::http_content_decoding`](struct.Easy2.html#method.http_content_decoding)
     pub fn http_content_decoding(&mut self, enable: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_HTTP_CONTENT_DECODING,
-                         enable as c_long)
+        self.inner.http_content_decoding(enable)
     }
 
-    /// Enable or disable HTTP transfer decoding.
-    ///
-    /// By default this option is `true` and corresponds to
-    /// `CURLOPT_HTTP_TRANSFER_DECODING`.
+    /// Same as [`Easy2::http_transfer_decoding`](struct.Easy2.html#method.http_transfer_decoding)
     pub fn http_transfer_decoding(&mut self, enable: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_HTTP_TRANSFER_DECODING,
-                         enable as c_long)
+        self.inner.http_transfer_decoding(enable)
     }
-
-    // /// Timeout for the Expect: 100-continue response
-    // ///
-    // /// By default this option is 1s and corresponds to
-    // /// `CURLOPT_EXPECT_100_TIMEOUT_MS`.
-    // pub fn expect_100_timeout(&mut self, enable: bool) -> Result<(), Error> {
-    //     self.setopt_long(curl_sys::CURLOPT_HTTP_TRANSFER_DECODING,
-    //                      enable as c_long)
-    // }
-
-    // /// Wait for pipelining/multiplexing.
-    // ///
-    // /// Tells libcurl to prefer to wait for a connection to confirm or deny that
-    // /// it can do pipelining or multiplexing before continuing.
-    // ///
-    // /// When about to perform a new transfer that allows pipelining or
-    // /// multiplexing, libcurl will check for existing connections to re-use and
-    // /// pipeline on. If no such connection exists it will immediately continue
-    // /// and create a fresh new connection to use.
-    // ///
-    // /// By setting this option to `true` - having `pipeline` enabled for the
-    // /// multi handle this transfer is associated with - libcurl will instead
-    // /// wait for the connection to reveal if it is possible to
-    // /// pipeline/multiplex on before it continues. This enables libcurl to much
-    // /// better keep the number of connections to a minimum when using pipelining
-    // /// or multiplexing protocols.
-    // ///
-    // /// The effect thus becomes that with this option set, libcurl prefers to
-    // /// wait and re-use an existing connection for pipelining rather than the
-    // /// opposite: prefer to open a new connection rather than waiting.
-    // ///
-    // /// The waiting time is as long as it takes for the connection to get up and
-    // /// for libcurl to get the necessary response back that informs it about its
-    // /// protocol and support level.
-    // pub fn http_pipewait(&mut self, enable: bool) -> Result<(), Error> {
-    // }
-
 
     // =========================================================================
     // Protocol Options
 
-    /// Indicates the range that this request should retrieve.
-    ///
-    /// The string provided should be of the form `N-M` where either `N` or `M`
-    /// can be left out. For HTTP transfers multiple ranges separated by commas
-    /// are also accepted.
-    ///
-    /// By default this option is not set and corresponds to `CURLOPT_RANGE`.
+    /// Same as [`Easy2::range`](struct.Easy2.html#method.range)
     pub fn range(&mut self, range: &str) -> Result<(), Error> {
-        let range = try!(CString::new(range));
-        self.setopt_str(curl_sys::CURLOPT_RANGE, &range)
+        self.inner.range(range)
     }
 
-    /// Set a point to resume transfer from
-    ///
-    /// Specify the offset in bytes you want the transfer to start from.
-    ///
-    /// By default this option is 0 and corresponds to
-    /// `CURLOPT_RESUME_FROM_LARGE`.
+    /// Same as [`Easy2::resume_from`](struct.Easy2.html#method.resume_from)
     pub fn resume_from(&mut self, from: u64) -> Result<(), Error> {
-        self.setopt_off_t(curl_sys::CURLOPT_RESUME_FROM_LARGE,
-                          from as curl_sys::curl_off_t)
+        self.inner.resume_from(from)
     }
 
-    /// Set a custom request string
-    ///
-    /// Specifies that a custom request will be made (e.g. a custom HTTP
-    /// method). This does not change how libcurl performs internally, just
-    /// changes the string sent to the server.
-    ///
-    /// By default this option is not set and corresponds to
-    /// `CURLOPT_CUSTOMREQUEST`.
+    /// Same as [`Easy2::custom_request`](struct.Easy2.html#method.custom_request)
     pub fn custom_request(&mut self, request: &str) -> Result<(), Error> {
-        let request = try!(CString::new(request));
-        self.setopt_str(curl_sys::CURLOPT_CUSTOMREQUEST, &request)
+        self.inner.custom_request(request)
     }
 
-    /// Get the modification time of the remote resource
-    ///
-    /// If true, libcurl will attempt to get the modification time of the
-    /// remote document in this operation. This requires that the remote server
-    /// sends the time or replies to a time querying command. The `filetime`
-    /// function can be used after a transfer to extract the received time (if
-    /// any).
-    ///
-    /// By default this option is `false` and corresponds to `CURLOPT_FILETIME`
+    /// Same as [`Easy2::fetch_filetime`](struct.Easy2.html#method.fetch_filetime)
     pub fn fetch_filetime(&mut self, fetch: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_FILETIME, fetch as c_long)
+        self.inner.fetch_filetime(fetch)
     }
 
-    /// Indicate whether to download the request without getting the body
-    ///
-    /// This is useful, for example, for doing a HEAD request.
-    ///
-    /// By default this option is `false` and corresponds to `CURLOPT_NOBODY`.
+    /// Same as [`Easy2::nobody`](struct.Easy2.html#method.nobody)
     pub fn nobody(&mut self, enable: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_NOBODY, enable as c_long)
+        self.inner.nobody(enable)
     }
 
-    /// Set the size of the input file to send off.
-    ///
-    /// By default this option is not set and corresponds to
-    /// `CURLOPT_INFILESIZE_LARGE`.
+    /// Same as [`Easy2::in_filesize`](struct.Easy2.html#method.in_filesize)
     pub fn in_filesize(&mut self, size: u64) -> Result<(), Error> {
-        self.setopt_off_t(curl_sys::CURLOPT_INFILESIZE_LARGE,
-                          size as curl_sys::curl_off_t)
+        self.inner.in_filesize(size)
     }
 
-    /// Enable or disable data upload.
-    ///
-    /// This means that a PUT request will be made for HTTP and probably wants
-    /// to be combined with the read callback as well as the `in_filesize`
-    /// method.
-    ///
-    /// By default this option is `false` and corresponds to `CURLOPT_UPLOAD`.
+    /// Same as [`Easy2::upload`](struct.Easy2.html#method.upload)
     pub fn upload(&mut self, enable: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_UPLOAD, enable as c_long)
+        self.inner.upload(enable)
     }
 
-    /// Configure the maximum file size to download.
-    ///
-    /// By default this option is not set and corresponds to
-    /// `CURLOPT_MAXFILESIZE_LARGE`.
+    /// Same as [`Easy2::max_filesize`](struct.Easy2.html#method.max_filesize)
     pub fn max_filesize(&mut self, size: u64) -> Result<(), Error> {
-        self.setopt_off_t(curl_sys::CURLOPT_MAXFILESIZE_LARGE,
-                          size as curl_sys::curl_off_t)
+        self.inner.max_filesize(size)
     }
 
-    /// Selects a condition for a time request.
-    ///
-    /// This value indicates how the `time_value` option is interpreted.
-    ///
-    /// By default this option is not set and corresponds to
-    /// `CURLOPT_TIMECONDITION`.
+    /// Same as [`Easy2::time_condition`](struct.Easy2.html#method.time_condition)
     pub fn time_condition(&mut self, cond: TimeCondition) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_TIMECONDITION, cond as c_long)
+        self.inner.time_condition(cond)
     }
 
-    /// Sets the time value for a conditional request.
-    ///
-    /// The value here should be the number of seconds elapsed since January 1,
-    /// 1970. To pass how to interpret this value, use `time_condition`.
-    ///
-    /// By default this option is not set and corresponds to
-    /// `CURLOPT_TIMEVALUE`.
+    /// Same as [`Easy2::time_value`](struct.Easy2.html#method.time_value)
     pub fn time_value(&mut self, val: i64) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_TIMEVALUE, val as c_long)
+        self.inner.time_value(val)
     }
 
     // =========================================================================
     // Connection Options
 
-    /// Set maximum time the request is allowed to take.
-    ///
-    /// Normally, name lookups can take a considerable time and limiting
-    /// operations to less than a few minutes risk aborting perfectly normal
-    /// operations.
-    ///
-    /// If libcurl is built to use the standard system name resolver, that
-    /// portion of the transfer will still use full-second resolution for
-    /// timeouts with a minimum timeout allowed of one second.
-    ///
-    /// In unix-like systems, this might cause signals to be used unless
-    /// `nosignal` is set.
-    ///
-    /// Since this puts a hard limit for how long a request is allowed to
-    /// take, it has limited use in dynamic use cases with varying transfer
-    /// times. You are then advised to explore `low_speed_limit`,
-    /// `low_speed_time` or using `progress_function` to implement your own
-    /// timeout logic.
-    ///
-    /// By default this option is not set and corresponds to
-    /// `CURLOPT_TIMEOUT_MS`.
+    /// Same as [`Easy2::timeout`](struct.Easy2.html#method.timeout)
     pub fn timeout(&mut self, timeout: Duration) -> Result<(), Error> {
-        // TODO: checked arithmetic and casts
-        // TODO: use CURLOPT_TIMEOUT if the timeout is too great
-        let ms = timeout.as_secs() * 1000 +
-                 (timeout.subsec_nanos() / 1_000_000) as u64;
-        self.setopt_long(curl_sys::CURLOPT_TIMEOUT_MS, ms as c_long)
-
+        self.inner.timeout(timeout)
     }
 
-    /// Set the low speed limit in bytes per second.
-    ///
-    /// This specifies the average transfer speed in bytes per second that the
-    /// transfer should be below during `low_speed_time` for libcurl to consider
-    /// it to be too slow and abort.
-    ///
-    /// By default this option is not set and corresponds to
-    /// `CURLOPT_LOW_SPEED_LIMIT`.
+    /// Same as [`Easy2::low_speed_limit`](struct.Easy2.html#method.low_speed_limit)
     pub fn low_speed_limit(&mut self, limit: u32) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_LOW_SPEED_LIMIT, limit as c_long)
+        self.inner.low_speed_limit(limit)
     }
 
-    /// Set the low speed time period.
-    ///
-    /// Specifies the window of time for which if the transfer rate is below
-    /// `low_speed_limit` the request will be aborted.
-    ///
-    /// By default this option is not set and corresponds to
-    /// `CURLOPT_LOW_SPEED_TIME`.
+    /// Same as [`Easy2::low_speed_time`](struct.Easy2.html#method.low_speed_time)
     pub fn low_speed_time(&mut self, dur: Duration) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_LOW_SPEED_TIME,
-                         dur.as_secs() as c_long)
+        self.inner.low_speed_time(dur)
     }
 
-    /// Rate limit data upload speed
-    ///
-    /// If an upload exceeds this speed (counted in bytes per second) on
-    /// cumulative average during the transfer, the transfer will pause to keep
-    /// the average rate less than or equal to the parameter value.
-    ///
-    /// By default this option is not set (unlimited speed) and corresponds to
-    /// `CURLOPT_MAX_SEND_SPEED_LARGE`.
+    /// Same as [`Easy2::max_send_speed`](struct.Easy2.html#method.max_send_speed)
     pub fn max_send_speed(&mut self, speed: u64) -> Result<(), Error> {
-        self.setopt_off_t(curl_sys::CURLOPT_MAX_SEND_SPEED_LARGE,
-                          speed as curl_sys::curl_off_t)
+        self.inner.max_send_speed(speed)
     }
 
-    /// Rate limit data download speed
-    ///
-    /// If a download exceeds this speed (counted in bytes per second) on
-    /// cumulative average during the transfer, the transfer will pause to keep
-    /// the average rate less than or equal to the parameter value.
-    ///
-    /// By default this option is not set (unlimited speed) and corresponds to
-    /// `CURLOPT_MAX_RECV_SPEED_LARGE`.
+    /// Same as [`Easy2::max_recv_speed`](struct.Easy2.html#method.max_recv_speed)
     pub fn max_recv_speed(&mut self, speed: u64) -> Result<(), Error> {
-        self.setopt_off_t(curl_sys::CURLOPT_MAX_RECV_SPEED_LARGE,
-                          speed as curl_sys::curl_off_t)
+        self.inner.max_recv_speed(speed)
     }
 
-    /// Set the maximum connection cache size.
-    ///
-    /// The set amount will be the maximum number of simultaneously open
-    /// persistent connections that libcurl may cache in the pool associated
-    /// with this handle. The default is 5, and there isn't much point in
-    /// changing this value unless you are perfectly aware of how this works and
-    /// changes libcurl's behaviour. This concerns connections using any of the
-    /// protocols that support persistent connections.
-    ///
-    /// When reaching the maximum limit, curl closes the oldest one in the cache
-    /// to prevent increasing the number of open connections.
-    ///
-    /// By default this option is set to 5 and corresponds to
-    /// `CURLOPT_MAXCONNECTS`
+    /// Same as [`Easy2::max_connects`](struct.Easy2.html#method.max_connects)
     pub fn max_connects(&mut self, max: u32) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_MAXCONNECTS, max as c_long)
+        self.inner.max_connects(max)
     }
 
-    /// Force a new connection to be used.
-    ///
-    /// Makes the next transfer use a new (fresh) connection by force instead of
-    /// trying to re-use an existing one. This option should be used with
-    /// caution and only if you understand what it does as it may seriously
-    /// impact performance.
-    ///
-    /// By default this option is `false` and corresponds to
-    /// `CURLOPT_FRESH_CONNECT`.
+    /// Same as [`Easy2::fresh_connect`](struct.Easy2.html#method.fresh_connect)
     pub fn fresh_connect(&mut self, enable: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_FRESH_CONNECT, enable as c_long)
+        self.inner.fresh_connect(enable)
     }
 
-    /// Make connection get closed at once after use.
-    ///
-    /// Makes libcurl explicitly close the connection when done with the
-    /// transfer. Normally, libcurl keeps all connections alive when done with
-    /// one transfer in case a succeeding one follows that can re-use them.
-    /// This option should be used with caution and only if you understand what
-    /// it does as it can seriously impact performance.
-    ///
-    /// By default this option is `false` and corresponds to
-    /// `CURLOPT_FORBID_REUSE`.
+    /// Same as [`Easy2::forbid_reuse`](struct.Easy2.html#method.forbid_reuse)
     pub fn forbid_reuse(&mut self, enable: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_FORBID_REUSE, enable as c_long)
+        self.inner.forbid_reuse(enable)
     }
 
-    /// Timeout for the connect phase
-    ///
-    /// This is the maximum time that you allow the connection phase to the
-    /// server to take. This only limits the connection phase, it has no impact
-    /// once it has connected.
-    ///
-    /// By default this value is 300 seconds and corresponds to
-    /// `CURLOPT_CONNECTTIMEOUT_MS`.
+    /// Same as [`Easy2::connect_timeout`](struct.Easy2.html#method.connect_timeout)
     pub fn connect_timeout(&mut self, timeout: Duration) -> Result<(), Error> {
-        let ms = timeout.as_secs() * 1000 +
-                 (timeout.subsec_nanos() / 1_000_000) as u64;
-        self.setopt_long(curl_sys::CURLOPT_CONNECTTIMEOUT_MS, ms as c_long)
+        self.inner.connect_timeout(timeout)
     }
 
-    /// Specify which IP protocol version to use
-    ///
-    /// Allows an application to select what kind of IP addresses to use when
-    /// resolving host names. This is only interesting when using host names
-    /// that resolve addresses using more than one version of IP.
-    ///
-    /// By default this value is "any" and corresponds to `CURLOPT_IPRESOLVE`.
+    /// Same as [`Easy2::ip_resolve`](struct.Easy2.html#method.ip_resolve)
     pub fn ip_resolve(&mut self, resolve: IpResolve) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_IPRESOLVE, resolve as c_long)
+        self.inner.ip_resolve(resolve)
     }
 
-    /// Configure whether to stop when connected to target server
-    ///
-    /// When enabled it tells the library to perform all the required proxy
-    /// authentication and connection setup, but no data transfer, and then
-    /// return.
-    ///
-    /// The option can be used to simply test a connection to a server.
-    ///
-    /// By default this value is `false` and corresponds to
-    /// `CURLOPT_CONNECT_ONLY`.
+    /// Same as [`Easy2::connect_only`](struct.Easy2.html#method.connect_only)
     pub fn connect_only(&mut self, enable: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_CONNECT_ONLY, enable as c_long)
+        self.inner.connect_only(enable)
     }
-
-    // /// Set interface to speak DNS over.
-    // ///
-    // /// Set the name of the network interface that the DNS resolver should bind
-    // /// to. This must be an interface name (not an address).
-    // ///
-    // /// By default this option is not set and corresponds to
-    // /// `CURLOPT_DNS_INTERFACE`.
-    // pub fn dns_interface(&mut self, interface: &str) -> Result<(), Error> {
-    //     let interface = try!(CString::new(interface));
-    //     self.setopt_str(curl_sys::CURLOPT_DNS_INTERFACE, &interface)
-    // }
-    //
-    // /// IPv4 address to bind DNS resolves to
-    // ///
-    // /// Set the local IPv4 address that the resolver should bind to. The
-    // /// argument should be of type char * and contain a single numerical IPv4
-    // /// address as a string.
-    // ///
-    // /// By default this option is not set and corresponds to
-    // /// `CURLOPT_DNS_LOCAL_IP4`.
-    // pub fn dns_local_ip4(&mut self, ip: &str) -> Result<(), Error> {
-    //     let ip = try!(CString::new(ip));
-    //     self.setopt_str(curl_sys::CURLOPT_DNS_LOCAL_IP4, &ip)
-    // }
-    //
-    // /// IPv6 address to bind DNS resolves to
-    // ///
-    // /// Set the local IPv6 address that the resolver should bind to. The
-    // /// argument should be of type char * and contain a single numerical IPv6
-    // /// address as a string.
-    // ///
-    // /// By default this option is not set and corresponds to
-    // /// `CURLOPT_DNS_LOCAL_IP6`.
-    // pub fn dns_local_ip6(&mut self, ip: &str) -> Result<(), Error> {
-    //     let ip = try!(CString::new(ip));
-    //     self.setopt_str(curl_sys::CURLOPT_DNS_LOCAL_IP6, &ip)
-    // }
-    //
-    // /// Set preferred DNS servers.
-    // ///
-    // /// Provides a list of DNS servers to be used instead of the system default.
-    // /// The format of the dns servers option is:
-    // ///
-    // /// ```text
-    // /// host[:port],[host[:port]]...
-    // /// ```
-    // ///
-    // /// By default this option is not set and corresponds to
-    // /// `CURLOPT_DNS_SERVERS`.
-    // pub fn dns_servers(&mut self, servers: &str) -> Result<(), Error> {
-    //     let servers = try!(CString::new(servers));
-    //     self.setopt_str(curl_sys::CURLOPT_DNS_SERVERS, &servers)
-    // }
 
     // =========================================================================
     // SSL/Security Options
 
-    /// Sets the SSL client certificate.
-    ///
-    /// The string should be the file name of your client certificate. The
-    /// default format is "P12" on Secure Transport and "PEM" on other engines,
-    /// and can be changed with `ssl_cert_type`.
-    ///
-    /// With NSS or Secure Transport, this can also be the nickname of the
-    /// certificate you wish to authenticate with as it is named in the security
-    /// database. If you want to use a file from the current directory, please
-    /// precede it with "./" prefix, in order to avoid confusion with a
-    /// nickname.
-    ///
-    /// When using a client certificate, you most likely also need to provide a
-    /// private key with `ssl_key`.
-    ///
-    /// By default this option is not set and corresponds to `CURLOPT_SSLCERT`.
+    /// Same as [`Easy2::ssl_cert`](struct.Easy2.html#method.ssl_cert)
     pub fn ssl_cert<P: AsRef<Path>>(&mut self, cert: P) -> Result<(), Error> {
-        self.setopt_path(curl_sys::CURLOPT_SSLCERT, cert.as_ref())
+        self.inner.ssl_cert(cert)
     }
 
-    /// Specify type of the client SSL certificate.
-    ///
-    /// The string should be the format of your certificate. Supported formats
-    /// are "PEM" and "DER", except with Secure Transport. OpenSSL (versions
-    /// 0.9.3 and later) and Secure Transport (on iOS 5 or later, or OS X 10.7
-    /// or later) also support "P12" for PKCS#12-encoded files.
-    ///
-    /// By default this option is "PEM" and corresponds to
-    /// `CURLOPT_SSLCERTTYPE`.
+    /// Same as [`Easy2::ssl_cert_type`](struct.Easy2.html#method.ssl_cert_type)
     pub fn ssl_cert_type(&mut self, kind: &str) -> Result<(), Error> {
-        let kind = try!(CString::new(kind));
-        self.setopt_str(curl_sys::CURLOPT_SSLCERTTYPE, &kind)
+        self.inner.ssl_cert_type(kind)
     }
 
-    /// Specify private keyfile for TLS and SSL client cert.
-    ///
-    /// The string should be the file name of your private key. The default
-    /// format is "PEM" and can be changed with `ssl_key_type`.
-    ///
-    /// (iOS and Mac OS X only) This option is ignored if curl was built against
-    /// Secure Transport. Secure Transport expects the private key to be already
-    /// present in the keychain or PKCS#12 file containing the certificate.
-    ///
-    /// By default this option is not set and corresponds to `CURLOPT_SSLKEY`.
+    /// Same as [`Easy2::ssl_key`](struct.Easy2.html#method.ssl_key)
     pub fn ssl_key<P: AsRef<Path>>(&mut self, key: P) -> Result<(), Error> {
-        self.setopt_path(curl_sys::CURLOPT_SSLKEY, key.as_ref())
+        self.inner.ssl_key(key)
     }
 
-    /// Set type of the private key file.
-    ///
-    /// The string should be the format of your private key. Supported formats
-    /// are "PEM", "DER" and "ENG".
-    ///
-    /// The format "ENG" enables you to load the private key from a crypto
-    /// engine. In this case `ssl_key` is used as an identifier passed to
-    /// the engine. You have to set the crypto engine with `ssl_engine`.
-    /// "DER" format key file currently does not work because of a bug in
-    /// OpenSSL.
-    ///
-    /// By default this option is "PEM" and corresponds to
-    /// `CURLOPT_SSLKEYTYPE`.
+    /// Same as [`Easy2::ssl_key_type`](struct.Easy2.html#method.ssl_key_type)
     pub fn ssl_key_type(&mut self, kind: &str) -> Result<(), Error> {
-        let kind = try!(CString::new(kind));
-        self.setopt_str(curl_sys::CURLOPT_SSLKEYTYPE, &kind)
+        self.inner.ssl_key_type(kind)
     }
 
-    /// Set passphrase to private key.
-    ///
-    /// This will be used as the password required to use the `ssl_key`.
-    /// You never needed a pass phrase to load a certificate but you need one to
-    /// load your private key.
-    ///
-    /// By default this option is not set and corresponds to
-    /// `CURLOPT_KEYPASSWD`.
+    /// Same as [`Easy2::key_password`](struct.Easy2.html#method.key_password)
     pub fn key_password(&mut self, password: &str) -> Result<(), Error> {
-        let password = try!(CString::new(password));
-        self.setopt_str(curl_sys::CURLOPT_KEYPASSWD, &password)
+        self.inner.key_password(password)
     }
 
-    /// Set the SSL engine identifier.
-    ///
-    /// This will be used as the identifier for the crypto engine you want to
-    /// use for your private key.
-    ///
-    /// By default this option is not set and corresponds to
-    /// `CURLOPT_SSLENGINE`.
+    /// Same as [`Easy2::ssl_engine`](struct.Easy2.html#method.ssl_engine)
     pub fn ssl_engine(&mut self, engine: &str) -> Result<(), Error> {
-        let engine = try!(CString::new(engine));
-        self.setopt_str(curl_sys::CURLOPT_SSLENGINE, &engine)
+        self.inner.ssl_engine(engine)
     }
 
-    /// Make this handle's SSL engine the default.
-    ///
-    /// By default this option is not set and corresponds to
-    /// `CURLOPT_SSLENGINE_DEFAULT`.
+    /// Same as [`Easy2::ssl_engine_default`](struct.Easy2.html#method.ssl_engine_default)
     pub fn ssl_engine_default(&mut self, enable: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_SSLENGINE_DEFAULT, enable as c_long)
+        self.inner.ssl_engine_default(enable)
     }
 
-    // /// Enable TLS false start.
-    // ///
-    // /// This option determines whether libcurl should use false start during the
-    // /// TLS handshake. False start is a mode where a TLS client will start
-    // /// sending application data before verifying the server's Finished message,
-    // /// thus saving a round trip when performing a full handshake.
-    // ///
-    // /// By default this option is not set and corresponds to
-    // /// `CURLOPT_SSL_FALSESTARTE`.
-    // pub fn ssl_false_start(&mut self, enable: bool) -> Result<(), Error> {
-    //     self.setopt_long(curl_sys::CURLOPT_SSLENGINE_DEFAULT, enable as c_long)
-    // }
-
-    /// Set preferred HTTP version.
-    ///
-    /// By default this option is not set and corresponds to
-    /// `CURLOPT_HTTP_VERSION`.
+    /// Same as [`Easy2::http_version`](struct.Easy2.html#method.http_version)
     pub fn http_version(&mut self, version: HttpVersion) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_HTTP_VERSION, version as c_long)
+        self.inner.http_version(version)
     }
 
-    /// Set preferred TLS/SSL version.
-    ///
-    /// By default this option is not set and corresponds to
-    /// `CURLOPT_SSLVERSION`.
+    /// Same as [`Easy2::ssl_version`](struct.Easy2.html#method.ssl_version)
     pub fn ssl_version(&mut self, version: SslVersion) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_SSLVERSION, version as c_long)
+        self.inner.ssl_version(version)
     }
 
-    /// Verify the certificate's name against host.
-    ///
-    /// This should be disabled with great caution! It basically disables the
-    /// security features of SSL if it is disabled.
-    ///
-    /// By default this option is set to `true` and corresponds to
-    /// `CURLOPT_SSL_VERIFYHOST`.
+    /// Same as [`Easy2::ssl_verify_host`](struct.Easy2.html#method.ssl_verify_host)
     pub fn ssl_verify_host(&mut self, verify: bool) -> Result<(), Error> {
-        let val = if verify {2} else {0};
-        self.setopt_long(curl_sys::CURLOPT_SSL_VERIFYHOST, val)
+        self.inner.ssl_verify_host(verify)
     }
 
-    /// Verify the peer's SSL certificate.
-    ///
-    /// This should be disabled with great caution! It basically disables the
-    /// security features of SSL if it is disabled.
-    ///
-    /// By default this option is set to `true` and corresponds to
-    /// `CURLOPT_SSL_VERIFYPEER`.
+    /// Same as [`Easy2::ssl_verify_peer`](struct.Easy2.html#method.ssl_verify_peer)
     pub fn ssl_verify_peer(&mut self, verify: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_SSL_VERIFYPEER, verify as c_long)
+        self.inner.ssl_verify_peer(verify)
     }
 
-    // /// Verify the certificate's status.
-    // ///
-    // /// This option determines whether libcurl verifies the status of the server
-    // /// cert using the "Certificate Status Request" TLS extension (aka. OCSP
-    // /// stapling).
-    // ///
-    // /// By default this option is set to `false` and corresponds to
-    // /// `CURLOPT_SSL_VERIFYSTATUS`.
-    // pub fn ssl_verify_status(&mut self, verify: bool) -> Result<(), Error> {
-    //     self.setopt_long(curl_sys::CURLOPT_SSL_VERIFYSTATUS, verify as c_long)
-    // }
-
-    /// Specify the path to Certificate Authority (CA) bundle
-    ///
-    /// The file referenced should hold one or more certificates to verify the
-    /// peer with.
-    ///
-    /// This option is by default set to the system path where libcurl's cacert
-    /// bundle is assumed to be stored, as established at build time.
-    ///
-    /// If curl is built against the NSS SSL library, the NSS PEM PKCS#11 module
-    /// (libnsspem.so) needs to be available for this option to work properly.
-    ///
-    /// By default this option is the system defaults, and corresponds to
-    /// `CURLOPT_CAINFO`.
+    /// Same as [`Easy2::cainfo`](struct.Easy2.html#method.cainfo)
     pub fn cainfo<P: AsRef<Path>>(&mut self, path: P) -> Result<(), Error> {
-        self.setopt_path(curl_sys::CURLOPT_CAINFO, path.as_ref())
+        self.inner.cainfo(path)
     }
 
-    /// Set the issuer SSL certificate filename
-    ///
-    /// Specifies a file holding a CA certificate in PEM format. If the option
-    /// is set, an additional check against the peer certificate is performed to
-    /// verify the issuer is indeed the one associated with the certificate
-    /// provided by the option. This additional check is useful in multi-level
-    /// PKI where one needs to enforce that the peer certificate is from a
-    /// specific branch of the tree.
-    ///
-    /// This option makes sense only when used in combination with the
-    /// `ssl_verify_peer` option. Otherwise, the result of the check is not
-    /// considered as failure.
-    ///
-    /// By default this option is not set and corresponds to
-    /// `CURLOPT_ISSUERCERT`.
+    /// Same as [`Easy2::issuer_cert`](struct.Easy2.html#method.issuer_cert)
     pub fn issuer_cert<P: AsRef<Path>>(&mut self, path: P) -> Result<(), Error> {
-        self.setopt_path(curl_sys::CURLOPT_ISSUERCERT, path.as_ref())
+        self.inner.issuer_cert(path)
     }
 
-    /// Specify directory holding CA certificates
-    ///
-    /// Names a directory holding multiple CA certificates to verify the peer
-    /// with. If libcurl is built against OpenSSL, the certificate directory
-    /// must be prepared using the openssl c_rehash utility. This makes sense
-    /// only when used in combination with the `ssl_verify_peer` option.
-    ///
-    /// By default this option is not set and corresponds to `CURLOPT_CAPATH`.
+    /// Same as [`Easy2::capath`](struct.Easy2.html#method.capath)
     pub fn capath<P: AsRef<Path>>(&mut self, path: P) -> Result<(), Error> {
-        self.setopt_path(curl_sys::CURLOPT_CAPATH, path.as_ref())
+        self.inner.capath(path)
     }
 
-    /// Specify a Certificate Revocation List file
-    ///
-    /// Names a file with the concatenation of CRL (in PEM format) to use in the
-    /// certificate validation that occurs during the SSL exchange.
-    ///
-    /// When curl is built to use NSS or GnuTLS, there is no way to influence
-    /// the use of CRL passed to help in the verification process. When libcurl
-    /// is built with OpenSSL support, X509_V_FLAG_CRL_CHECK and
-    /// X509_V_FLAG_CRL_CHECK_ALL are both set, requiring CRL check against all
-    /// the elements of the certificate chain if a CRL file is passed.
-    ///
-    /// This option makes sense only when used in combination with the
-    /// `ssl_verify_peer` option.
-    ///
-    /// A specific error code (`is_ssl_crl_badfile`) is defined with the
-    /// option. It is returned when the SSL exchange fails because the CRL file
-    /// cannot be loaded. A failure in certificate verification due to a
-    /// revocation information found in the CRL does not trigger this specific
-    /// error.
-    ///
-    /// By default this option is not set and corresponds to `CURLOPT_CRLFILE`.
+    /// Same as [`Easy2::crlfile`](struct.Easy2.html#method.crlfile)
     pub fn crlfile<P: AsRef<Path>>(&mut self, path: P) -> Result<(), Error> {
-        self.setopt_path(curl_sys::CURLOPT_CRLFILE, path.as_ref())
+        self.inner.crlfile(path)
     }
 
-    /// Request SSL certificate information
-    ///
-    /// Enable libcurl's certificate chain info gatherer. With this enabled,
-    /// libcurl will extract lots of information and data about the certificates
-    /// in the certificate chain used in the SSL connection.
-    ///
-    /// By default this option is `false` and corresponds to
-    /// `CURLOPT_CERTINFO`.
+    /// Same as [`Easy2::certinfo`](struct.Easy2.html#method.certinfo)
     pub fn certinfo(&mut self, enable: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_CERTINFO, enable as c_long)
+        self.inner.certinfo(enable)
     }
 
-    // /// Set pinned public key.
-    // ///
-    // /// Pass a pointer to a zero terminated string as parameter. The string can
-    // /// be the file name of your pinned public key. The file format expected is
-    // /// "PEM" or "DER". The string can also be any number of base64 encoded
-    // /// sha256 hashes preceded by "sha256//" and separated by ";"
-    // ///
-    // /// When negotiating a TLS or SSL connection, the server sends a certificate
-    // /// indicating its identity. A public key is extracted from this certificate
-    // /// and if it does not exactly match the public key provided to this option,
-    // /// curl will abort the connection before sending or receiving any data.
-    // ///
-    // /// By default this option is not set and corresponds to
-    // /// `CURLOPT_PINNEDPUBLICKEY`.
-    // pub fn pinned_public_key(&mut self, enable: bool) -> Result<(), Error> {
-    //     self.setopt_long(curl_sys::CURLOPT_CERTINFO, enable as c_long)
-    // }
-
-    /// Specify a source for random data
-    ///
-    /// The file will be used to read from to seed the random engine for SSL and
-    /// more.
-    ///
-    /// By default this option is not set and corresponds to
-    /// `CURLOPT_RANDOM_FILE`.
+    /// Same as [`Easy2::random_file`](struct.Easy2.html#method.random_file)
     pub fn random_file<P: AsRef<Path>>(&mut self, p: P) -> Result<(), Error> {
-        self.setopt_path(curl_sys::CURLOPT_RANDOM_FILE, p.as_ref())
+        self.inner.random_file(p)
     }
 
-    /// Specify EGD socket path.
-    ///
-    /// Indicates the path name to the Entropy Gathering Daemon socket. It will
-    /// be used to seed the random engine for SSL.
-    ///
-    /// By default this option is not set and corresponds to
-    /// `CURLOPT_EGDSOCKET`.
+    /// Same as [`Easy2::egd_socket`](struct.Easy2.html#method.egd_socket)
     pub fn egd_socket<P: AsRef<Path>>(&mut self, p: P) -> Result<(), Error> {
-        self.setopt_path(curl_sys::CURLOPT_EGDSOCKET, p.as_ref())
+        self.inner.egd_socket(p)
     }
 
-    /// Specify ciphers to use for TLS.
-    ///
-    /// Holds the list of ciphers to use for the SSL connection. The list must
-    /// be syntactically correct, it consists of one or more cipher strings
-    /// separated by colons. Commas or spaces are also acceptable separators
-    /// but colons are normally used, !, - and + can be used as operators.
-    ///
-    /// For OpenSSL and GnuTLS valid examples of cipher lists include 'RC4-SHA',
-    /// ´SHA1+DES´, 'TLSv1' and 'DEFAULT'. The default list is normally set when
-    /// you compile OpenSSL.
-    ///
-    /// You'll find more details about cipher lists on this URL:
-    ///
-    /// https://www.openssl.org/docs/apps/ciphers.html
-    ///
-    /// For NSS, valid examples of cipher lists include 'rsa_rc4_128_md5',
-    /// ´rsa_aes_128_sha´, etc. With NSS you don't add/remove ciphers. If one
-    /// uses this option then all known ciphers are disabled and only those
-    /// passed in are enabled.
-    ///
-    /// You'll find more details about the NSS cipher lists on this URL:
-    ///
-    /// http://git.fedorahosted.org/cgit/mod_nss.git/plain/docs/mod_nss.html#Directives
-    ///
-    /// By default this option is not set and corresponds to
-    /// `CURLOPT_SSL_CIPHER_LIST`.
+    /// Same as [`Easy2::ssl_cipher_list`](struct.Easy2.html#method.ssl_cipher_list)
     pub fn ssl_cipher_list(&mut self, ciphers: &str) -> Result<(), Error> {
-        let ciphers = try!(CString::new(ciphers));
-        self.setopt_str(curl_sys::CURLOPT_SSL_CIPHER_LIST, &ciphers)
+        self.inner.ssl_cipher_list(ciphers)
     }
 
-    /// Enable or disable use of the SSL session-ID cache
-    ///
-    /// By default all transfers are done using the cache enabled. While nothing
-    /// ever should get hurt by attempting to reuse SSL session-IDs, there seem
-    /// to be or have been broken SSL implementations in the wild that may
-    /// require you to disable this in order for you to succeed.
-    ///
-    /// This corresponds to the `CURLOPT_SSL_SESSIONID_CACHE` option.
+    /// Same as [`Easy2::ssl_sessionid_cache`](struct.Easy2.html#method.ssl_sessionid_cache)
     pub fn ssl_sessionid_cache(&mut self, enable: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_SSL_SESSIONID_CACHE,
-                         enable as c_long)
+        self.inner.ssl_sessionid_cache(enable)
     }
 
-    /// Set SSL behavior options
-    ///
-    /// Inform libcurl about SSL specific behaviors.
-    ///
-    /// This corresponds to the `CURLOPT_SSL_OPTIONS` option.
+    /// Same as [`Easy2::ssl_options`](struct.Easy2.html#method.ssl_options)
     pub fn ssl_options(&mut self, bits: &SslOpt) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_SSL_OPTIONS, bits.bits)
+        self.inner.ssl_options(bits)
     }
-
-    // /// Set SSL behavior options for proxies
-    // ///
-    // /// Inform libcurl about SSL specific behaviors.
-    // ///
-    // /// This corresponds to the `CURLOPT_PROXY_SSL_OPTIONS` option.
-    // pub fn proxy_ssl_options(&mut self, bits: &SslOpt) -> Result<(), Error> {
-    //     self.setopt_long(curl_sys::CURLOPT_PROXY_SSL_OPTIONS, bits.bits)
-    // }
-
-    // /// Stores a private pointer-sized piece of data.
-    // ///
-    // /// This can be retrieved through the `private` function and otherwise
-    // /// libcurl does not tamper with this value. This corresponds to
-    // /// `CURLOPT_PRIVATE` and defaults to 0.
-    // pub fn set_private(&mut self, private: usize) -> Result<(), Error> {
-    //     self.setopt_ptr(curl_sys::CURLOPT_PRIVATE, private as *const _)
-    // }
-    //
-    // /// Fetches this handle's private pointer-sized piece of data.
-    // ///
-    // /// This corresponds to `CURLINFO_PRIVATE` and defaults to 0.
-    // pub fn private(&mut self) -> Result<usize, Error> {
-    //     self.getopt_ptr(curl_sys::CURLINFO_PRIVATE).map(|p| p as usize)
-    // }
 
     // =========================================================================
     // getters
 
-    /// Get the last used URL
-    ///
-    /// In cases when you've asked libcurl to follow redirects, it may
-    /// not be the same value you set with `url`.
-    ///
-    /// This methods corresponds to the `CURLINFO_EFFECTIVE_URL` option.
-    ///
-    /// Returns `Ok(None)` if no effective url is listed or `Err` if an error
-    /// happens or the underlying bytes aren't valid utf-8.
+    /// Same as [`Easy2::effective_url`](struct.Easy2.html#method.effective_url)
     pub fn effective_url(&mut self) -> Result<Option<&str>, Error> {
-        self.getopt_str(curl_sys::CURLINFO_EFFECTIVE_URL)
+        self.inner.effective_url()
     }
 
-    /// Get the last used URL, in bytes
-    ///
-    /// In cases when you've asked libcurl to follow redirects, it may
-    /// not be the same value you set with `url`.
-    ///
-    /// This methods corresponds to the `CURLINFO_EFFECTIVE_URL` option.
-    ///
-    /// Returns `Ok(None)` if no effective url is listed or `Err` if an error
-    /// happens or the underlying bytes aren't valid utf-8.
+    /// Same as [`Easy2::effective_url_bytes`](struct.Easy2.html#method.effective_url_bytes)
     pub fn effective_url_bytes(&mut self) -> Result<Option<&[u8]>, Error> {
-        self.getopt_bytes(curl_sys::CURLINFO_EFFECTIVE_URL)
+        self.inner.effective_url_bytes()
     }
 
-    /// Get the last response code
-    ///
-    /// The stored value will be zero if no server response code has been
-    /// received. Note that a proxy's CONNECT response should be read with
-    /// `http_connectcode` and not this.
-    ///
-    /// Corresponds to `CURLINFO_RESPONSE_CODE` and returns an error if this
-    /// option is not supported.
+    /// Same as [`Easy2::response_code`](struct.Easy2.html#method.response_code)
     pub fn response_code(&mut self) -> Result<u32, Error> {
-        self.getopt_long(curl_sys::CURLINFO_RESPONSE_CODE).map(|c| c as u32)
+        self.inner.response_code()
     }
 
-    /// Get the CONNECT response code
-    ///
-    /// Returns the last received HTTP proxy response code to a CONNECT request.
-    /// The returned value will be zero if no such response code was available.
-    ///
-    /// Corresponds to `CURLINFO_HTTP_CONNECTCODE` and returns an error if this
-    /// option is not supported.
+    /// Same as [`Easy2::http_connectcode`](struct.Easy2.html#method.http_connectcode)
     pub fn http_connectcode(&mut self) -> Result<u32, Error> {
-        self.getopt_long(curl_sys::CURLINFO_HTTP_CONNECTCODE).map(|c| c as u32)
+        self.inner.http_connectcode()
     }
 
-    /// Get the remote time of the retrieved document
-    ///
-    /// Returns the remote time of the retrieved document (in number of seconds
-    /// since 1 Jan 1970 in the GMT/UTC time zone). If you get `None`, it can be
-    /// because of many reasons (it might be unknown, the server might hide it
-    /// or the server doesn't support the command that tells document time etc)
-    /// and the time of the document is unknown.
-    ///
-    /// Note that you must tell the server to collect this information before
-    /// the transfer is made, by using the `filetime` method to
-    /// or you will unconditionally get a `None` back.
-    ///
-    /// This corresponds to `CURLINFO_FILETIME` and may return an error if the
-    /// option is not supported
+    /// Same as [`Easy2::filetime`](struct.Easy2.html#method.filetime)
     pub fn filetime(&mut self) -> Result<Option<i64>, Error> {
-        self.getopt_long(curl_sys::CURLINFO_FILETIME).map(|r| {
-            if r == -1 {
-                None
-            } else {
-                Some(r as i64)
-            }
-        })
+        self.inner.filetime()
     }
 
-    /// Get total time of previous transfer
-    ///
-    /// Returns the total time for the previous transfer,
-    /// including name resolving, TCP connect etc.
-    ///
-    /// Corresponds to `CURLINFO_TOTAL_TIME` and may return an error if the
-    /// option isn't supported.
+    /// Same as [`Easy2::total_time`](struct.Easy2.html#method.total_time)
     pub fn total_time(&mut self) -> Result<Duration, Error> {
-        self.getopt_double(curl_sys::CURLINFO_TOTAL_TIME)
-            .map(double_seconds_to_duration)
+        self.inner.total_time()
     }
 
-    /// Get the name lookup time
-    ///
-    /// Returns the total time from the start
-    /// until the name resolving was completed.
-    ///
-    /// Corresponds to `CURLINFO_NAMELOOKUP_TIME` and may return an error if the
-    /// option isn't supported.
+    /// Same as [`Easy2::namelookup_time`](struct.Easy2.html#method.namelookup_time)
     pub fn namelookup_time(&mut self) -> Result<Duration, Error> {
-        self.getopt_double(curl_sys::CURLINFO_NAMELOOKUP_TIME)
-            .map(double_seconds_to_duration)
+        self.inner.namelookup_time()
     }
 
-    /// Get the time until connect
-    ///
-    /// Returns the total time from the start
-    /// until the connection to the remote host (or proxy) was completed.
-    ///
-    /// Corresponds to `CURLINFO_CONNECT_TIME` and may return an error if the
-    /// option isn't supported.
+    /// Same as [`Easy2::connect_time`](struct.Easy2.html#method.connect_time)
     pub fn connect_time(&mut self) -> Result<Duration, Error> {
-        self.getopt_double(curl_sys::CURLINFO_CONNECT_TIME)
-            .map(double_seconds_to_duration)
+        self.inner.connect_time()
     }
 
-    /// Get the time until the SSL/SSH handshake is completed
-    ///
-    /// Returns the total time it took from the start until the SSL/SSH
-    /// connect/handshake to the remote host was completed. This time is most often
-    /// very near to the `pretransfer_time` time, except for cases such as
-    /// HTTP pipelining where the pretransfer time can be delayed due to waits in
-    /// line for the pipeline and more.
-    ///
-    /// Corresponds to `CURLINFO_APPCONNECT_TIME` and may return an error if the
-    /// option isn't supported.
+    /// Same as [`Easy2::appconnect_time`](struct.Easy2.html#method.appconnect_time)
     pub fn appconnect_time(&mut self) -> Result<Duration, Error> {
-        self.getopt_double(curl_sys::CURLINFO_APPCONNECT_TIME)
-            .map(double_seconds_to_duration)
+        self.inner.appconnect_time()
     }
 
-    /// Get the time until the file transfer start
-    ///
-    /// Returns the total time it took from the start until the file
-    /// transfer is just about to begin. This includes all pre-transfer commands
-    /// and negotiations that are specific to the particular protocol(s) involved.
-    /// It does not involve the sending of the protocol- specific request that
-    /// triggers a transfer.
-    ///
-    /// Corresponds to `CURLINFO_PRETRANSFER_TIME` and may return an error if the
-    /// option isn't supported.
+    /// Same as [`Easy2::pretransfer_time`](struct.Easy2.html#method.pretransfer_time)
     pub fn pretransfer_time(&mut self) -> Result<Duration, Error> {
-        self.getopt_double(curl_sys::CURLINFO_PRETRANSFER_TIME)
-            .map(double_seconds_to_duration)
+        self.inner.pretransfer_time()
     }
 
-    /// Get the time until the first byte is received
-    ///
-    /// Returns the total time it took from the start until the first
-    /// byte is received by libcurl. This includes `pretransfer_time` and
-    /// also the time the server needs to calculate the result.
-    ///
-    /// Corresponds to `CURLINFO_STARTTRANSFER_TIME` and may return an error if the
-    /// option isn't supported.
+    /// Same as [`Easy2::starttransfer_time`](struct.Easy2.html#method.starttransfer_time)
     pub fn starttransfer_time(&mut self) -> Result<Duration, Error> {
-        self.getopt_double(curl_sys::CURLINFO_STARTTRANSFER_TIME)
-            .map(double_seconds_to_duration)
+        self.inner.starttransfer_time()
     }
 
-    /// Get the time for all redirection steps
-    ///
-    /// Returns the total time it took for all redirection steps
-    /// include name lookup, connect, pretransfer and transfer before final
-    /// transaction was started. `redirect_time` contains the complete
-    /// execution time for multiple redirections.
-    ///
-    /// Corresponds to `CURLINFO_REDIRECT_TIME` and may return an error if the
-    /// option isn't supported.
+    /// Same as [`Easy2::redirect_time`](struct.Easy2.html#method.redirect_time)
     pub fn redirect_time(&mut self) -> Result<Duration, Error> {
-        self.getopt_double(curl_sys::CURLINFO_REDIRECT_TIME)
-            .map(double_seconds_to_duration)
+        self.inner.redirect_time()
     }
 
-    /// Get the number of redirects
-    ///
-    /// Corresponds to `CURLINFO_REDIRECT_COUNT` and may return an error if the
-    /// option isn't supported.
+    /// Same as [`Easy2::redirect_count`](struct.Easy2.html#method.redirect_count)
     pub fn redirect_count(&mut self) -> Result<u32, Error> {
-        self.getopt_long(curl_sys::CURLINFO_REDIRECT_COUNT).map(|c| c as u32)
+        self.inner.redirect_count()
     }
 
-    /// Get the URL a redirect would go to
-    ///
-    /// Returns the URL a redirect would take you to if you would enable
-    /// `follow_location`. This can come very handy if you think using the
-    /// built-in libcurl redirect logic isn't good enough for you but you would
-    /// still prefer to avoid implementing all the magic of figuring out the new
-    /// URL.
-    ///
-    /// Corresponds to `CURLINFO_REDIRECT_URL` and may return an error if the
-    /// url isn't valid utf-8 or an error happens.
+    /// Same as [`Easy2::redirect_url`](struct.Easy2.html#method.redirect_url)
     pub fn redirect_url(&mut self) -> Result<Option<&str>, Error> {
-        self.getopt_str(curl_sys::CURLINFO_REDIRECT_URL)
+        self.inner.redirect_url()
     }
 
-    /// Get the URL a redirect would go to, in bytes
-    ///
-    /// Returns the URL a redirect would take you to if you would enable
-    /// `follow_location`. This can come very handy if you think using the
-    /// built-in libcurl redirect logic isn't good enough for you but you would
-    /// still prefer to avoid implementing all the magic of figuring out the new
-    /// URL.
-    ///
-    /// Corresponds to `CURLINFO_REDIRECT_URL` and may return an error.
+    /// Same as [`Easy2::redirect_url_bytes`](struct.Easy2.html#method.redirect_url_bytes)
     pub fn redirect_url_bytes(&mut self) -> Result<Option<&[u8]>, Error> {
-        self.getopt_bytes(curl_sys::CURLINFO_REDIRECT_URL)
+        self.inner.redirect_url_bytes()
     }
 
-    /// Get size of retrieved headers
-    ///
-    /// Corresponds to `CURLINFO_HEADER_SIZE` and may return an error if the
-    /// option isn't supported.
+    /// Same as [`Easy2::header_size`](struct.Easy2.html#method.header_size)
     pub fn header_size(&mut self) -> Result<u64, Error> {
-        self.getopt_long(curl_sys::CURLINFO_HEADER_SIZE).map(|c| c as u64)
+        self.inner.header_size()
     }
 
-    /// Get size of sent request.
-    ///
-    /// Corresponds to `CURLINFO_REQUEST_SIZE` and may return an error if the
-    /// option isn't supported.
+    /// Same as [`Easy2::request_size`](struct.Easy2.html#method.request_size)
     pub fn request_size(&mut self) -> Result<u64, Error> {
-        self.getopt_long(curl_sys::CURLINFO_REQUEST_SIZE).map(|c| c as u64)
+        self.inner.request_size()
     }
 
-    /// Get Content-Type
-    ///
-    /// Returns the content-type of the downloaded object. This is the value
-    /// read from the Content-Type: field.  If you get `None`, it means that the
-    /// server didn't send a valid Content-Type header or that the protocol
-    /// used doesn't support this.
-    ///
-    /// Corresponds to `CURLINFO_CONTENT_TYPE` and may return an error if the
-    /// option isn't supported.
+    /// Same as [`Easy2::content_type`](struct.Easy2.html#method.content_type)
     pub fn content_type(&mut self) -> Result<Option<&str>, Error> {
-        self.getopt_str(curl_sys::CURLINFO_CONTENT_TYPE)
+        self.inner.content_type()
     }
 
-    /// Get Content-Type, in bytes
-    ///
-    /// Returns the content-type of the downloaded object. This is the value
-    /// read from the Content-Type: field.  If you get `None`, it means that the
-    /// server didn't send a valid Content-Type header or that the protocol
-    /// used doesn't support this.
-    ///
-    /// Corresponds to `CURLINFO_CONTENT_TYPE` and may return an error if the
-    /// option isn't supported.
+    /// Same as [`Easy2::content_type_bytes`](struct.Easy2.html#method.content_type_bytes)
     pub fn content_type_bytes(&mut self) -> Result<Option<&[u8]>, Error> {
-        self.getopt_bytes(curl_sys::CURLINFO_CONTENT_TYPE)
+        self.inner.content_type_bytes()
     }
 
-    /// Get errno number from last connect failure.
-    ///
-    /// Note that the value is only set on failure, it is not reset upon a
-    /// successful operation. The number is OS and system specific.
-    ///
-    /// Corresponds to `CURLINFO_OS_ERRNO` and may return an error if the
-    /// option isn't supported.
+    /// Same as [`Easy2::os_errno`](struct.Easy2.html#method.os_errno)
     pub fn os_errno(&mut self) -> Result<i32, Error> {
-        self.getopt_long(curl_sys::CURLINFO_OS_ERRNO).map(|c| c as i32)
+        self.inner.os_errno()
     }
 
-    /// Get IP address of last connection.
-    ///
-    /// Returns a string holding the IP address of the most recent connection
-    /// done with this curl handle. This string may be IPv6 when that is
-    /// enabled.
-    ///
-    /// Corresponds to `CURLINFO_PRIMARY_IP` and may return an error if the
-    /// option isn't supported.
+    /// Same as [`Easy2::primary_ip`](struct.Easy2.html#method.primary_ip)
     pub fn primary_ip(&mut self) -> Result<Option<&str>, Error> {
-        self.getopt_str(curl_sys::CURLINFO_PRIMARY_IP)
+        self.inner.primary_ip()
     }
 
-    /// Get the latest destination port number
-    ///
-    /// Corresponds to `CURLINFO_PRIMARY_PORT` and may return an error if the
-    /// option isn't supported.
+    /// Same as [`Easy2::primary_port`](struct.Easy2.html#method.primary_port)
     pub fn primary_port(&mut self) -> Result<u16, Error> {
-        self.getopt_long(curl_sys::CURLINFO_PRIMARY_PORT).map(|c| c as u16)
+        self.inner.primary_port()
     }
 
-    /// Get local IP address of last connection
-    ///
-    /// Returns a string holding the IP address of the local end of most recent
-    /// connection done with this curl handle. This string may be IPv6 when that
-    /// is enabled.
-    ///
-    /// Corresponds to `CURLINFO_LOCAL_IP` and may return an error if the
-    /// option isn't supported.
+    /// Same as [`Easy2::local_ip`](struct.Easy2.html#method.local_ip)
     pub fn local_ip(&mut self) -> Result<Option<&str>, Error> {
-        self.getopt_str(curl_sys::CURLINFO_LOCAL_IP)
+        self.inner.local_ip()
     }
 
-    /// Get the latest local port number
-    ///
-    /// Corresponds to `CURLINFO_LOCAL_PORT` and may return an error if the
-    /// option isn't supported.
+    /// Same as [`Easy2::local_port`](struct.Easy2.html#method.local_port)
     pub fn local_port(&mut self) -> Result<u16, Error> {
-        self.getopt_long(curl_sys::CURLINFO_LOCAL_PORT).map(|c| c as u16)
+        self.inner.local_port()
     }
 
-    /// Get all known cookies
-    ///
-    /// Returns a linked-list of all cookies cURL knows (expired ones, too).
-    ///
-    /// Corresponds to the `CURLINFO_COOKIELIST` option and may return an error
-    /// if the option isn't supported.
+    /// Same as [`Easy2::cookies`](struct.Easy2.html#method.cookies)
     pub fn cookies(&mut self) -> Result<List, Error> {
-        unsafe {
-            let mut list = 0 as *mut _;
-            let rc = curl_sys::curl_easy_getinfo(self.handle,
-                                                 curl_sys::CURLINFO_COOKIELIST,
-                                                 &mut list);
-            try!(self.cvt(rc));
-            Ok(list::from_raw(list))
-        }
+        self.inner.cookies()
     }
 
     // =========================================================================
     // Other methods
 
-    /// After options have been set, this will perform the transfer described by
-    /// the options.
-    ///
-    /// This performs the request in a synchronous fashion. This can be used
-    /// multiple times for one easy handle and libcurl will attempt to re-use
-    /// the same connection for all transfers.
-    ///
-    /// This method will preserve all options configured in this handle for the
-    /// next request, and if that is not desired then the options can be
-    /// manually reset or the `reset` method can be called.
-    ///
-    /// Note that this method takes `&self`, which is quite important! This
-    /// allows applications to close over the handle in various callbacks to
-    /// call methods like `unpause_write` and `unpause_read` while a transfer is
-    /// in progress.
+    /// Same as [`Easy2::perform`](struct.Easy2.html#method.perform)
     pub fn perform(&self) -> Result<(), Error> {
-        unsafe {
-            self.reset_scoped_configuration();
-        }
+        assert!(self.inner.get_ref().borrowed.get().is_null());
         self.do_perform()
     }
 
     fn do_perform(&self) -> Result<(), Error> {
-        if self.data.running.get() {
+        // We don't allow recursive invocations of `perform` because we're
+        // invoking `FnMut`closures behind a `&self` pointer. This flag acts as
+        // our own `RefCell` borrow flag sorta.
+        if self.inner.get_ref().running.get() {
             return Err(Error::new(curl_sys::CURLE_FAILED_INIT))
         }
 
-        self.data.running.set(true);
-        let ret = unsafe {
-            self.cvt(curl_sys::curl_easy_perform(self.handle))
-        };
-        self.data.running.set(false);
-        panic::propagate();
-        return ret
+        self.inner.get_ref().running.set(true);
+        struct Reset<'a>(&'a Cell<bool>);
+        impl<'a> Drop for Reset<'a> {
+            fn drop(&mut self) {
+                self.0.set(false);
+            }
+        }
+        let _reset = Reset(&self.inner.get_ref().running);
+
+        self.inner.perform()
     }
 
     /// Creates a new scoped transfer which can be used to set callbacks and
@@ -2609,692 +1153,159 @@ impl Easy {
     /// When the `Transfer` option is dropped then all configuration set on the
     /// transfer itself will be reset.
     pub fn transfer<'data, 'easy>(&'easy mut self) -> Transfer<'easy, 'data> {
-        // NB: We need to be *very* careful here about how we treat the
-        //     callbacks set on a `Transfer`! It may be possible for that type
-        //     to leak, and if we were to continue using the callbacks there
-        //     there could possibly be use-after-free as they reference
-        //     stack-local data. As a result, we attempt to be robust in the
-        //     face of leaking a `Transfer` (one that didn't drop).
-        //
-        // What this basically amounts to is that whenever we poke libcurl that
-        // *might* call one of those callbacks or use some of that data we clear
-        // out everything that would have been set on a `Transfer` and instead
-        // start fresh. This call to `reset_scoped_configuration` will reset all
-        // callbacks based on the state in *this* handle which we know is still
-        // alive, so it's safe to configure.
-        //
-        // Also note that because we have to be resilient in the face of
-        // `Transfer` leaks anyway we just don't bother with a `Drop` impl and
-        // instead rely on this always running to reset any configuration.
-        assert!(!self.data.running.get());
-        unsafe {
-            self.reset_scoped_configuration();
-        }
+        assert!(!self.inner.get_ref().running.get());
         Transfer {
-            data: Box::new(TransferData::default()),
+            data: Box::new(Callbacks::default()),
             easy: self,
         }
     }
 
-    // See note above in `transfer` for what this is doing.
-    unsafe fn reset_scoped_configuration(&self) {
-        let EasyData {
-            ref write,
-            ref read,
-            ref seek,
-            ref debug,
-            ref header,
-            ref progress,
-            ref ssl_ctx,
-            ref running,
-            debug_set,
-            header_list: _,
-            form: _,
-            error_buf: _,
-        } = *self.data;
-
-        // Can't reset while running, we'll detect this elsewhere
-        if running.get() {
-            return
-        }
-
-        let ptr = |set| {
-            if set {
-                &*self.data as *const _ as *mut c_void
-            } else {
-                0 as *mut _
-            }
-        };
-
-        let write = ptr(write.is_some());
-        let read = ptr(read.is_some());
-        let seek = ptr(seek.is_some());
-        let debug = ptr(debug.is_some());
-        let header = ptr(header.is_some());
-        let progress = ptr(progress.is_some());
-        let ssl_ctx = ptr(ssl_ctx.is_some());
-
-        let _ = self.set_write_function(easy_write_cb, write);
-        let _ = self.set_read_function(easy_read_cb, read);
-        let _ = self.set_seek_function(easy_seek_cb, seek);
-        let _ = self.set_header_function(easy_header_cb, header);
-        let _ = self.set_progress_function(easy_progress_cb, progress);
-        let _ = self.set_ssl_ctx_function(easy_ssl_ctx_cb, ssl_ctx);
-
-        // Don't reset the debug callback if we haven't set it yet to preserve
-        // the default behavior.
-        if debug_set {
-            let _ = self.set_debug_function(easy_debug_cb, debug);
-        }
-
-        // Clear out the post fields which may be referencing stale data.
-        // curl_sys::curl_easy_setopt(easy,
-        //                            curl_sys::CURLOPT_POSTFIELDS,
-        //                            0 as *const i32);
-    }
-
-    /// Unpause reading on a connection.
-    ///
-    /// Using this function, you can explicitly unpause a connection that was
-    /// previously paused.
-    ///
-    /// A connection can be paused by letting the read or the write callbacks
-    /// return `ReadError::Pause` or `WriteError::Pause`.
-    ///
-    /// To unpause, you may for example call this from the progress callback
-    /// which gets called at least once per second, even if the connection is
-    /// paused.
-    ///
-    /// The chance is high that you will get your write callback called before
-    /// this function returns.
+    /// Same as [`Easy2::unpause_read`](struct.Easy2.html#method.unpause_read)
     pub fn unpause_read(&self) -> Result<(), Error> {
-        unsafe {
-            let rc = curl_sys::curl_easy_pause(self.handle,
-                                               curl_sys::CURLPAUSE_RECV_CONT);
-            self.cvt(rc)
-        }
+        self.inner.unpause_read()
     }
 
-    /// Unpause writing on a connection.
-    ///
-    /// Using this function, you can explicitly unpause a connection that was
-    /// previously paused.
-    ///
-    /// A connection can be paused by letting the read or the write callbacks
-    /// return `ReadError::Pause` or `WriteError::Pause`. A write callback that
-    /// returns pause signals to the library that it couldn't take care of any
-    /// data at all, and that data will then be delivered again to the callback
-    /// when the writing is later unpaused.
-    ///
-    /// To unpause, you may for example call this from the progress callback
-    /// which gets called at least once per second, even if the connection is
-    /// paused.
+    /// Same as [`Easy2::unpause_write`](struct.Easy2.html#method.unpause_write)
     pub fn unpause_write(&self) -> Result<(), Error> {
-        unsafe {
-            let rc = curl_sys::curl_easy_pause(self.handle,
-                                               curl_sys::CURLPAUSE_SEND_CONT);
-            self.cvt(rc)
-        }
+        self.inner.unpause_write()
     }
 
-    /// URL encodes a string `s`
+    /// Same as [`Easy2::url_encode`](struct.Easy2.html#method.url_encode)
     pub fn url_encode(&mut self, s: &[u8]) -> String {
-        if s.len() == 0 {
-            return String::new()
-        }
-        unsafe {
-            let p = curl_sys::curl_easy_escape(self.handle,
-                                               s.as_ptr() as *const _,
-                                               s.len() as c_int);
-            assert!(!p.is_null());
-            let ret = str::from_utf8(CStr::from_ptr(p).to_bytes()).unwrap();
-            let ret = String::from(ret);
-            curl_sys::curl_free(p as *mut _);
-            return ret
-        }
+        self.inner.url_encode(s)
     }
 
-    /// URL decodes a string `s`, returning `None` if it fails
+    /// Same as [`Easy2::url_decode`](struct.Easy2.html#method.url_decode)
     pub fn url_decode(&mut self, s: &str) -> Vec<u8> {
-        if s.len() == 0 {
-            return Vec::new();
-        }
-
-        // Work around https://curl.haxx.se/docs/adv_20130622.html, a bug where
-        // if the last few characters are a bad escape then curl will have a
-        // buffer overrun.
-        let mut iter = s.chars().rev();
-        let orig_len = s.len();
-        let mut data;
-        let mut s = s;
-        if iter.next() == Some('%') ||
-           iter.next() == Some('%') ||
-           iter.next() == Some('%') {
-            data = s.to_string();
-            data.push(0u8 as char);
-            s = &data[..];
-        }
-        unsafe {
-            let mut len = 0;
-            let p = curl_sys::curl_easy_unescape(self.handle,
-                                                 s.as_ptr() as *const _,
-                                                 orig_len as c_int,
-                                                 &mut len);
-            assert!(!p.is_null());
-            let slice = slice::from_raw_parts(p as *const u8, len as usize);
-            let ret = slice.to_vec();
-            curl_sys::curl_free(p as *mut _);
-            return ret
-        }
+        self.inner.url_decode(s)
     }
 
-    // TODO: I don't think this is safe, you can drop this which has all the
-    //       callback data and then the next is use-after-free
-    //
-    // /// Attempts to clone this handle, returning a new session handle with the
-    // /// same options set for this handle.
-    // ///
-    // /// Internal state info and things like persistent connections ccannot be
-    // /// transferred.
-    // ///
-    // /// # Errors
-    // ///
-    // /// If a new handle could not be allocated or another error happens, `None`
-    // /// is returned.
-    // pub fn try_clone<'b>(&mut self) -> Option<Easy<'b>> {
-    //     unsafe {
-    //         let handle = curl_sys::curl_easy_duphandle(self.handle);
-    //         if handle.is_null() {
-    //             None
-    //         } else {
-    //             Some(Easy {
-    //                 handle: handle,
-    //                 data: blank_data(),
-    //                 _marker: marker::PhantomData,
-    //             })
-    //         }
-    //     }
-    // }
-
-    /// Re-initializes this handle to the default values.
-    ///
-    /// This puts the handle to the same state as it was in when it was just
-    /// created. This does, however, keep live connections, the session id
-    /// cache, the dns cache, and cookies.
+    /// Same as [`Easy2::reset`](struct.Easy2.html#method.reset)
     pub fn reset(&mut self) {
-        unsafe {
-            curl_sys::curl_easy_reset(self.handle);
-        }
-        default_configure(self);
+        self.inner.reset()
     }
 
-    /// Receives data from a connected socket.
-    ///
-    /// Only useful after a successful `perform` with the `connect_only` option
-    /// set as well.
+    /// Same as [`Easy2::recv`](struct.Easy2.html#method.recv)
     pub fn recv(&mut self, data: &mut [u8]) -> Result<usize, Error> {
-        unsafe {
-            let mut n = 0;
-            let r = curl_sys::curl_easy_recv(self.handle,
-                                             data.as_mut_ptr() as *mut _,
-                                             data.len(),
-                                             &mut n);
-            if r == curl_sys::CURLE_OK {
-                Ok(n)
-            } else {
-                Err(Error::new(r))
-            }
-        }
+        self.inner.recv(data)
     }
 
-    /// Sends data over the connected socket.
-    ///
-    /// Only useful after a successful `perform` with the `connect_only` option
-    /// set as well.
+    /// Same as [`Easy2::send`](struct.Easy2.html#method.send)
     pub fn send(&mut self, data: &[u8]) -> Result<usize, Error> {
-        unsafe {
-            let mut n = 0;
-            let rc = curl_sys::curl_easy_send(self.handle,
-                                              data.as_ptr() as *const _,
-                                              data.len(),
-                                              &mut n);
-            try!(self.cvt(rc));
-            Ok(n)
-        }
+        self.inner.send(data)
     }
 
-    /// Get a pointer to the raw underlying CURL handle.
+    /// Same as [`Easy2::raw`](struct.Easy2.html#method.raw)
     pub fn raw(&self) -> *mut curl_sys::CURL {
-        self.handle
+        self.inner.raw()
     }
+}
 
-    #[cfg(unix)]
-    fn setopt_path(&mut self,
-                   opt: curl_sys::CURLoption,
-                   val: &Path) -> Result<(), Error> {
-        use std::os::unix::prelude::*;
-        let s = try!(CString::new(val.as_os_str().as_bytes()));
-        self.setopt_str(opt, &s)
-    }
-
-    #[cfg(windows)]
-    fn setopt_path(&mut self,
-                   opt: curl_sys::CURLoption,
-                   val: &Path) -> Result<(), Error> {
-        match val.to_str() {
-            Some(s) => self.setopt_str(opt, &try!(CString::new(s))),
-            None => Err(Error::new(curl_sys::CURLE_CONV_FAILED)),
+impl EasyData {
+    /// An unsafe function to get the appropriate callback field.
+    ///
+    /// We can have callbacks configured from one of two different sources.
+    /// We could either have a callback from the `borrowed` field, callbacks on
+    /// an ephemeral `Transfer`, or the `owned` field which are `'static`
+    /// callbacks that live for the lifetime of this `EasyData`.
+    ///
+    /// The first set of callbacks are unsafe to access because they're actually
+    /// owned elsewhere and we're just aliasing. Additionally they don't
+    /// technically live long enough for us to access them, so they're hidden
+    /// behind unsafe pointers and casts.
+    ///
+    /// This function returns `&'a mut T` but that's actually somewhat of a lie.
+    /// The value should **not be stored to** nor should it be used for the full
+    /// lifetime of `'a`, but rather immediately in the local scope.
+    ///
+    /// Basically this is just intended to acquire a callback, invoke it, and
+    /// then stop. Nothing else. Super unsafe.
+    unsafe fn callback<'a, T, F>(&'a mut self, f: F) -> Option<&'a mut T>
+        where F: for<'b> Fn(&'b mut Callbacks<'static>) -> &'b mut Option<T>,
+    {
+        let ptr = self.borrowed.get();
+        if !ptr.is_null() {
+            let val = f(&mut *ptr);
+            if val.is_some() {
+                return val.as_mut()
+            }
         }
+        f(&mut self.owned).as_mut()
     }
+}
 
-    fn setopt_long(&mut self,
-                   opt: curl_sys::CURLoption,
-                   val: c_long) -> Result<(), Error> {
+impl Handler for EasyData {
+    fn write(&mut self, data: &[u8]) -> Result<usize, WriteError> {
         unsafe {
-            self.cvt(curl_sys::curl_easy_setopt(self.handle, opt, val))
-        }
-    }
-
-    fn setopt_str(&mut self,
-                  opt: curl_sys::CURLoption,
-                  val: &CStr) -> Result<(), Error> {
-        self.setopt_ptr(opt, val.as_ptr())
-    }
-
-    fn setopt_ptr(&self,
-                  opt: curl_sys::CURLoption,
-                  val: *const c_char) -> Result<(), Error> {
-        unsafe {
-            self.cvt(curl_sys::curl_easy_setopt(self.handle, opt, val))
-        }
-    }
-
-    fn setopt_off_t(&mut self,
-                    opt: curl_sys::CURLoption,
-                    val: curl_sys::curl_off_t) -> Result<(), Error> {
-        unsafe {
-            let rc = curl_sys::curl_easy_setopt(self.handle, opt, val);
-            self.cvt(rc)
-        }
-    }
-
-    fn getopt_bytes(&mut self, opt: curl_sys::CURLINFO)
-                    -> Result<Option<&[u8]>, Error> {
-        unsafe {
-            let p = try!(self.getopt_ptr(opt));
-            if p.is_null() {
-                Ok(None)
-            } else {
-                Ok(Some(CStr::from_ptr(p).to_bytes()))
+            match self.callback(|s| &mut s.write) {
+                Some(write) => write(data),
+                None => Ok(data.len()),
             }
         }
     }
 
-    fn getopt_ptr(&mut self, opt: curl_sys::CURLINFO)
-                  -> Result<*const c_char, Error> {
+    fn read(&mut self, data: &mut [u8]) -> Result<usize, ReadError> {
         unsafe {
-            let mut p = 0 as *const c_char;
-            let rc = curl_sys::curl_easy_getinfo(self.handle, opt, &mut p);
-            try!(self.cvt(rc));
-            Ok(p)
-        }
-    }
-
-    fn getopt_str(&mut self, opt: curl_sys::CURLINFO)
-                    -> Result<Option<&str>, Error> {
-        match self.getopt_bytes(opt) {
-            Ok(None) => Ok(None),
-            Err(e) => Err(e),
-            Ok(Some(bytes)) => {
-                match str::from_utf8(bytes) {
-                    Ok(s) => Ok(Some(s)),
-                    Err(_) => Err(Error::new(curl_sys::CURLE_CONV_FAILED)),
-                }
+            match self.callback(|s| &mut s.read) {
+                Some(read) => read(data),
+                None => Ok(0),
             }
         }
     }
 
-    fn getopt_long(&mut self, opt: curl_sys::CURLINFO) -> Result<c_long, Error> {
+    fn seek(&mut self, whence: SeekFrom) -> SeekResult {
         unsafe {
-            let mut p = 0;
-            let rc = curl_sys::curl_easy_getinfo(self.handle, opt, &mut p);
-            try!(self.cvt(rc));
-            Ok(p)
+            match self.callback(|s| &mut s.seek) {
+                Some(seek) => seek(whence),
+                None => SeekResult::CantSeek,
+            }
         }
     }
 
-    fn getopt_double(&mut self, opt: curl_sys::CURLINFO) -> Result<c_double, Error> {
+    fn debug(&mut self, kind: InfoType, data: &[u8]) {
         unsafe {
-            let mut p = 0 as c_double;
-            let rc = curl_sys::curl_easy_getinfo(self.handle, opt, &mut p);
-            try!(self.cvt(rc));
-            Ok(p)
-        }
-    }
-
-    fn cvt(&self, rc: curl_sys::CURLcode) -> Result<(), Error> {
-        if rc == curl_sys::CURLE_OK {
-            return Ok(())
-        }
-        let mut buf = self.data.error_buf.borrow_mut();
-        if buf[0] == 0 {
-            return Err(Error::new(rc))
-        }
-        let pos = buf.iter().position(|i| *i == 0).unwrap_or(buf.len());
-        let msg = String::from_utf8_lossy(&buf[..pos]).into_owned();
-        buf[0] = 0;
-        Err(::error::error_with_extra(rc, msg.into_boxed_str()))
-    }
-}
-
-extern fn easy_write_cb(ptr: *mut c_char,
-                        size: size_t,
-                        nmemb: size_t,
-                        data: *mut c_void) -> size_t {
-    write_cb(ptr, size, nmemb, data, |buf| unsafe {
-        (*(data as *mut EasyData)).write.as_mut().map(|f| f(buf))
-    })
-}
-
-extern fn transfer_write_cb(ptr: *mut c_char,
-                            size: size_t,
-                            nmemb: size_t,
-                            data: *mut c_void) -> size_t {
-    write_cb(ptr, size, nmemb, data, |buf| unsafe {
-        (*(data as *mut TransferData)).write.as_mut().map(|f| f(buf))
-    })
-}
-
-fn write_cb<F>(ptr: *mut c_char,
-               size: size_t,
-               nmemb: size_t,
-               data: *mut c_void,
-               f: F)
-               -> size_t
-    where F: FnOnce(&[u8]) -> Option<Result<usize, WriteError>>
-{
-    if data.is_null() {
-        return size * nmemb
-    }
-    panic::catch(|| unsafe {
-        let input = slice::from_raw_parts(ptr as *const u8,
-                                          size * nmemb);
-        match f(input) {
-            Some(Ok(s)) => s,
-            Some(Err(WriteError::Pause)) |
-            Some(Err(WriteError::__Nonexhaustive)) => {
-                curl_sys::CURL_WRITEFUNC_PAUSE
+            match self.callback(|s| &mut s.debug) {
+                Some(debug) => debug(kind, data),
+                None => handler::debug(kind, data),
             }
-            None => !0,
         }
-    }).unwrap_or(!0)
-}
+    }
 
-extern fn easy_read_cb(ptr: *mut c_char,
-                       size: size_t,
-                       nmemb: size_t,
-                       data: *mut c_void) -> size_t {
-    read_cb(ptr, size, nmemb, data, |buf| unsafe {
-        (*(data as *mut EasyData)).read.as_mut().map(|f| f(buf))
-    })
-}
-
-extern fn transfer_read_cb(ptr: *mut c_char,
-                           size: size_t,
-                           nmemb: size_t,
-                           data: *mut c_void) -> size_t {
-    read_cb(ptr, size, nmemb, data, |buf| unsafe {
-        (*(data as *mut TransferData)).read.as_mut().map(|f| f(buf))
-    })
-}
-
-fn read_cb<F>(ptr: *mut c_char,
-              size: size_t,
-              nmemb: size_t,
-              data: *mut c_void,
-              f: F) -> size_t
-    where F: FnOnce(&mut [u8]) -> Option<Result<usize, ReadError>>
-{
-    unsafe {
-        if data.is_null() {
-            return 0
-        }
-        let input = slice::from_raw_parts_mut(ptr as *mut u8,
-                                              size * nmemb);
-        panic::catch(|| {
-            match f(input) {
-                Some(Ok(s)) => s,
-                Some(Err(ReadError::Pause)) => {
-                    curl_sys::CURL_READFUNC_PAUSE
-                }
-                Some(Err(ReadError::__Nonexhaustive)) |
-                Some(Err(ReadError::Abort)) => {
-                    curl_sys::CURL_READFUNC_ABORT
-                }
-                None => !0,
+    fn header(&mut self, data: &[u8]) -> bool {
+        unsafe {
+            match self.callback(|s| &mut s.header) {
+                Some(header) => header(data),
+                None => true,
             }
-        }).unwrap_or(!0)
-    }
-}
-
-extern fn easy_seek_cb(data: *mut c_void,
-                       offset: curl_sys::curl_off_t,
-                       origin: c_int) -> c_int {
-    seek_cb(data, offset, origin, |s| unsafe {
-        (*(data as *mut EasyData)).seek.as_mut().map(|f| f(s))
-    })
-}
-
-extern fn transfer_seek_cb(data: *mut c_void,
-                           offset: curl_sys::curl_off_t,
-                           origin: c_int) -> c_int {
-    seek_cb(data, offset, origin, |s| unsafe {
-        (*(data as *mut TransferData)).seek.as_mut().map(|f| f(s))
-    })
-}
-
-fn seek_cb<F>(data: *mut c_void,
-              offset: curl_sys::curl_off_t,
-              origin: c_int,
-              f: F) -> c_int
-    where F: FnOnce(SeekFrom) -> Option<SeekResult>
-{
-    if data.is_null() {
-        return -1
-    }
-    panic::catch(|| {
-        let from = if origin == libc::SEEK_SET {
-            SeekFrom::Start(offset as u64)
-        } else {
-            panic!("unknown origin from libcurl: {}", origin);
-        };
-        match f(from) {
-            Some(to) => to as c_int,
-            None => -1,
         }
-    }).unwrap_or(!0)
-}
-
-extern fn easy_progress_cb(data: *mut c_void,
-                           dltotal: c_double,
-                           dlnow: c_double,
-                           ultotal: c_double,
-                           ulnow: c_double) -> c_int {
-    progress_cb(data, dltotal, dlnow, ultotal, ulnow, |a, b, c, d| unsafe {
-        (*(data as *mut EasyData)).progress.as_mut().map(|f| f(a, b, c, d))
-    })
-}
-
-extern fn transfer_progress_cb(data: *mut c_void,
-                               dltotal: c_double,
-                               dlnow: c_double,
-                               ultotal: c_double,
-                               ulnow: c_double) -> c_int {
-    progress_cb(data, dltotal, dlnow, ultotal, ulnow, |a, b, c, d| unsafe {
-        (*(data as *mut TransferData)).progress.as_mut().map(|f| f(a, b, c, d))
-    })
-}
-
-fn progress_cb<F>(data: *mut c_void,
-                  dltotal: c_double,
-                  dlnow: c_double,
-                  ultotal: c_double,
-                  ulnow: c_double,
-                  f: F) -> c_int
-    where F: FnOnce(f64, f64, f64, f64) -> Option<bool>,
-{
-    if data.is_null() {
-        return 0
     }
-    let keep_going = panic::catch(|| {
-        f(dltotal, dlnow, ultotal, ulnow).unwrap_or(false)
-    }).unwrap_or(false);
-    if keep_going {
-        0
-    } else {
-        1
-    }
-}
 
-extern fn easy_ssl_ctx_cb(handle: *mut curl_sys::CURL,
-                          ssl_ctx: *mut c_void,
-                          data: *mut c_void) -> curl_sys::CURLcode {
-
-    ssl_ctx_cb(handle, ssl_ctx, data, |ssl_ctx| unsafe {
-        match (*(data as *mut EasyData)).ssl_ctx.as_mut() {
-            Some(f) => f(ssl_ctx),
-            // If the callback isn't set we just tell CURL to
-            // continue.
-            None => Ok(()),
+    fn progress(&mut self,
+                dltotal: f64,
+                dlnow: f64,
+                ultotal: f64,
+                ulnow: f64) -> bool {
+        unsafe {
+            match self.callback(|s| &mut s.progress) {
+                Some(progress) => progress(dltotal, dlnow, ultotal, ulnow),
+                None => true,
+            }
         }
-    })
-}
+    }
 
-extern fn transfer_ssl_ctx_cb(handle: *mut curl_sys::CURL,
-                              ssl_ctx: *mut c_void,
-                              data: *mut c_void) -> curl_sys::CURLcode {
-
-    ssl_ctx_cb(handle, ssl_ctx, data, |ssl_ctx| unsafe {
-        match (*(data as *mut TransferData)).ssl_ctx.as_mut() {
-            Some(f) => f(ssl_ctx),
-            // If the callback isn't set we just tell CURL to
-            // continue.
-            None => Ok(()),
+    fn ssl_ctx(&mut self, cx: *mut c_void) -> Result<(), Error> {
+        unsafe {
+            match self.callback(|s| &mut s.ssl_ctx) {
+                Some(ssl_ctx) => ssl_ctx(cx),
+                None => Ok(()),
+            }
         }
-    })
-}
-
-// TODO: same thing as `debug_cb`: can we expose `handle`?
-fn ssl_ctx_cb<F>(_handle: *mut curl_sys::CURL,
-                 ssl_ctx: *mut c_void,
-                 data: *mut c_void,
-                 f: F) -> curl_sys::CURLcode
-    where F: FnOnce(*mut c_void) -> Result<(), Error>
-{
-    if data.is_null() {
-        return curl_sys::CURLE_OK;
-    }
-
-    let result = panic::catch(|| {
-        f(ssl_ctx)
-    });
-
-    match result {
-        Some(Ok(())) => curl_sys::CURLE_OK,
-        Some(Err(e)) => e.code(),
-        // Default to a generic SSL error in case of panic. This
-        // shouldn't really matter since the error should be
-        // propagated later on but better safe than sorry...
-        None => curl_sys::CURLE_SSL_CONNECT_ERROR,
     }
 }
 
-extern fn easy_debug_cb(handle: *mut curl_sys::CURL,
-                        kind: curl_sys::curl_infotype,
-                        data: *mut c_char,
-                        size: size_t,
-                        userptr: *mut c_void) -> c_int {
-    debug_cb(handle, kind, data, size, userptr, |a, b| unsafe {
-        (*(userptr as *mut EasyData)).debug.as_mut().map(|f| f(a, b))
-    })
-}
-
-extern fn transfer_debug_cb(handle: *mut curl_sys::CURL,
-                            kind: curl_sys::curl_infotype,
-                            data: *mut c_char,
-                            size: size_t,
-                            userptr: *mut c_void) -> c_int {
-    debug_cb(handle, kind, data, size, userptr, |a, b| unsafe {
-        (*(userptr as *mut TransferData)).debug.as_mut().map(|f| f(a, b))
-    })
-}
-
-// TODO: expose `handle`? is that safe?
-fn debug_cb<F>(_handle: *mut curl_sys::CURL,
-               kind: curl_sys::curl_infotype,
-               data: *mut c_char,
-               size: size_t,
-               userptr: *mut c_void,
-               f: F) -> c_int
-    where F: FnOnce(InfoType, &[u8]) -> Option<()>
-{
-    if userptr.is_null() {
-        return 0
-    }
-    panic::catch(|| unsafe {
-        let data = slice::from_raw_parts(data as *const u8, size);
-        let kind = match kind {
-            curl_sys::CURLINFO_TEXT => InfoType::Text,
-            curl_sys::CURLINFO_HEADER_IN => InfoType::HeaderIn,
-            curl_sys::CURLINFO_HEADER_OUT => InfoType::HeaderOut,
-            curl_sys::CURLINFO_DATA_IN => InfoType::DataIn,
-            curl_sys::CURLINFO_DATA_OUT => InfoType::DataOut,
-            curl_sys::CURLINFO_SSL_DATA_IN => InfoType::SslDataIn,
-            curl_sys::CURLINFO_SSL_DATA_OUT => InfoType::SslDataOut,
-            _ => return,
-        };
-        f(kind, data);
-    });
-    return 0
-}
-
-extern fn easy_header_cb(buffer: *mut c_char,
-                         size: size_t,
-                         nitems: size_t,
-                         userptr: *mut c_void) -> size_t {
-    header_cb(buffer, size, nitems, userptr, |buf| unsafe {
-        (*(userptr as *mut EasyData)).header.as_mut().map(|f| f(buf))
-    })
-}
-
-extern fn transfer_header_cb(buffer: *mut c_char,
-                             size: size_t,
-                             nitems: size_t,
-                             userptr: *mut c_void) -> size_t {
-    header_cb(buffer, size, nitems, userptr, |buf| unsafe {
-        (*(userptr as *mut TransferData)).header.as_mut().map(|f| f(buf))
-    })
-}
-
-fn header_cb<F>(buffer: *mut c_char,
-                size: size_t,
-                nitems: size_t,
-                userptr: *mut c_void,
-                f: F) -> size_t
-    where F: FnOnce(&[u8]) -> Option<bool>,
-{
-    if userptr.is_null() {
-        return size * nitems
-    }
-    let keep_going = panic::catch(|| unsafe {
-        let data = slice::from_raw_parts(buffer as *const u8,
-                                         size * nitems);
-        f(data).unwrap_or(false)
-    }).unwrap_or(false);
-    if keep_going {
-        size * nitems
-    } else {
-        !0
+impl fmt::Debug for EasyData {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        "callbacks ...".fmt(f)
     }
 }
 
@@ -3305,10 +1316,7 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
         where F: FnMut(&[u8]) -> Result<usize, WriteError> + 'data
     {
         self.data.write = Some(Box::new(f));
-        unsafe {
-            self.easy.set_write_function(transfer_write_cb,
-                                         &*self.data as *const _ as *mut _)
-        }
+        Ok(())
     }
 
     /// Same as `Easy::read_function`, just takes a non `'static` lifetime
@@ -3317,10 +1325,7 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
         where F: FnMut(&mut [u8]) -> Result<usize, ReadError> + 'data
     {
         self.data.read = Some(Box::new(f));
-        unsafe {
-            self.easy.set_read_function(transfer_read_cb,
-                                        &*self.data as *const _ as *mut _)
-        }
+        Ok(())
     }
 
     /// Same as `Easy::seek_function`, just takes a non `'static` lifetime
@@ -3329,10 +1334,7 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
         where F: FnMut(SeekFrom) -> SeekResult + 'data
     {
         self.data.seek = Some(Box::new(f));
-        unsafe {
-            self.easy.set_seek_function(transfer_seek_cb,
-                                        &*self.data as *const _ as *mut _)
-        }
+        Ok(())
     }
 
     /// Same as `Easy::progress_function`, just takes a non `'static` lifetime
@@ -3341,10 +1343,7 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
         where F: FnMut(f64, f64, f64, f64) -> bool + 'data
     {
         self.data.progress = Some(Box::new(f));
-        unsafe {
-            self.easy.set_progress_function(transfer_progress_cb,
-                                            &*self.data as *const _ as *mut _)
-        }
+        Ok(())
     }
 
     /// Same as `Easy::ssl_ctx_function`, just takes a non `'static`
@@ -3353,10 +1352,7 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
         where F: FnMut(*mut c_void) -> Result<(), Error> + Send + 'data
     {
         self.data.ssl_ctx = Some(Box::new(f));
-        unsafe {
-            self.easy.set_ssl_ctx_function(transfer_ssl_ctx_cb,
-                                            &*self.data as *const _ as *mut _)
-        }
+        Ok(())
     }
 
     /// Same as `Easy::debug_function`, just takes a non `'static` lifetime
@@ -3365,11 +1361,7 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
         where F: FnMut(InfoType, &[u8]) + 'data
     {
         self.data.debug = Some(Box::new(f));
-        self.easy.data.debug_set = true;
-        unsafe {
-            self.easy.set_debug_function(transfer_debug_cb,
-                                         &*self.data as *const _ as *mut _)
-        }
+        Ok(())
     }
 
     /// Same as `Easy::header_function`, just takes a non `'static` lifetime
@@ -3378,30 +1370,32 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
         where F: FnMut(&[u8]) -> bool + 'data
     {
         self.data.header = Some(Box::new(f));
-        unsafe {
-            self.easy.set_header_function(transfer_header_cb,
-                                          &*self.data as *const _ as *mut _)
-        }
+        Ok(())
     }
-
-    // TODO: need to figure out how to expose this, but it also needs to be
-    //       reset as part of `reset_scoped_configuration` above. Unfortunately
-    //       setting `CURLOPT_POSTFIELDS` to null will switch the request to
-    //       POST, which is not what we want.
-    //
-    // /// Configures the data that will be uploaded as part of a POST.
-    // ///
-    // /// By default this option is not set and corresponds to
-    // /// `CURLOPT_POSTFIELDS`.
-    // pub fn post_fields(&mut self, data: &'data [u8]) -> Result<(), Error> {
-    //     // Set the length before the pointer so libcurl knows how much to read
-    //     try!(self.easy.post_field_size(data.len() as u64));
-    //     self.easy.setopt_ptr(curl_sys::CURLOPT_POSTFIELDS,
-    //                          data.as_ptr() as *const _)
-    // }
 
     /// Same as `Easy::transfer`.
     pub fn perform(&self) -> Result<(), Error> {
+        let inner = self.easy.inner.get_ref();
+
+        // Note that we're casting a `&self` pointer to a `*mut`, and then
+        // during the invocation of this call we're going to invoke `FnMut`
+        // closures that we ourselves own.
+        //
+        // This should be ok, however, because `do_perform` checks for recursive
+        // invocations of `perform` and disallows them. Our type also isn't
+        // `Sync`.
+        inner.borrowed.set(&*self.data as *const _ as *mut _);
+
+        // Make sure to reset everything back to the way it was before when
+        // we're done.
+        struct Reset<'a>(&'a Cell<*mut Callbacks<'static>>);
+        impl<'a> Drop for Reset<'a> {
+            fn drop(&mut self) {
+                self.0.set(ptr::null_mut());
+            }
+        }
+        let _reset = Reset(&inner.borrowed);
+
         self.easy.do_perform()
     }
 
@@ -3424,228 +1418,9 @@ impl<'easy, 'data> fmt::Debug for Transfer<'easy, 'data> {
     }
 }
 
-fn double_seconds_to_duration(seconds: f64) -> Duration {
-    let whole_seconds = seconds.trunc() as u64;
-    let nanos = seconds.fract() * 1_000_000_000f64;
-    Duration::new(whole_seconds, nanos as u32)
-}
-
-#[test]
-fn double_seconds_to_duration_whole_second() {
-    let dur = double_seconds_to_duration(1.0);
-    assert_eq!(dur.as_secs(), 1);
-    assert_eq!(dur.subsec_nanos(), 0);
-}
-
-#[test]
-fn double_seconds_to_duration_sub_second1() {
-    let dur = double_seconds_to_duration(0.0);
-    assert_eq!(dur.as_secs(), 0);
-    assert_eq!(dur.subsec_nanos(), 0);
-}
-
-#[test]
-fn double_seconds_to_duration_sub_second2() {
-    let dur = double_seconds_to_duration(0.5);
-    assert_eq!(dur.as_secs(), 0);
-    assert_eq!(dur.subsec_nanos(), 500_000_000);
-}
-
-fn default_configure(handle: &mut Easy) {
-    handle.data.error_buf = RefCell::new(vec![0; curl_sys::CURL_ERROR_SIZE]);
-    handle.setopt_ptr(curl_sys::CURLOPT_ERRORBUFFER,
-                      handle.data.error_buf.borrow().as_ptr() as *const _)
-          .expect("failed to set error buffer");
-    let _ = handle.signal(false);
-    ssl_configure(handle);
-}
-
-#[cfg(all(unix, not(target_os = "macos")))]
-fn ssl_configure(handle: &mut Easy) {
-    let probe = ::openssl_probe::probe();
-    if let Some(ref path) = probe.cert_file {
-        let _ = handle.cainfo(path);
-    }
-    if let Some(ref path) = probe.cert_dir {
-        let _ = handle.capath(path);
-    }
-}
-
-#[cfg(not(all(unix, not(target_os = "macos"))))]
-fn ssl_configure(_handle: &mut Easy) {}
-
-impl fmt::Debug for Easy {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_struct("Easy")
-         .field("handle", &self.handle)
-         .finish()
-    }
-}
-
-impl Drop for Easy {
+impl<'easy, 'data> Drop for Transfer<'easy, 'data> {
     fn drop(&mut self) {
-        unsafe {
-            curl_sys::curl_easy_cleanup(self.handle);
-        }
+        // Extra double check to make sure we don't leak a pointer to ourselves.
+        assert!(self.easy.inner.get_ref().borrowed.get().is_null());
     }
 }
-
-impl Auth {
-    /// Creates a new set of authentications with no members.
-    ///
-    /// An `Auth` structure is used to configure which forms of authentication
-    /// are attempted when negotiating connections with servers.
-    pub fn new() -> Auth {
-        Auth { bits: 0 }
-    }
-
-    /// HTTP Basic authentication.
-    ///
-    /// This is the default choice, and the only method that is in wide-spread
-    /// use and supported virtually everywhere.  This sends the user name and
-    /// password over the network in plain text, easily captured by others.
-    pub fn basic(&mut self, on: bool) -> &mut Auth {
-        self.flag(curl_sys::CURLAUTH_BASIC, on)
-    }
-
-    /// HTTP Digest authentication.
-    ///
-    /// Digest authentication is defined in RFC 2617 and is a more secure way to
-    /// do authentication over public networks than the regular old-fashioned
-    /// Basic method.
-    pub fn digest(&mut self, on: bool) -> &mut Auth {
-        self.flag(curl_sys::CURLAUTH_DIGEST, on)
-    }
-
-    /// HTTP Digest authentication with an IE flavor.
-    ///
-    /// Digest authentication is defined in RFC 2617 and is a more secure way to
-    /// do authentication over public networks than the regular old-fashioned
-    /// Basic method. The IE flavor is simply that libcurl will use a special
-    /// "quirk" that IE is known to have used before version 7 and that some
-    /// servers require the client to use.
-    pub fn digest_ie(&mut self, on: bool) -> &mut Auth {
-        self.flag(curl_sys::CURLAUTH_DIGEST_IE, on)
-    }
-
-    /// HTTP Negotiate (SPNEGO) authentication.
-    ///
-    /// Negotiate authentication is defined in RFC 4559 and is the most secure
-    /// way to perform authentication over HTTP.
-    ///
-    /// You need to build libcurl with a suitable GSS-API library or SSPI on
-    /// Windows for this to work.
-    pub fn gssnegotiate(&mut self, on: bool) -> &mut Auth {
-        self.flag(curl_sys::CURLAUTH_GSSNEGOTIATE, on)
-    }
-
-    /// HTTP NTLM authentication.
-    ///
-    /// A proprietary protocol invented and used by Microsoft. It uses a
-    /// challenge-response and hash concept similar to Digest, to prevent the
-    /// password from being eavesdropped.
-    ///
-    /// You need to build libcurl with either OpenSSL, GnuTLS or NSS support for
-    /// this option to work, or build libcurl on Windows with SSPI support.
-    pub fn ntlm(&mut self, on: bool) -> &mut Auth {
-        self.flag(curl_sys::CURLAUTH_NTLM, on)
-    }
-
-    /// NTLM delegating to winbind helper.
-    ///
-    /// Authentication is performed by a separate binary application that is
-    /// executed when needed. The name of the application is specified at
-    /// compile time but is typically /usr/bin/ntlm_auth
-    ///
-    /// Note that libcurl will fork when necessary to run the winbind
-    /// application and kill it when complete, calling waitpid() to await its
-    /// exit when done. On POSIX operating systems, killing the process will
-    /// cause a SIGCHLD signal to be raised (regardless of whether
-    /// CURLOPT_NOSIGNAL is set), which must be handled intelligently by the
-    /// application. In particular, the application must not unconditionally
-    /// call wait() in its SIGCHLD signal handler to avoid being subject to a
-    /// race condition. This behavior is subject to change in future versions of
-    /// libcurl.
-    ///
-    /// A proprietary protocol invented and used by Microsoft. It uses a
-    /// challenge-response and hash concept similar to Digest, to prevent the
-    /// password from being eavesdropped.
-    pub fn ntlm_wb(&mut self, on: bool) -> &mut Auth {
-        self.flag(curl_sys::CURLAUTH_NTLM_WB, on)
-    }
-
-    fn flag(&mut self, bit: c_ulong, on: bool) -> &mut Auth {
-        if on {
-            self.bits |= bit as c_long;
-        } else {
-            self.bits &= !bit as c_long;
-        }
-        self
-    }
-}
-
-impl fmt::Debug for Auth {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let bits = self.bits as c_ulong;
-        f.debug_struct("Auth")
-         .field("basic", &(bits & curl_sys::CURLAUTH_BASIC != 0))
-         .field("digest", &(bits & curl_sys::CURLAUTH_DIGEST != 0))
-         .field("digest_ie", &(bits & curl_sys::CURLAUTH_DIGEST_IE != 0))
-         .field("gssnegotiate", &(bits & curl_sys::CURLAUTH_GSSNEGOTIATE != 0))
-         .field("ntlm", &(bits & curl_sys::CURLAUTH_NTLM != 0))
-         .field("ntlm_wb", &(bits & curl_sys::CURLAUTH_NTLM_WB != 0))
-         .finish()
-    }
-}
-
-impl SslOpt {
-    /// Creates a new set of SSL options.
-    pub fn new() -> SslOpt {
-        SslOpt { bits: 0 }
-    }
-
-    /// Tells libcurl to disable certificate revocation checks for those SSL
-    /// backends where such behavior is present.
-    ///
-    /// Currently this option is only supported for WinSSL (the native Windows
-    /// SSL library), with an exception in the case of Windows' Untrusted
-    /// Publishers blacklist which it seems can't be bypassed. This option may
-    /// have broader support to accommodate other SSL backends in the future.
-    /// https://curl.haxx.se/docs/ssl-compared.html
-    pub fn no_revoke(&mut self, on: bool) -> &mut SslOpt {
-        self.flag(curl_sys::CURLSSLOPT_NO_REVOKE, on)
-    }
-
-    /// Tells libcurl to not attempt to use any workarounds for a security flaw
-    /// in the SSL3 and TLS1.0 protocols.
-    ///
-    /// If this option isn't used or this bit is set to 0, the SSL layer libcurl
-    /// uses may use a work-around for this flaw although it might cause
-    /// interoperability problems with some (older) SSL implementations.
-    ///
-    /// > WARNING: avoiding this work-around lessens the security, and by
-    /// > setting this option to 1 you ask for exactly that. This option is only
-    /// > supported for DarwinSSL, NSS and OpenSSL.
-    pub fn allow_beast(&mut self, on: bool) -> &mut SslOpt {
-        self.flag(curl_sys::CURLSSLOPT_ALLOW_BEAST, on)
-    }
-
-    fn flag(&mut self, bit: c_long, on: bool) -> &mut SslOpt {
-        if on {
-            self.bits |= bit as c_long;
-        } else {
-            self.bits &= !bit as c_long;
-        }
-        self
-    }
-}
-
-impl fmt::Debug for SslOpt {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_struct("SslOpt")
-         .field("no_revoke", &(self.bits & curl_sys::CURLSSLOPT_NO_REVOKE != 0))
-         .field("allow_beast", &(self.bits & curl_sys::CURLSSLOPT_ALLOW_BEAST != 0))
-         .finish()
-    }
-}
-

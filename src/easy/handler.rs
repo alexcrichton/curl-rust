@@ -250,6 +250,9 @@ pub trait Handler {
     /// By default this function calls an internal method and
     /// corresponds to `CURLOPT_SSL_CTX_FUNCTION` and
     /// `CURLOPT_SSL_CTX_DATA`.
+    ///
+    /// Note that this callback is not guaranteed to be called, not all versions
+    /// of libcurl support calling this callback.
     fn ssl_ctx(&mut self, cx: *mut c_void) -> Result<(), Error> {
         drop(cx);
         Ok(())
@@ -632,10 +635,8 @@ impl<H: Handler> Easy2<H> {
             .expect("failed to set debug callback");
 
         let cb: curl_sys::curl_ssl_ctx_callback = ssl_ctx_cb::<H>;
-        self.setopt_ptr(curl_sys::CURLOPT_SSL_CTX_FUNCTION, cb as *const _)
-            .expect("failed to set ssl ctx callback");
-        self.setopt_ptr(curl_sys::CURLOPT_SSL_CTX_DATA, ptr)
-            .expect("failed to set ssl ctx callback");
+        drop(self.setopt_ptr(curl_sys::CURLOPT_SSL_CTX_FUNCTION, cb as *const _));
+        drop(self.setopt_ptr(curl_sys::CURLOPT_SSL_CTX_DATA, ptr));
     }
 
     #[cfg(all(unix, not(target_os = "macos")))]

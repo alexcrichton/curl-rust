@@ -600,6 +600,21 @@ impl Easy {
         self.inner.tcp_nodelay(enable)
     }
 
+    /// Same as [`Easy2::tcp_keepalive`](struct.Easy2.html#method.tcp_keepalive)
+    pub fn tcp_keepalive(&mut self, enable: bool) -> Result<(), Error> {
+        self.inner.tcp_keepalive(enable)
+    }
+
+    /// Same as [`Easy2::tcp_keepintvl`](struct.Easy2.html#method.tcp_keepalive)
+    pub fn tcp_keepintvl(&mut self, dur: Duration) -> Result<(), Error> {
+        self.inner.tcp_keepintvl(dur)
+    }
+
+    /// Same as [`Easy2::tcp_keepidle`](struct.Easy2.html#method.tcp_keepidle)
+    pub fn tcp_keepidle(&mut self, dur: Duration) -> Result<(), Error> {
+        self.inner.tcp_keepidle(dur)
+    }
+
     /// Same as [`Easy2::address_scope`](struct.Easy2.html#method.address_scope)
     pub fn address_scope(&mut self, scope: u32) -> Result<(), Error> {
         self.inner.address_scope(scope)

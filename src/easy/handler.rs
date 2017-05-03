@@ -923,35 +923,35 @@ impl<H> Easy2<H> {
         self.setopt_long(curl_sys::CURLOPT_TCP_NODELAY, enable as c_long)
     }
 
-    // /// Configures whether TCP keepalive probes will be sent.
-    // ///
-    // /// The delay and frequency of these probes is controlled by `tcp_keepidle`
-    // /// and `tcp_keepintvl`.
-    // ///
-    // /// By default this option is `false` and corresponds to
-    // /// `CURLOPT_TCP_KEEPALIVE`.
-    // pub fn tcp_keepalive(&mut self, enable: bool) -> Result<(), Error> {
-    //     self.setopt_long(curl_sys::CURLOPT_TCP_KEEPALIVE, enable as c_long)
-    // }
+    /// Configures whether TCP keepalive probes will be sent.
+    ///
+    /// The delay and frequency of these probes is controlled by `tcp_keepidle`
+    /// and `tcp_keepintvl`.
+    ///
+    /// By default this option is `false` and corresponds to
+    /// `CURLOPT_TCP_KEEPALIVE`.
+    pub fn tcp_keepalive(&mut self, enable: bool) -> Result<(), Error> {
+        self.setopt_long(curl_sys::CURLOPT_TCP_KEEPALIVE, enable as c_long)
+    }
 
-    // /// Configures the TCP keepalive idle time wait.
-    // ///
-    // /// This is the delay, after which the connection is idle, keepalive probes
-    // /// will be sent. Not all operating systems support this.
-    // ///
-    // /// By default this corresponds to `CURLOPT_TCP_KEEPIDLE`.
-    // pub fn tcp_keepidle(&mut self, amt: Duration) -> Result<(), Error> {
-    //     self.setopt_long(curl_sys::CURLOPT_TCP_KEEPIDLE,
-    //                      amt.as_secs() as c_long)
-    // }
-    //
-    // /// Configures the delay between keepalive probes.
-    // ///
-    // /// By default this corresponds to `CURLOPT_TCP_KEEPINTVL`.
-    // pub fn tcp_keepintvl(&mut self, amt: Duration) -> Result<(), Error> {
-    //     self.setopt_long(curl_sys::CURLOPT_TCP_KEEPINTVL,
-    //                      amt.as_secs() as c_long)
-    // }
+    /// Configures the TCP keepalive idle time wait.
+    ///
+    /// This is the delay, after which the connection is idle, keepalive probes
+    /// will be sent. Not all operating systems support this.
+    ///
+    /// By default this corresponds to `CURLOPT_TCP_KEEPIDLE`.
+    pub fn tcp_keepidle(&mut self, amt: Duration) -> Result<(), Error> {
+        self.setopt_long(curl_sys::CURLOPT_TCP_KEEPIDLE,
+                         amt.as_secs() as c_long)
+    }
+
+    /// Configures the delay between keepalive probes.
+    ///
+    /// By default this corresponds to `CURLOPT_TCP_KEEPINTVL`.
+    pub fn tcp_keepintvl(&mut self, amt: Duration) -> Result<(), Error> {
+        self.setopt_long(curl_sys::CURLOPT_TCP_KEEPINTVL,
+                         amt.as_secs() as c_long)
+    }
 
     /// Configures the scope for local IPv6 addresses.
     ///

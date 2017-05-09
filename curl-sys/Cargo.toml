@@ -16,7 +16,7 @@ travis-ci = { repository = "alexcrichton/curl-rust" }
 appveyor = { repository = "alexcrichton/curl-rust" }
 
 [build-dependencies]
-pkg-config = "0.3"
+metadeps = "1"
 gcc = "0.3.10"
 
 [lib]
@@ -32,3 +32,6 @@ openssl-sys = "0.9"
 
 [target."cfg(windows)".dependencies]
 winapi = "0.2"
+
+[package.metadata.pkg-config]
+libcurl = "7.51"

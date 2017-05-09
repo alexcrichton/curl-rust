@@ -1,4 +1,4 @@
-extern crate pkg_config;
+extern crate metadeps;
 extern crate gcc;
 
 use std::env;
@@ -35,13 +35,8 @@ fn main() {
 
     // Next, fall back and try to use pkg-config if its available.
     if !target.contains("windows") {
-        match pkg_config::find_library("libcurl") {
-            Ok(lib) => {
-                for path in lib.include_paths.iter() {
-                    println!("cargo:include={}", path.display());
-                }
-                return
-            }
+        match metadeps::probe() {
+            Ok(_) => return,
             Err(e) => println!("Couldn't find libcurl from \
                                pkgconfig ({:?}), compiling it from source...", e),
         }

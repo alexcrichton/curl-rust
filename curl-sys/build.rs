@@ -52,7 +52,7 @@ fn main() {
                                    .status();
     }
 
-    println!("cargo:rustc-link-search={}/lib", dst.display());
+    println!("cargo:rustc-link-search=native={}/lib", dst.display());
     println!("cargo:rustc-link-lib=static=curl");
     println!("cargo:root={}", dst.display());
     println!("cargo:include={}/include", dst.display());

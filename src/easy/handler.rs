@@ -613,6 +613,7 @@ impl<H: Handler> Easy2<H> {
         let cb: curl_sys::curl_read_callback = read_cb::<H>;
         self.setopt_ptr(curl_sys::CURLOPT_READFUNCTION, cb as *const _)
             .expect("failed to set read callback");
+        assert!((ptr as usize) & 1 == 0);
         self.setopt_ptr(curl_sys::CURLOPT_READDATA, ptr)
             .expect("failed to set read callback");
 
@@ -2783,7 +2784,18 @@ extern fn read_cb<H: Handler>(ptr: *mut c_char,
     panic::catch(|| unsafe {
         let input = slice::from_raw_parts_mut(ptr as *mut u8,
                                               size * nmemb);
-        match (*(data as *mut Inner<H>)).handler.read(input) {
+
+        // We use a bit of a "tricky encoding" here to handle CURLFORM_STREAM
+        // callbacks. If the lower bit of the data pointer is 1 it's a stream
+        // callback so we delegate to the `form` module, otherwise we handle
+        // that here as part of `Handler`.
+        let ret = if data as usize & 1 == 0 {
+            (*(data as *mut Inner<H>)).handler.read(input)
+        } else {
+            let data = data as usize & !1;
+            form::read(data as *mut c_void, input)
+        };
+        match ret {
             Ok(s) => s,
             Err(ReadError::Pause) => {
                 curl_sys::CURL_READFUNC_PAUSE

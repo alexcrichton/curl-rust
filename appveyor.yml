@@ -22,10 +22,17 @@ environment:
     ARCH: amd64
     VS: C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat
 
+  # Ensure getting libcurl from vcpkg works
+  - TARGET: x86_64-pc-windows-msvc
+    RUSTFLAGS: -Ctarget-feature=+crt-static
+    VCPKG_DEFAULT_TRIPLET: x64-windows-static
+
 install:
   # Install rust, x86_64-pc-windows-msvc host
   - appveyor-retry appveyor DownloadFile https://win.rustup.rs/ -FileName rustup-init.exe
-  - rustup-init.exe -y --default-host x86_64-pc-windows-msvc
+  # use nightly if required until -Ctarget-feature=+crt-static is stable (expected in rust 1.19)
+  - if not defined RUSTFLAGS rustup-init.exe -y --default-host x86_64-pc-windows-msvc
+  - if defined RUSTFLAGS rustup-init.exe -y --default-host x86_64-pc-windows-msvc --default-toolchain nightly
   - set PATH=%PATH%;C:\Users\appveyor\.cargo\bin
 
   # Install the target we're compiling for
@@ -47,6 +54,12 @@ install:
   - rustc -vV
   - cargo -vV
   - set CARGO_TARGET_DIR=%CD%\target
+
+  # install vcpkg if required
+  - if defined VCPKG_DEFAULT_TRIPLET git clone https://github.com/Microsoft/vcpkg c:\projects\vcpkg
+  - if defined VCPKG_DEFAULT_TRIPLET c:\projects\vcpkg\bootstrap-vcpkg.bat
+  - if defined VCPKG_DEFAULT_TRIPLET set VCPKG_ROOT=c:\projects\vcpkg
+  - if defined VCPKG_DEFAULT_TRIPLET %VCPKG_ROOT%\vcpkg.exe install curl
 
 build: false
 

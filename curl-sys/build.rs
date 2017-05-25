@@ -1,4 +1,6 @@
 extern crate pkg_config;
+#[cfg(target_env = "msvc")]
+extern crate vcpkg;
 extern crate gcc;
 
 use std::env;
@@ -45,6 +47,10 @@ fn main() {
             Err(e) => println!("Couldn't find libcurl from \
                                pkgconfig ({:?}), compiling it from source...", e),
         }
+    }
+
+    if try_vcpkg() {
+        return;
     }
 
     if !Path::new("curl/.git").exists() {
@@ -323,4 +329,56 @@ fn build_msvc(target: &str) {
     println!("cargo:rustc-link-lib=wldap32");
     println!("cargo:rustc-link-lib=advapi32");
     println!("cargo:rustc-link-lib=normaliz");
+}
+
+#[cfg(not(target_env = "msvc"))]
+fn try_vcpkg() -> bool {
+    false
+}
+
+#[cfg(target_env = "msvc")]
+fn try_vcpkg() -> bool {
+
+    // the import library for the dll is called libcurl_imp
+    let mut successful_probe_details =
+        match vcpkg::Config::new().lib_names("libcurl_imp", "libcurl")
+                .emit_includes(true).probe("curl") {
+            Ok(details) => Some(details),
+            Err(e) => {
+                println!("first run of vcpkg did not find libcurl: {}", e);
+                None
+            }
+        };
+
+    if successful_probe_details.is_none() {
+        match vcpkg::Config::new().lib_name("libcurl")
+                .emit_includes(true).probe("curl") {
+            Ok(details) => successful_probe_details = Some(details),
+            Err(e) => println!("second run of vcpkg did not find libcurl: {}", e),
+        }
+    }
+
+    if successful_probe_details.is_some() {
+        // found libcurl which depends on openssl, libssh2 and zlib
+        vcpkg::Config::new()
+            .lib_name("libeay32")
+            .lib_name("ssleay32")
+            .probe("openssl").expect("configured libssh2 from vcpkg but could not \
+                                      find openssl libraries that it depends on");
+
+        vcpkg::probe_package("libssh2").expect("configured libcurl from vcpkg but could not \
+                                                find the libssh2 library that it depends on");
+
+        vcpkg::Config::new()
+            .lib_names("zlib", "zlib1")
+            .probe("zlib").expect("configured libssh2 from vcpkg but could not \
+                                    find the zlib library that it depends on");
+
+        println!("cargo:rustc-link-lib=crypt32");
+        println!("cargo:rustc-link-lib=gdi32");
+        println!("cargo:rustc-link-lib=user32");
+        println!("cargo:rustc-link-lib=wldap32");
+        return true;
+    }
+    false
 }

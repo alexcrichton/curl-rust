@@ -19,6 +19,9 @@ appveyor = { repository = "alexcrichton/curl-rust" }
 pkg-config = "0.3"
 gcc = "0.3.10"
 
+[target.'cfg(target_env = "msvc")'.build-dependencies]
+vcpkg = "0.2"
+
 [lib]
 name = "curl_sys"
 path = "lib.rs"

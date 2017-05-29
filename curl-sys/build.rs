@@ -36,7 +36,7 @@ fn main() {
     }
 
     // Next, fall back and try to use pkg-config if its available.
-    if !target.contains("windows") {
+    if !target.contains("msvc") {
         match pkg_config::find_library("libcurl") {
             Ok(lib) => {
                 for path in lib.include_paths.iter() {

@@ -196,10 +196,10 @@ fn main() {
     cmd.arg("--disable-libcurl-option");
 
     run(&mut cmd, "sh");
-    run(Command::new(make())
+    run(make()
                 .arg(&format!("-j{}", env::var("NUM_JOBS").unwrap()))
                 .current_dir(&dst.join("build")), "make");
-    run(Command::new(make())
+    run(make()
                 .arg("install")
                 .current_dir(&dst.join("build")), "make");
 }
@@ -223,8 +223,15 @@ fn fail(s: &str) -> ! {
     panic!("\n{}\n\nbuild script failed, must exit now", s)
 }
 
-fn make() -> &'static str {
-    if cfg!(target_os = "freebsd") {"gmake"} else {"make"}
+fn make() -> Command {
+    let cmd = if cfg!(target_os = "freebsd") {"gmake"} else {"make"};
+    let mut cmd = Command::new(cmd);
+    // We're using the MSYS make which doesn't work with the mingw32-make-style
+    // MAKEFLAGS, so remove that from the env if present.
+    if cfg!(windows) {
+        cmd.env_remove("MAKEFLAGS").env_remove("MFLAGS");
+    }
+    return cmd
 }
 
 fn which(cmd: &str) -> Option<PathBuf> {

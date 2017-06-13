@@ -302,6 +302,11 @@ fn build_msvc(target: &str) {
        .arg("ENABLE_SSPI=yes")
        .arg(format!("MACHINE={}", machine));
 
+    // These env vars are intended for `make` usually, not nmake, so remove them
+    // unconditionally
+    cmd.env_remove("MAKEFLAGS")
+       .env_remove("MFLAGS");
+
     let features = env::var("CARGO_CFG_TARGET_FEATURE")
                       .unwrap_or(String::new());
     if features.contains("crt-static") {

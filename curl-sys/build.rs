@@ -13,7 +13,7 @@ use std::io::ErrorKind;
 macro_rules! t {
     ($e:expr) => (match $e {
         Ok(t) => t,
-        Err(e) => panic!("{} return the error {}", stringify!($e), e),
+        Err(e) => panic!("{} return the error \"{}\"", stringify!($e), e),
     })
 }
 
@@ -313,7 +313,7 @@ fn build_msvc(target: &str) {
         cmd.arg("RTLIBCFG=static");
     }
 
-    if let Some(inc) = env::var_os("DEP_Z_ROOT") {
+    let zlib_part = if let Some(inc) = env::var_os("DEP_Z_ROOT") {
         let inc = PathBuf::from(inc);
         let mut s = OsString::from("WITH_DEVEL=");
         s.push(&inc);
@@ -324,11 +324,17 @@ fn build_msvc(target: &str) {
         // produces zlib.lib)
         let _ = fs::remove_file(&inc.join("lib/zlib_a.lib"));
         t!(fs::copy(inc.join("lib/zlib.lib"), inc.join("lib/zlib_a.lib")));
-    }
+
+        Some("zlib-static-")
+    } else {
+        None
+    };
+
     run(&mut cmd, "nmake");
 
-    let name = format!("libcurl-vc-{}-release-static-zlib-static-\
-                        ipv6-sspi-winssl", machine);
+    let name = format!("libcurl-vc-{}-release-static-{}\
+                        ipv6-sspi-winssl", machine, zlib_part.unwrap_or(""));
+
     let libs = src.join("curl/builds").join(name);
 
     t!(fs::copy(libs.join("lib/libcurl_a.lib"), dst.join("lib/curl.lib")));

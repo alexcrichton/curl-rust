@@ -371,20 +371,20 @@ fn try_vcpkg() -> bool {
     }
 
     if successful_probe_details.is_some() {
-        // found libcurl which depends on openssl, libssh2 and zlib
+        // Found libcurl which depends on openssl, libssh2 and zlib
+        // in the a default vcpkg installation. Probe for them
+        // but do not fail if they are not present as we may be working
+        // with a customized vcpkg installation.
         vcpkg::Config::new()
             .lib_name("libeay32")
             .lib_name("ssleay32")
-            .probe("openssl").expect("configured libssh2 from vcpkg but could not \
-                                      find openssl libraries that it depends on");
+            .probe("openssl").ok();
 
-        vcpkg::probe_package("libssh2").expect("configured libcurl from vcpkg but could not \
-                                                find the libssh2 library that it depends on");
+        vcpkg::probe_package("libssh2").ok();
 
         vcpkg::Config::new()
             .lib_names("zlib", "zlib1")
-            .probe("zlib").expect("configured libssh2 from vcpkg but could not \
-                                    find the zlib library that it depends on");
+            .probe("zlib").ok();
 
         println!("cargo:rustc-link-lib=crypt32");
         println!("cargo:rustc-link-lib=gdi32");

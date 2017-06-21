@@ -18,6 +18,7 @@ appveyor = { repository = "alexcrichton/curl-rust" }
 [dependencies]
 libc = "0.2"
 curl-sys = { path = "curl-sys", version = "0.3.10" }
+socket2 = "0.2"
 
 # Unix platforms use OpenSSL for now to provide SSL functionality
 [target."cfg(all(unix, not(target_os = \"macos\")))".dependencies]

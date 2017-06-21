@@ -9,6 +9,7 @@ use std::time::Duration;
 
 use curl_sys;
 use libc::{self, c_void, c_char, c_long, size_t, c_int, c_double, c_ulong};
+use socket2::Socket;
 
 use Error;
 use easy::form;
@@ -256,6 +257,43 @@ pub trait Handler {
     fn ssl_ctx(&mut self, cx: *mut c_void) -> Result<(), Error> {
         drop(cx);
         Ok(())
+    }
+
+    /// Callback to open sockets for libcurl.
+    ///
+    /// This callback function gets called by libcurl instead of the socket(2)
+    /// call. The callback function should return the newly created socket
+    /// or `None` in case no connection could be established or another
+    /// error was detected. Any additional `setsockopt(2)` calls can of course
+    /// be done on the socket at the user's discretion. A `None` return
+    /// value from the callback function will signal an unrecoverable error to
+    /// libcurl and it will return `is_couldnt_connect` from the function that
+    /// triggered this callback.
+    ///
+    /// By default this function opens a standard socket and
+    /// corresponds to `CURLOPT_OPENSOCKETFUNCTION `.
+    fn open_socket(&mut self,
+                   family: c_int,
+                   socktype: c_int,
+                   protocol: c_int) -> Option<curl_sys::curl_socket_t> {
+        // Note that we override this to calling a function in `socket2` to
+        // ensure that we open all sockets with CLOEXEC. Otherwise if we rely on
+        // libcurl to open sockets it won't use CLOEXEC.
+        return Socket::new(family.into(), socktype.into(), Some(protocol.into()))
+                    .ok()
+                    .map(cvt);
+
+        #[cfg(unix)]
+        fn cvt(socket: Socket) -> curl_sys::curl_socket_t {
+            use std::os::unix::prelude::*;
+            socket.into_raw_fd()
+        }
+
+        #[cfg(windows)]
+        fn cvt(socket: Socket) -> curl_sys::curl_socket_t {
+            use std::os::windows::prelude::*;
+            socket.into_raw_socket()
+        }
     }
 }
 
@@ -637,6 +675,12 @@ impl<H: Handler> Easy2<H> {
         let cb: curl_sys::curl_ssl_ctx_callback = ssl_ctx_cb::<H>;
         drop(self.setopt_ptr(curl_sys::CURLOPT_SSL_CTX_FUNCTION, cb as *const _));
         drop(self.setopt_ptr(curl_sys::CURLOPT_SSL_CTX_DATA, ptr));
+
+        let cb: curl_sys::curl_opensocket_callback = opensocket_cb::<H>;
+        self.setopt_ptr(curl_sys::CURLOPT_OPENSOCKETFUNCTION , cb as *const _)
+            .expect("failed to set open socket callback");
+        self.setopt_ptr(curl_sys::CURLOPT_OPENSOCKETDATA, ptr)
+            .expect("failed to set open socket callback");
     }
 
     #[cfg(all(unix, not(target_os = "macos")))]
@@ -2860,6 +2904,21 @@ extern fn ssl_ctx_cb<H: Handler>(_handle: *mut curl_sys::CURL,
     // shouldn't really matter since the error should be
     // propagated later on but better safe than sorry...
     res.unwrap_or(curl_sys::CURLE_SSL_CONNECT_ERROR)
+}
+
+// TODO: expose `purpose` and `sockaddr` inside of `address`
+extern fn opensocket_cb<H: Handler>(data: *mut c_void,
+                                    _purpose: curl_sys::curlsocktype,
+                                    address: *mut curl_sys::curl_sockaddr)
+    -> curl_sys::curl_socket_t
+{
+    let res = panic::catch(|| unsafe {
+        (*(data as *mut Inner<H>)).handler.open_socket((*address).family,
+                                                       (*address).socktype,
+                                                       (*address).protocol)
+            .unwrap_or(curl_sys::CURL_SOCKET_BAD)
+    });
+    res.unwrap_or(curl_sys::CURL_SOCKET_BAD)
 }
 
 fn double_seconds_to_duration(seconds: f64) -> Duration {

@@ -162,29 +162,12 @@ pub type curl_read_callback = extern fn(*mut c_char,
                                         size_t,
                                         *mut c_void) -> size_t;
 
-// pub type curlsocktype = __enum_ty;
-// pub const CURLSOCKTYPE_IPCXN: curlsocktype = 0;
-// pub const CURLSOCKTYPE_ACCEPT: curlsocktype = 1;
 // pub const CURL_SOCKOPT_OK: c_int = 0;
 // pub const CURL_SOCKOPT_ERROR: c_int = 1;
 // pub const CURL_SOCKOPT_ALREADY_CONNECTED: c_int = 2;
 // pub type curl_sockopt_callback = extern fn(*mut c_void,
 //                                            curl_socket_t,
 //                                            curlsocktype) -> c_int;
-
-// TODO: sort out libc::sockaddr on windows
-// #[repr(C)]
-// pub struct curl_sockaddr {
-//     pub family: c_int,
-//     pub socktype: c_int,
-//     pub protocol: c_int,
-//     pub addrlen: c_uint,
-//     pub addr: libc::sockaddr,
-// }
-//
-// pub type curl_opensocket_callback = extern fn(*mut c_void,
-//                                               curlsocktype,
-//                                               *mut curl_sockaddr) -> curl_socket_t;
 
 pub type curlioerr = __enum_ty;
 pub const CURLIOE_OK: curlioerr = 0;
@@ -941,6 +924,26 @@ pub const CURLMOPT_TIMERDATA: CURLMoption = CURLOPTTYPE_OBJECTPOINT + 5;
 // pub const CURLMOPT_MAX_TOTAL_CONNECTIONS: CURLMoption = CURLOPTTYPE_LONG + 13;
 
 pub const CURL_ERROR_SIZE: usize = 256;
+
+pub type curl_opensocket_callback = extern fn(*mut c_void,
+                                              curlsocktype,
+                                              *mut curl_sockaddr) -> curl_socket_t;
+pub type curlsocktype = __enum_ty;
+pub const CURLSOCKTYPE_IPCXN: curlsocktype = 0;
+pub const CURLSOCKTYPE_ACCEPT: curlsocktype = 1;
+pub const CURLSOCKTYPE_LAST: curlsocktype = 2;
+
+#[repr(C)]
+pub struct curl_sockaddr {
+    pub family: c_int,
+    pub socktype: c_int,
+    pub protocol: c_int,
+    pub addrlen: c_uint,
+    #[cfg(unix)]
+    pub addr: libc::sockaddr,
+    #[cfg(windows)]
+    pub addr: winapi::SOCKADDR,
+}
 
 extern {
     pub fn curl_formadd(httppost: *mut *mut curl_httppost,

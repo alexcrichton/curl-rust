@@ -292,7 +292,9 @@ fn build_msvc(target: &str) {
     t!(fs::create_dir_all(dst.join("include/curl")));
     t!(fs::create_dir_all(dst.join("lib")));
 
-    cmd.current_dir(src.join("curl/winbuild"));
+    drop(fs::remove_dir_all(&dst.join("build")));
+    cp_r(&src.join("curl"), &dst.join("build"));
+    cmd.current_dir(dst.join("build/winbuild"));
     cmd.arg("/f").arg("Makefile.vc")
        .arg("MODE=static")
        .arg("ENABLE_IDN=yes")
@@ -329,7 +331,7 @@ fn build_msvc(target: &str) {
 
     let name = format!("libcurl-vc-{}-release-static-zlib-static-\
                         ipv6-sspi-winssl", machine);
-    let libs = src.join("curl/builds").join(name);
+    let libs = dst.join("build/builds").join(name);
 
     t!(fs::copy(libs.join("lib/libcurl_a.lib"), dst.join("lib/curl.lib")));
     for f in t!(fs::read_dir(libs.join("include/curl"))) {
@@ -337,7 +339,7 @@ fn build_msvc(target: &str) {
         let dst = dst.join("include/curl").join(path.file_name().unwrap());
         t!(fs::copy(path, dst));
     }
-    t!(fs::remove_dir_all(src.join("curl/builds")));
+    t!(fs::remove_dir_all(dst.join("build/builds")));
     println!("cargo:rustc-link-lib=wldap32");
     println!("cargo:rustc-link-lib=advapi32");
     println!("cargo:rustc-link-lib=normaliz");
@@ -393,4 +395,17 @@ fn try_vcpkg() -> bool {
         return true;
     }
     false
+}
+
+fn cp_r(src: &Path, dst: &Path) {
+    t!(fs::create_dir(dst));
+    for e in t!(src.read_dir()).map(|e| t!(e)) {
+        let src = e.path();
+        let dst = dst.join(e.file_name());
+        if t!(e.file_type()).is_dir() {
+            cp_r(&src, &dst);
+        } else {
+            t!(fs::copy(&src, &dst));
+        }
+    }
 }

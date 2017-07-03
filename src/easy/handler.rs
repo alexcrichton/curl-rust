@@ -1713,6 +1713,30 @@ impl<H> Easy2<H> {
         self.setopt_long(curl_sys::CURLOPT_IPRESOLVE, resolve as c_long)
     }
 
+    /// Specify custom host name to IP address resolves.
+    ///
+    /// Allows specifying hostname to IP mappins to use before trying the
+    /// system resolver.
+    ///
+    /// # Examples
+    /// ...
+    /// use curl::easy::{Easy, List};
+    ///
+    /// let mut list = List::new();
+    /// list.append("www.rust-lang.org:443:192.241.171.49").unwrap();
+    ///
+    /// let mut handle = Easy::new();
+    /// handle.url("https://www-rust-lang.org/".unwrap();
+    /// handle.resolve(list).unwrap();
+    /// handle.perform().unwrap();
+    /// ...
+    pub fn resolve(&mut self, list: List) -> Result<(), Error> {
+        let ptr = list::raw(&list);
+        self.inner.header_list = Some(list);
+        self.setopt_ptr(curl_sys::CURLOPT_RESOLVE, ptr as *const _)
+    }
+
+
     /// Configure whether to stop when connected to target server
     ///
     /// When enabled it tells the library to perform all the required proxy

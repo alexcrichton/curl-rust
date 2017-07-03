@@ -882,6 +882,11 @@ impl Easy {
         self.inner.ip_resolve(resolve)
     }
 
+    /// Same as [`Easy2::resolve`](struct.Easy2.html#method.resolve)
+    pub fn resolve(&mut self, list: List) -> Result<(), Error> {
+        self.inner.resolve(list)
+    }
+
     /// Same as [`Easy2::connect_only`](struct.Easy2.html#method.connect_only)
     pub fn connect_only(&mut self, enable: bool) -> Result<(), Error> {
         self.inner.connect_only(enable)

@@ -80,9 +80,19 @@ impl<'form, 'data> Part<'form, 'data> {
     /// A pointer to the contents of this part, the actual data to send away.
     pub fn contents(&mut self, contents: &'data [u8]) -> &mut Self {
         let pos = self.array.len() - 1;
+
+        // curl has an oddity where if the length if 0 it will call strlen
+        // on the value.  This means that if someone wants to add empty form
+        // contents we need to make sure the buffer contains a null byte.
+        let ptr = if contents.is_empty() {
+            b"\x00"
+        } else {
+            contents
+        }.as_ptr();
+
         self.array.insert(pos, curl_sys::curl_forms {
             option: curl_sys::CURLFORM_COPYCONTENTS,
-            value: contents.as_ptr() as *mut _,
+            value: ptr as *mut _,
         });
         self.array.insert(pos + 1, curl_sys::curl_forms {
             option: curl_sys::CURLFORM_CONTENTSLENGTH,

@@ -375,6 +375,7 @@ pub struct Easy2<H> {
 struct Inner<H> {
     handle: *mut curl_sys::CURL,
     header_list: Option<List>,
+    resolve_list: Option<List>,
     form: Option<Form>,
     error_buf: RefCell<Vec<u8>>,
     handler: H,
@@ -604,6 +605,7 @@ impl<H: Handler> Easy2<H> {
                 inner: Box::new(Inner {
                     handle: handle,
                     header_list: None,
+                    resolve_list: None,
                     form: None,
                     error_buf: RefCell::new(vec![0; curl_sys::CURL_ERROR_SIZE]),
                     handler: handler,
@@ -1719,20 +1721,20 @@ impl<H> Easy2<H> {
     /// system resolver.
     ///
     /// # Examples
-    /// ...
+    /// ```
     /// use curl::easy::{Easy, List};
     ///
     /// let mut list = List::new();
-    /// list.append("www.rust-lang.org:443:192.241.171.49").unwrap();
+    /// list.append("www.rust-lang.org:443:13.32.234.49").unwrap();
     ///
     /// let mut handle = Easy::new();
-    /// handle.url("https://www-rust-lang.org/".unwrap();
+    /// handle.url("https://www.rust-lang.org/").unwrap();
     /// handle.resolve(list).unwrap();
     /// handle.perform().unwrap();
-    /// ...
+    /// ```
     pub fn resolve(&mut self, list: List) -> Result<(), Error> {
         let ptr = list::raw(&list);
-        self.inner.header_list = Some(list);
+        self.inner.resolve_list = Some(list);
         self.setopt_ptr(curl_sys::CURLOPT_RESOLVE, ptr as *const _)
     }
 

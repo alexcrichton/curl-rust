@@ -83,6 +83,24 @@ Accept: */*\r\n\
 }
 
 #[test]
+fn resolve() {
+    let s = Server::new();
+    s.receive("\
+GET / HTTP/1.1\r\n\
+Host: example.com:$PORT\r\n\
+Accept: */*\r\n\
+\r\n");
+    s.send("HTTP/1.1 200 OK\r\n\r\n");
+
+    let mut list = List::new();
+    t!(list.append(&format!("example.com:{}:127.0.0.1", s.addr().port())));
+    let mut handle = handle();
+    t!(handle.url(&format!("http://example.com:{}/", s.addr().port())));
+    t!(handle.resolve(list));
+    t!(handle.perform());
+}
+
+#[test]
 fn progress() {
     let s = Server::new();
     s.receive("\

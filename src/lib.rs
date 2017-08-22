@@ -55,7 +55,7 @@ extern crate socket2;
 
 #[cfg(all(unix, not(target_os = "macos")))]
 extern crate openssl_sys;
-#[cfg(all(unix, not(target_os = "macos")))]
+#[cfg(any(all(unix, not(target_os = "macos")), windows))]
 extern crate openssl_probe;
 #[cfg(windows)]
 extern crate winapi;

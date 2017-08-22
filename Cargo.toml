@@ -27,6 +27,7 @@ openssl-probe = "0.1"
 
 [target."cfg(windows)".dependencies]
 winapi = "0.2"
+openssl-probe = "0.1"
 
 [dev-dependencies]
 mio = "0.6"

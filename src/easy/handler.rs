@@ -685,7 +685,7 @@ impl<H: Handler> Easy2<H> {
             .expect("failed to set open socket callback");
     }
 
-    #[cfg(all(unix, not(target_os = "macos")))]
+    #[cfg(any(all(unix, not(target_os = "macos")), windows))]
     fn ssl_configure(&mut self) {
         let probe = ::openssl_probe::probe();
         if let Some(ref path) = probe.cert_file {
@@ -696,7 +696,7 @@ impl<H: Handler> Easy2<H> {
         }
     }
 
-    #[cfg(not(all(unix, not(target_os = "macos"))))]
+    #[cfg(not(any(all(unix, not(target_os = "macos")), windows)))]
     fn ssl_configure(&mut self) {}
 }
 

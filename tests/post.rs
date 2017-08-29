@@ -80,11 +80,12 @@ Content-Type: foo/bar\r\n\
 #[test]
 fn file() {
     let s = Server::new();
-    s.receive("\
+    let formdata = include_str!("formdata");
+    s.receive(format!("\
 POST / HTTP/1.1\r\n\
 Host: 127.0.0.1:$PORT\r\n\
 Accept: */*\r\n\
-Content-Length: 205\r\n\
+Content-Length: {}\r\n\
 Expect: 100-continue\r\n\
 Content-Type: multipart/form-data; boundary=--[..]\r\n\
 \r\n\
@@ -92,9 +93,9 @@ Content-Type: multipart/form-data; boundary=--[..]\r\n\
 Content-Disposition: form-data; name=\"foo\"; filename=\"formdata\"\r\n\
 Content-Type: application/octet-stream\r\n\
 \r\n\
-hello\n\
+{}\
 \r\n\
---[..]\r\n");
+--[..]\r\n", 199 + formdata.len(), formdata).as_str());
     s.send("HTTP/1.1 200 OK\r\n\r\n");
 
     let mut handle = handle();

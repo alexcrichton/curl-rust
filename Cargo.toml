@@ -28,6 +28,11 @@ openssl-probe = "0.1"
 [target."cfg(windows)".dependencies]
 winapi = "0.2"
 
+[target.'cfg(target_env="msvc")'.dependencies]
+kernel32-sys = "0.2"
+#schannel = "0.1.7"
+schannel = { git = "https://github.com/mcgoo/schannel-rs" }
+
 [dev-dependencies]
 mio = "0.6"
 

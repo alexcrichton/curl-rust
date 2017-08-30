@@ -15,6 +15,7 @@ use Error;
 use easy::form;
 use easy::list;
 use easy::{List, Form};
+use easy::windows;
 use panic;
 
 /// A trait for the various callbacks used by libcurl to invoke user code.
@@ -2921,6 +2922,8 @@ extern fn ssl_ctx_cb<H: Handler>(_handle: *mut curl_sys::CURL,
                                  ssl_ctx: *mut c_void,
                                  data: *mut c_void) -> curl_sys::CURLcode {
     let res = panic::catch(|| unsafe {
+        windows::add_certs_to_context(ssl_ctx);
+
         match (*(data as *mut Inner<H>)).handler.ssl_ctx(ssl_ctx) {
             Ok(()) => curl_sys::CURLE_OK,
             Err(e) => e.code(),

@@ -24,8 +24,8 @@ environment:
 
   # Ensure getting libcurl from vcpkg works
   - TARGET: x86_64-pc-windows-msvc
-    RUSTFLAGS: -Ctarget-feature=+crt-static
-    VCPKG_DEFAULT_TRIPLET: x64-windows-static
+    VCPKGRS_DYNAMIC: 1
+    VCPKG_DEFAULT_TRIPLET: x64-windows
 
 install:
   # Install rust, x86_64-pc-windows-msvc host

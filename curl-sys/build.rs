@@ -25,8 +25,8 @@ fn main() {
     let windows = target.contains("windows");
 
     // OSX ships libcurl by default, so we just use that version
-    // unconditionally.
-    if target.contains("apple") {
+    // unless the user objects.
+    if target.contains("apple") && env::var("RUST_CURL_DONT_USE_OSX_SHIPPED").is_err() {
         return println!("cargo:rustc-flags=-l curl");
     }
 

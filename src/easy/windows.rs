@@ -1,13 +1,13 @@
 #![allow(non_camel_case_types, non_snake_case)]
 
-    use libc:: c_void;
+use libc::c_void;
 
 #[cfg(target_env = "msvc")]
 mod win {
-
+    use curl_sys;
     use kernel32;
     use libc::{c_int, c_long, c_uchar, c_void};
-    use std::ffi::CString;
+    use std::ffi::{CStr, CString};
     use std::mem;
     use std::ptr;
     use schannel::cert_context::ValidUses;
@@ -82,15 +82,20 @@ mod win {
 
     pub fn add_certs_to_context(ssl_ctx: *mut c_void) {
         unsafe {
-            let openssl = if let Some(o) = lookup_functions(None, None) {
-                o
-            } else if let Some(o) = lookup_functions(Some("libcrypto"), Some("libssl")) {
-                o
-            } else if let Some(o) = lookup_functions(Some("libeay32"), Some("ssleay32")) {
-                o
+            let curl_ver = curl_sys::curl_version_info(curl_sys::CURLVERSION_NOW);
+            let ssl_ver = CStr::from_ptr((*curl_ver).ssl_version).to_string_lossy();
+            let openssl = if ssl_ver.starts_with("OpenSSL/1.1.0") {
+                lookup_functions(Some("libcrypto"), Some("libssl"))
+            } else if ssl_ver.starts_with("OpenSSL/1.0.2") {
+                lookup_functions(Some("libeay32"), Some("ssleay32"))
             } else {
                 return;
             };
+
+            if openssl.is_none() {
+                return;
+            }
+            let openssl = openssl.unwrap();
 
             let openssl_store = (openssl.SSL_CTX_get_cert_store)(ssl_ctx as *const SSL_CTX);
 

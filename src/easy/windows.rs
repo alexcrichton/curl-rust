@@ -109,7 +109,7 @@ mod win {
                 let valid_uses = if let Ok(v) = cert.valid_uses() {
                     v
                 } else {
-                    return;
+                    continue;
                 };
 
                 // check the extended key usage for the "Server Authentication" OID

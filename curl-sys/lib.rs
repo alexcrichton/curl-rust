@@ -811,6 +811,7 @@ pub const CURLVERSION_FIRST: CURLversion = 0;
 pub const CURLVERSION_SECOND: CURLversion = 1;
 pub const CURLVERSION_THIRD: CURLversion = 2;
 pub const CURLVERSION_FOURTH: CURLversion = 3;
+pub const CURLVERSION_NOW: CURLversion = CURLVERSION_FOURTH;
 
 #[repr(C)]
 pub struct curl_version_info_data {

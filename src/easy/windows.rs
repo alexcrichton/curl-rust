@@ -14,19 +14,12 @@ mod win {
     use schannel::cert_store::CertStore;
     use winapi;
 
-    fn lookup(module: Option<&str>, symbol: &str) -> Option<*const ::std::os::raw::c_void> {
-        let symbol = CString::new(symbol).unwrap();
+    fn lookup(module: &str, symbol: &str) -> Option<*const ::std::os::raw::c_void> {
         unsafe {
-            let mut mod_buf: Vec<u16>;
-            let mod_ptr: *mut u16 = if let Some(module) = module {
-                mod_buf = module.encode_utf16().collect();
-                mod_buf.push(0);
-                mod_buf.as_mut_ptr()
-            } else {
-                ptr::null_mut()
-            };
-
-            let handle = kernel32::GetModuleHandleW(mod_ptr);
+            let symbol = CString::new(symbol).unwrap();
+            let mut mod_buf: Vec<u16> = module.encode_utf16().collect();
+            mod_buf.push(0);
+            let handle = kernel32::GetModuleHandleW(mod_buf.as_mut_ptr());
             let n = kernel32::GetProcAddress(handle, symbol.as_ptr());
             if n == ptr::null() {
                 None
@@ -58,7 +51,7 @@ mod win {
         SSL_CTX_get_cert_store: SSL_CTX_get_cert_store_fn,
     }
 
-    fn lookup_functions(crypto_module: Option<&str>, ssl_module: Option<&str>) -> Option<OpenSSL> {
+    fn lookup_functions(crypto_module: &str, ssl_module: &str) -> Option<OpenSSL> {
         let d2i_X509 = lookup(crypto_module, "d2i_X509");
         let X509_free = lookup(crypto_module, "X509_free");
         let X509_STORE_add_cert = lookup(crypto_module, "X509_STORE_add_cert");
@@ -82,12 +75,13 @@ mod win {
 
     pub fn add_certs_to_context(ssl_ctx: *mut c_void) {
         unsafe {
+            // check the runtime version of OpenSSL
             let curl_ver = curl_sys::curl_version_info(curl_sys::CURLVERSION_NOW);
             let ssl_ver = CStr::from_ptr((*curl_ver).ssl_version).to_string_lossy();
             let openssl = if ssl_ver.starts_with("OpenSSL/1.1.0") {
-                lookup_functions(Some("libcrypto"), Some("libssl"))
+                lookup_functions("libcrypto", "libssl")
             } else if ssl_ver.starts_with("OpenSSL/1.0.2") {
-                lookup_functions(Some("libeay32"), Some("ssleay32"))
+                lookup_functions("libeay32", "ssleay32")
             } else {
                 return;
             };

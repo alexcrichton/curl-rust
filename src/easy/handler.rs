@@ -256,8 +256,10 @@ pub trait Handler {
     /// Note that this callback is not guaranteed to be called, not all versions
     /// of libcurl support calling this callback.
     fn ssl_ctx(&mut self, cx: *mut c_void) -> Result<(), Error> {
+        // By default, if we're on an OpenSSL enabled libcurl and we're on
+        // Windows, add the system's certificate store to OpenSSL's certificate
+        // store.
         windows::add_certs_to_context(cx);
-        drop(cx);
         Ok(())
     }
 

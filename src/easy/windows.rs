@@ -5,15 +5,14 @@ use libc::c_void;
 #[cfg(target_env = "msvc")]
 mod win {
     use kernel32;
-    use libc::{c_int, c_long, c_uchar, c_void};
     use std::ffi::CString;
     use std::mem;
     use std::ptr;
     use schannel::cert_context::ValidUses;
     use schannel::cert_store::CertStore;
-    use winapi;
+    use winapi::{self, c_void, c_uchar, c_long, c_int};
 
-    fn lookup(module: &str, symbol: &str) -> Option<*const ::std::os::raw::c_void> {
+    fn lookup(module: &str, symbol: &str) -> Option<*const c_void> {
         unsafe {
             let symbol = CString::new(symbol).unwrap();
             let mut mod_buf: Vec<u16> = module.encode_utf16().collect();
@@ -50,80 +49,77 @@ mod win {
         SSL_CTX_get_cert_store: SSL_CTX_get_cert_store_fn,
     }
 
-    fn lookup_functions(crypto_module: &str, ssl_module: &str) -> Option<OpenSSL> {
-        let d2i_X509 = lookup(crypto_module, "d2i_X509");
-        let X509_free = lookup(crypto_module, "X509_free");
-        let X509_STORE_add_cert = lookup(crypto_module, "X509_STORE_add_cert");
-        let SSL_CTX_get_cert_store = lookup(ssl_module, "SSL_CTX_get_cert_store");
-
-        if d2i_X509.is_some() && X509_free.is_some() && X509_STORE_add_cert.is_some() &&
-            SSL_CTX_get_cert_store.is_some()
-        {
-            unsafe {
-                Some(OpenSSL {
-                    d2i_X509: mem::transmute(d2i_X509.unwrap()),
-                    X509_free: mem::transmute(X509_free.unwrap()),
-                    X509_STORE_add_cert: mem::transmute(X509_STORE_add_cert.unwrap()),
-                    SSL_CTX_get_cert_store: mem::transmute(SSL_CTX_get_cert_store.unwrap()),
-                })
-            }
-        } else {
-            None
+    unsafe fn lookup_functions(crypto_module: &str, ssl_module: &str)
+        -> Option<OpenSSL>
+    {
+        macro_rules! get {
+            ($(let $sym:ident in $module:expr;)*) => ($(
+                let $sym = match lookup($module, stringify!($sym)) {
+                    Some(p) => p,
+                    None => return None,
+                };
+            )*)
         }
+        get! {
+            let d2i_X509 in crypto_module;
+            let X509_free in crypto_module;
+            let X509_STORE_add_cert in crypto_module;
+            let SSL_CTX_get_cert_store in ssl_module;
+        }
+        Some(OpenSSL {
+            d2i_X509: mem::transmute(d2i_X509),
+            X509_free: mem::transmute(X509_free),
+            X509_STORE_add_cert: mem::transmute(X509_STORE_add_cert),
+            SSL_CTX_get_cert_store: mem::transmute(SSL_CTX_get_cert_store),
+        })
     }
 
-    pub fn add_certs_to_context(ssl_ctx: *mut c_void) {
-        unsafe {
-            // check the runtime version of OpenSSL
-            let openssl = match ::version::Version::get().ssl_version() {
-                Some(ssl_ver) if ssl_ver.starts_with("OpenSSL/1.1.0") => {
-                    lookup_functions("libcrypto", "libssl")
-                }
-                Some(ssl_ver) if ssl_ver.starts_with("OpenSSL/1.0.2") => {
-                    lookup_functions("libeay32", "ssleay32")
-                }
-                _ => return,
-            };
-
-            if openssl.is_none() {
-                return;
+    pub unsafe fn add_certs_to_context(ssl_ctx: *mut c_void) {
+        // check the runtime version of OpenSSL
+        let openssl = match ::version::Version::get().ssl_version() {
+            Some(ssl_ver) if ssl_ver.starts_with("OpenSSL/1.1.0") => {
+                lookup_functions("libcrypto", "libssl")
             }
-            let openssl = openssl.unwrap();
+            Some(ssl_ver) if ssl_ver.starts_with("OpenSSL/1.0.2") => {
+                lookup_functions("libeay32", "ssleay32")
+            }
+            _ => return,
+        };
+        let openssl = match openssl {
+            Some(s) => s,
+            None => return,
+        };
 
-            let openssl_store = (openssl.SSL_CTX_get_cert_store)(ssl_ctx as *const SSL_CTX);
+        let openssl_store = (openssl.SSL_CTX_get_cert_store)(ssl_ctx as *const SSL_CTX);
+        let mut store = match CertStore::open_current_user("ROOT") {
+            Ok(s) => s,
+            Err(_) => return,
+        };
 
-            let mut store = if let Ok(s) = CertStore::open_current_user("ROOT") {
-                s
-            } else {
-                return;
+        for cert in store.certs() {
+            let valid_uses = match cert.valid_uses() {
+                Ok(v) => v,
+                Err(_) => continue,
             };
 
-            for cert in store.certs() {
-                let valid_uses = if let Ok(v) = cert.valid_uses() {
-                    v
-                } else {
-                    continue;
-                };
-
-                // check the extended key usage for the "Server Authentication" OID
-                let is_server_auth = match valid_uses {
-                    ValidUses::All => true,
-                    ValidUses::OIDs(ref oids) => {
-                        oids.contains(&winapi::wincrypt::szOID_PKIX_KP_SERVER_AUTH.to_owned())
+            // check the extended key usage for the "Server Authentication" OID
+            match valid_uses {
+                ValidUses::All => {}
+                ValidUses::OIDs(ref oids) => {
+                    let oid = winapi::wincrypt::szOID_PKIX_KP_SERVER_AUTH.to_owned();
+                    if !oids.contains(&oid) {
+                        continue
                     }
-                };
-
-                if !is_server_auth {
-                    continue;
                 }
+            }
 
-                let der = cert.to_der();
-                let x509 =
-                    (openssl.d2i_X509)(ptr::null_mut(), &mut der.as_ptr(), der.len() as c_long);
-                if !x509.is_null() {
-                    (openssl.X509_STORE_add_cert)(openssl_store, x509);
-                    (openssl.X509_free)(x509);
-                }
+            let der = cert.to_der();
+            let x509 = (openssl.d2i_X509)(ptr::null_mut(),
+                                          &mut der.as_ptr(),
+                                          der.len() as c_long);
+            if !x509.is_null() {
+                (openssl.X509_STORE_add_cert)(openssl_store, x509);
+                (openssl.X509_free)(x509);
             }
         }
     }
@@ -131,7 +127,9 @@ mod win {
 
 #[cfg(target_env = "msvc")]
 pub fn add_certs_to_context(ssl_ctx: *mut c_void) {
-    win::add_certs_to_context(ssl_ctx)
+    unsafe {
+        win::add_certs_to_context(ssl_ctx as *mut _);
+    }
 }
 
 #[cfg(not(target_env = "msvc"))]

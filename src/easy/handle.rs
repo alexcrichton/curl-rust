@@ -15,7 +15,6 @@ use easy::handler::{self, InfoType, SeekResult, ReadError, WriteError};
 use easy::handler::{TimeCondition, IpResolve, HttpVersion, SslVersion};
 use easy::handler::{SslOpt, NetRc, Auth, ProxyType};
 use easy::{Easy2, Handler};
-use easy::windows;
 
 /// Raw bindings to a libcurl "easy session".
 ///
@@ -126,11 +125,7 @@ impl Easy {
         Easy {
             inner: Easy2::new(EasyData {
                 running: Cell::new(false),
-                owned: Callbacks {
-                    ssl_ctx: Some(Box::new(|cx| {
-                        windows::add_certs_to_context(cx); Ok(())
-                    })),
-                    .. Default::default()},
+                owned: Callbacks::default(),
                 borrowed: Cell::new(ptr::null_mut()),
             }),
         }

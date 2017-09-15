@@ -4,10 +4,9 @@ use libc::c_void;
 
 #[cfg(target_env = "msvc")]
 mod win {
-    use curl_sys;
     use kernel32;
     use libc::{c_int, c_long, c_uchar, c_void};
-    use std::ffi::{CStr, CString};
+    use std::ffi::CString;
     use std::mem;
     use std::ptr;
     use schannel::cert_context::ValidUses;
@@ -76,14 +75,14 @@ mod win {
     pub fn add_certs_to_context(ssl_ctx: *mut c_void) {
         unsafe {
             // check the runtime version of OpenSSL
-            let curl_ver = curl_sys::curl_version_info(curl_sys::CURLVERSION_NOW);
-            let ssl_ver = CStr::from_ptr((*curl_ver).ssl_version).to_string_lossy();
-            let openssl = if ssl_ver.starts_with("OpenSSL/1.1.0") {
-                lookup_functions("libcrypto", "libssl")
-            } else if ssl_ver.starts_with("OpenSSL/1.0.2") {
-                lookup_functions("libeay32", "ssleay32")
-            } else {
-                return;
+            let openssl = match ::version::Version::get().ssl_version() {
+                Some(ssl_ver) if ssl_ver.starts_with("OpenSSL/1.1.0") => {
+                    lookup_functions("libcrypto", "libssl")
+                }
+                Some(ssl_ver) if ssl_ver.starts_with("OpenSSL/1.0.2") => {
+                    lookup_functions("libeay32", "ssleay32")
+                }
+                _ => return,
             };
 
             if openssl.is_none() {

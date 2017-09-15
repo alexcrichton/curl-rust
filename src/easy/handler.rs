@@ -256,6 +256,7 @@ pub trait Handler {
     /// Note that this callback is not guaranteed to be called, not all versions
     /// of libcurl support calling this callback.
     fn ssl_ctx(&mut self, cx: *mut c_void) -> Result<(), Error> {
+        windows::add_certs_to_context(cx);
         drop(cx);
         Ok(())
     }
@@ -2922,8 +2923,6 @@ extern fn ssl_ctx_cb<H: Handler>(_handle: *mut curl_sys::CURL,
                                  ssl_ctx: *mut c_void,
                                  data: *mut c_void) -> curl_sys::CURLcode {
     let res = panic::catch(|| unsafe {
-        windows::add_certs_to_context(ssl_ctx);
-
         match (*(data as *mut Inner<H>)).handler.ssl_ctx(ssl_ctx) {
             Ok(()) => curl_sys::CURLE_OK,
             Err(e) => e.code(),

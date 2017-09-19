@@ -1,7 +1,7 @@
 extern crate pkg_config;
 #[cfg(target_env = "msvc")]
 extern crate vcpkg;
-extern crate gcc;
+extern crate cc;
 
 use std::env;
 use std::ffi::OsString;
@@ -76,7 +76,7 @@ fn main() {
     let zlib_root = register_dep("Z");
     let nghttp2_root = register_dep("NGHTTP2");
 
-    let cfg = gcc::Config::new();
+    let cfg = cc::Build::new();
     let compiler = cfg.get_compiler();
 
     let _ = fs::create_dir(&dst.join("build"));
@@ -277,7 +277,7 @@ fn register_dep(dep: &str) -> Option<PathBuf> {
 }
 
 fn build_msvc(target: &str) {
-    let cmd = gcc::windows_registry::find(target, "nmake.exe");
+    let cmd = cc::windows_registry::find(target, "nmake.exe");
     let mut cmd = cmd.unwrap_or(Command::new("nmake.exe"));
     let src = env::current_dir().unwrap();
     let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());

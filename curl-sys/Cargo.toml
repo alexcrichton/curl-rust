@@ -15,13 +15,6 @@ categories = ["external-ffi-bindings"]
 travis-ci = { repository = "alexcrichton/curl-rust" }
 appveyor = { repository = "alexcrichton/curl-rust" }
 
-[build-dependencies]
-pkg-config = "0.3"
-gcc = "0.3.10"
-
-[target.'cfg(target_env = "msvc")'.build-dependencies]
-vcpkg = "0.2"
-
 [lib]
 name = "curl_sys"
 path = "lib.rs"
@@ -35,3 +28,10 @@ openssl-sys = "0.9"
 
 [target."cfg(windows)".dependencies]
 winapi = "0.2"
+
+[target.'cfg(target_env = "msvc")'.build-dependencies]
+vcpkg = "0.2"
+
+[build-dependencies]
+pkg-config = "0.3"
+cc = "1.0"

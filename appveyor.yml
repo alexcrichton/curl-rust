@@ -26,6 +26,7 @@ environment:
   - TARGET: x86_64-pc-windows-msvc
     RUSTFLAGS: -Ctarget-feature=+crt-static
     VCPKG_DEFAULT_TRIPLET: x64-windows-static
+    SSL_CERT_FILE: "C:\\OpenSSL\\cacert.pem"
 
 install:
   # Install rust, x86_64-pc-windows-msvc host
@@ -61,6 +62,8 @@ install:
   - if defined VCPKG_DEFAULT_TRIPLET set VCPKG_ROOT=c:\projects\vcpkg
   - if defined VCPKG_DEFAULT_TRIPLET echo yes > %VCPKG_ROOT%\Downloads\AlwaysAllowDownloads  
   - if defined VCPKG_DEFAULT_TRIPLET %VCPKG_ROOT%\vcpkg.exe install curl
+  - if defined VCPKG_DEFAULT_TRIPLET mkdir C:\OpenSSL
+  - if defined VCPKG_DEFAULT_TRIPLET appveyor DownloadFile https://curl.haxx.se/ca/cacert.pem -FileName C:\OpenSSL\cacert.pem
 
 build: false
 

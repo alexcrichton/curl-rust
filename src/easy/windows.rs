@@ -105,7 +105,7 @@ mod win {
             // check the extended key usage for the "Server Authentication" OID
             match valid_uses {
                 ValidUses::All => {}
-                ValidUses::OIDs(ref oids) => {
+                ValidUses::Oids(ref oids) => {
                     let oid = winapi::wincrypt::szOID_PKIX_KP_SERVER_AUTH.to_owned();
                     if !oids.contains(&oid) {
                         continue

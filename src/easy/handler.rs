@@ -259,8 +259,7 @@ pub trait Handler {
         // By default, if we're on an OpenSSL enabled libcurl and we're on
         // Windows, add the system's certificate store to OpenSSL's certificate
         // store.
-        windows::add_certs_to_context(cx);
-        Ok(())
+        ssl_ctx(cx)
     }
 
     /// Callback to open sockets for libcurl.
@@ -316,6 +315,11 @@ pub fn debug(kind: InfoType, data: &[u8]) {
     let mut out = out.lock();
     drop(write!(out, "{} ", prefix));
     drop(out.write_all(data));
+}
+
+pub fn ssl_ctx(cx: *mut c_void) -> Result<(), Error> {
+    windows::add_certs_to_context(cx);
+    Ok(())
 }
 
 /// Raw bindings to a libcurl "easy session".

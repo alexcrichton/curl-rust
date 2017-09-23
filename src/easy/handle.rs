@@ -1317,7 +1317,7 @@ impl Handler for EasyData {
         unsafe {
             match self.callback(|s| &mut s.ssl_ctx) {
                 Some(ssl_ctx) => ssl_ctx(cx),
-                None => Ok(()),
+                None => handler::ssl_ctx(cx),
             }
         }
     }

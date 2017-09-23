@@ -60,6 +60,11 @@ extern crate openssl_probe;
 #[cfg(windows)]
 extern crate winapi;
 
+#[cfg(target_env = "msvc")]
+extern crate kernel32;
+#[cfg(target_env = "msvc")]
+extern crate schannel;
+
 use std::ffi::CStr;
 use std::str;
 use std::sync::{Once, ONCE_INIT};

@@ -60,5 +60,9 @@ fn main() {
         s == "CURLOPT_UNIX_SOCKET_PATH" || s == "CURL_VERSION_UNIX_SOCKETS"
     });
 
+    if cfg!(target_env = "msvc") {
+        cfg.skip_fn_ptrcheck(|s| s.starts_with("curl_"));
+    }
+
     cfg.generate("../curl-sys/lib.rs", "all.rs");
 }

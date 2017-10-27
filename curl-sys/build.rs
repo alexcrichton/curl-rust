@@ -3,10 +3,11 @@ extern crate pkg_config;
 extern crate vcpkg;
 extern crate cc;
 
+use std::ascii::AsciiExt;
 use std::env;
 use std::ffi::OsString;
 use std::fs;
-use std::path::{PathBuf, Path};
+use std::path::{PathBuf, Path, Component, Prefix};
 use std::process::Command;
 use std::io::ErrorKind;
 
@@ -243,12 +244,20 @@ fn which(cmd: &str) -> Option<PathBuf> {
 }
 
 fn msys_compatible(path: &Path) -> String {
-    let path = path.to_str().unwrap();
+    let mut path_string = path.to_str().unwrap().to_string();
     if !cfg!(windows) {
-        return path.to_string()
+        return path_string;
     }
-    path.replace("C:\\", "/c/")
-        .replace("\\", "/")
+
+    // Replace e.g. C:\ with /c/
+    if let Component::Prefix(prefix_component) = path.components().next().unwrap() {
+        if let Prefix::Disk(disk) = prefix_component.kind() {
+            let from = format!("{}:\\", disk as char);
+            let to = format!("/{}/", (disk as char).to_ascii_lowercase());
+            path_string = path_string.replace(&from, &to);
+        }
+    }
+    path_string.replace("\\", "/")
 }
 
 fn register_dep(dep: &str) -> Option<PathBuf> {

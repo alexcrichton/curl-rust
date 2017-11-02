@@ -173,7 +173,7 @@ fn main() {
     }
 
     cmd.arg("--without-librtmp");
-    cmd.arg("--without-libidn");
+    cmd.arg("--without-libidn2");
     cmd.arg("--without-libssh2");
     cmd.arg("--without-libpsl");
     cmd.arg("--disable-ldap");

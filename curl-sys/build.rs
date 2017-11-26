@@ -25,6 +25,31 @@ fn main() {
     let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
     let windows = target.contains("windows");
 
+    println!("cargo:rerun-if-env-changed=LIBCURL_LIB_DIR");
+    println!("cargo:rerun-if-env-changed=LIBCURL_INCLUDE_DIR");
+
+    let lib_dir = env::var("LIBCURL_LIB_DIR");
+    let include_dir = env::var("LIBCURL_INCLUDE_DIR");
+
+    if let (Ok(lib_dir), Ok(include_dir)) = (lib_dir, include_dir) {
+        let lib_dir = PathBuf::from(lib_dir);
+        let include_dir = PathBuf::from(include_dir);
+
+        if !Path::new(&lib_dir).exists() {
+            panic!("curl library directory does not exist: {}", lib_dir.to_string_lossy());
+        }
+
+        if !Path::new(&include_dir).exists() {
+            panic!("curl include directory does not exist: {}", include_dir.to_string_lossy());
+        }
+
+        println!("cargo:rustc-link-search=native={}", lib_dir.to_string_lossy());
+        println!("cargo:include={}", include_dir.to_string_lossy());
+        println!("cargo:rustc-link-lib=curl");
+
+        return;
+    }
+
     // OSX and Haiku ships libcurl by default, so we just use that version
     // unconditionally.
     if target.contains("apple") || target.contains("haiku") {

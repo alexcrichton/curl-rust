@@ -33,9 +33,12 @@ matrix:
     - os: linux
       rust: nightly
       env: TARGET=x86_64-unknown-linux-gnu DOCKER=linux64 NO_ADD=1
+      before_script:
+        - pip install 'travis-cargo<0.2' --user && export PATH=$HOME/.local/bin:$PATH
+      after_success:
+        - travis-cargo doc-upload
 sudo: false
-before_script:
-  - pip install 'travis-cargo<0.2' --user && export PATH=$HOME/.local/bin:$PATH
+install:
   - if [ -z "$NO_ADD" ]; then rustup target add $TARGET; fi
 script:
   - curl --version
@@ -58,8 +61,6 @@ script:
         -it rust
         sh ci/run.sh;
     fi
-after_success:
-  - travis-cargo --only nightly doc-upload
 notifications:
   email:
     on_success: never

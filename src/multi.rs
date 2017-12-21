@@ -645,6 +645,16 @@ impl fmt::Debug for EasyHandle {
 }
 
 impl<H> Easy2Handle<H> {
+    /// Acquires a reference to the underlying handler for events.
+    pub fn get_ref(&self) -> &H {
+        self.easy.get_ref()
+    }
+
+    /// Acquires a reference to the underlying handler for events.
+    pub fn get_mut(&mut self) -> &mut H {
+        self.easy.get_mut()
+    }
+
     /// Same as `EasyHandle::set_token`
     pub fn set_token(&mut self, token: usize) -> Result<(), Error> {
         unsafe {

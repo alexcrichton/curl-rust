@@ -15,7 +15,9 @@ use libc::c_ulong;
 #[cfg(unix)]
 use libc::fd_set;
 #[cfg(windows)]
-use winapi::fd_set;
+use winapi::um::winsock2::fd_set;
+#[cfg(windows)]
+use winapi::shared::ws2def::SOCKADDR;
 
 #[cfg(target_env = "msvc")]
 #[doc(hidden)]
@@ -943,7 +945,7 @@ pub struct curl_sockaddr {
     #[cfg(unix)]
     pub addr: libc::sockaddr,
     #[cfg(windows)]
-    pub addr: winapi::SOCKADDR,
+    pub addr: SOCKADDR,
 }
 
 extern {

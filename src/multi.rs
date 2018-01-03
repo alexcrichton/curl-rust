@@ -8,7 +8,7 @@ use libc::{c_int, c_char, c_void, c_long, c_short};
 use curl_sys;
 
 #[cfg(windows)]
-use winapi::fd_set;
+use winapi::um::winsock2::fd_set;
 #[cfg(unix)]
 use libc::{fd_set, pollfd, POLLIN, POLLPRI, POLLOUT};
 
@@ -344,7 +344,7 @@ impl Multi {
         self._messages(&mut f)
     }
 
-    fn _messages(&self, mut f: &mut FnMut(Message)) {
+    fn _messages(&self, f: &mut FnMut(Message)) {
         let mut queue = 0;
         unsafe {
             loop {

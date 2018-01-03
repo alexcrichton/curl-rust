@@ -27,7 +27,7 @@ libc = "0.2"
 openssl-sys = "0.9"
 
 [target."cfg(windows)".dependencies]
-winapi = "0.2"
+winapi = { version = "0.3", features = ["winsock2", "ws2def"] }
 
 [target.'cfg(target_env = "msvc")'.build-dependencies]
 vcpkg = "0.2"

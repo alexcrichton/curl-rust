@@ -13,9 +13,9 @@ use libc::{c_int, c_char, c_uint, c_short, c_long, c_double, c_void, size_t, tim
 use libc::c_ulong;
 
 #[cfg(unix)]
-use libc::fd_set;
+pub use libc::fd_set;
 #[cfg(windows)]
-use winapi::um::winsock2::fd_set;
+pub use winapi::um::winsock2::fd_set;
 #[cfg(windows)]
 use winapi::shared::ws2def::SOCKADDR;
 

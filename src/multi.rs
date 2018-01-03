@@ -8,7 +8,7 @@ use libc::{c_int, c_char, c_void, c_long, c_short};
 use curl_sys;
 
 #[cfg(windows)]
-use winapi::um::winsock2::fd_set;
+use winapi::winsock2::fd_set;
 #[cfg(unix)]
 use libc::{fd_set, pollfd, POLLIN, POLLPRI, POLLOUT};
 
@@ -571,6 +571,30 @@ impl Multi {
     /// of bounds write which can cause crashes, or worse. The effect of NOT
     /// storing it will possibly save you from the crash, but will make your
     /// program NOT wait for sockets it should wait for...
+    pub fn fdset2(&self,
+                  read: Option<&mut curl_sys::fd_set>,
+                  write: Option<&mut curl_sys::fd_set>,
+                  except: Option<&mut curl_sys::fd_set>) -> Result<Option<i32>, MultiError> {
+        unsafe {
+            let mut ret = 0;
+            let read = read.map(|r| r as *mut _).unwrap_or(0 as *mut _);
+            let write = write.map(|r| r as *mut _).unwrap_or(0 as *mut _);
+            let except = except.map(|r| r as *mut _).unwrap_or(0 as *mut _);
+            try!(cvt(curl_sys::curl_multi_fdset(self.raw,
+                                                read,
+                                                write,
+                                                except,
+                                                &mut ret)));
+            if ret == -1 {
+                Ok(None)
+            } else {
+                Ok(Some(ret))
+            }
+        }
+    }
+
+    #[doc(hidden)]
+    #[deprecated(note = "renamed to fdset2")]
     pub fn fdset(&self,
                  read: Option<&mut fd_set>,
                  write: Option<&mut fd_set>,
@@ -580,7 +604,10 @@ impl Multi {
             let read = read.map(|r| r as *mut _).unwrap_or(0 as *mut _);
             let write = write.map(|r| r as *mut _).unwrap_or(0 as *mut _);
             let except = except.map(|r| r as *mut _).unwrap_or(0 as *mut _);
-            try!(cvt(curl_sys::curl_multi_fdset(self.raw, read, write, except,
+            try!(cvt(curl_sys::curl_multi_fdset(self.raw,
+                                                read as *mut _,
+                                                write as *mut _,
+                                                except as *mut _,
                                                 &mut ret)));
             if ret == -1 {
                 Ok(None)

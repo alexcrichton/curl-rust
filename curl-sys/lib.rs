@@ -9,7 +9,7 @@ pub use curl_sys::*;
 #[cfg(windows)]
 extern crate winapi;
 #[cfg(windows)]
-use winapi::winsock2::fd_set;
+pub use winapi::winsock2::fd_set;
 #[cfg(windows)]
 use winapi::{SOCKADDR, c_int, c_uint};
 

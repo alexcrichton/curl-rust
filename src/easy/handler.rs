@@ -1559,16 +1559,6 @@ impl<H> Easy2<H> {
         self.setopt_long(curl_sys::CURLOPT_TIMECONDITION, cond as c_long)
     }
 
-    /// Get info on unmet time conditional
-    ///
-    /// Returns if the condition provided in the previous request didn't match
-    ///
-    //// This corresponds to `CURLINFO_CONDITION_UNMET` and may return an error if the
-    /// option is not supported
-    pub fn time_condition_unmet(&mut self) -> Result<bool, Error> {
-        self.getopt_bool(curl_sys::CURLINFO_CONDITION_UNMET)
-    }
-
     /// Sets the time value for a conditional request.
     ///
     /// The value here should be the number of seconds elapsed since January 1,
@@ -2197,6 +2187,23 @@ impl<H> Easy2<H> {
     // =========================================================================
     // getters
 
+
+    /// Get info on unmet time conditional
+    ///
+    /// Returns if the condition provided in the previous request didn't match
+    ///
+    //// This corresponds to `CURLINFO_CONDITION_UNMET` and may return an error if the
+    /// option is not supported
+    pub fn time_condition_unmet(&mut self) -> Result<bool, Error> {
+        self.getopt_long(curl_sys::CURLINFO_CONDITION_UNMET).map(|r| {
+            if r==0 {
+                false
+            } else {
+                true
+            }
+        })
+    }
+
     /// Get the last used URL
     ///
     /// In cases when you've asked libcurl to follow redirects, it may
@@ -2786,15 +2793,6 @@ impl<H> Easy2<H> {
     fn getopt_long(&mut self, opt: curl_sys::CURLINFO) -> Result<c_long, Error> {
         unsafe {
             let mut p = 0;
-            let rc = curl_sys::curl_easy_getinfo(self.inner.handle, opt, &mut p);
-            try!(self.cvt(rc));
-            Ok(p)
-        }
-    }
-
-    fn getopt_bool(&mut self, opt: curl_sys::CURLINFO) -> Result<bool, Error> {
-        unsafe {
-            let mut p = false;
             let rc = curl_sys::curl_easy_getinfo(self.inner.handle, opt, &mut p);
             try!(self.cvt(rc));
             Ok(p)

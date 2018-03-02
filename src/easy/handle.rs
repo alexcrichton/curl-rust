@@ -1033,6 +1033,11 @@ impl Easy {
         self.inner.filetime()
     }
 
+    /// Same as [`Easy2::download_size`](struct.Easy2.html#method.download_size)
+    pub fn download_size(&mut self) -> Result<f64, Error> {
+        self.inner.download_size()
+    }
+
     /// Same as [`Easy2::total_time`](struct.Easy2.html#method.total_time)
     pub fn total_time(&mut self) -> Result<Duration, Error> {
         self.inner.total_time()

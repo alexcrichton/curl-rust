@@ -2277,6 +2277,20 @@ impl<H> Easy2<H> {
         })
     }
 
+    /// Get the number of downloaded bytes
+    ///
+    /// Returns the total amount of bytes that were downloaded.
+    /// The amount is only for the latest transfer and will be reset again for each new transfer.
+    /// This counts actual payload data, what's also commonly called body.
+    /// All meta and header data are excluded and will not be counted in this number.
+    ///
+    /// This corresponds to `CURLINFO_SIZE_DOWNLOAD` and may return an error if the
+    /// option is not supported
+    pub fn download_size(&mut self) -> Result<f64, Error> {
+        self.getopt_double(curl_sys::CURLINFO_SIZE_DOWNLOAD)
+            .map(|r| r as f64)
+    }
+
     /// Get total time of previous transfer
     ///
     /// Returns the total time for the previous transfer,

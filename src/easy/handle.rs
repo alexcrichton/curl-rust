@@ -1003,6 +1003,11 @@ impl Easy {
     // =========================================================================
     // getters
 
+    /// Same as [`Easy2::time_condition_unmet`](struct.Easy2.html#method.time_condition_unmet)
+    pub fn time_condition_unmet(&mut self) -> Result<bool, Error> {
+        self.inner.time_condition_unmet()
+    }
+
     /// Same as [`Easy2::effective_url`](struct.Easy2.html#method.effective_url)
     pub fn effective_url(&mut self) -> Result<Option<&str>, Error> {
         self.inner.effective_url()

@@ -1565,7 +1565,7 @@ impl<H> Easy2<H> {
     ///
     //// This corresponds to `CURLINFO_CONDITION_UNMET` and may return an error if the
     /// option is not supported
-    pub fn time_condition_met(&mut self) -> Result<bool, Error> {
+    pub fn time_condition_unmet(&mut self) -> Result<bool, Error> {
         self.getopt_bool(curl_sys::CURLINFO_CONDITION_UNMET)
     }
 

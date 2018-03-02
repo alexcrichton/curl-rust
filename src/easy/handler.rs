@@ -2187,6 +2187,23 @@ impl<H> Easy2<H> {
     // =========================================================================
     // getters
 
+
+    /// Get info on unmet time conditional
+    ///
+    /// Returns if the condition provided in the previous request didn't match
+    ///
+    //// This corresponds to `CURLINFO_CONDITION_UNMET` and may return an error if the
+    /// option is not supported
+    pub fn time_condition_unmet(&mut self) -> Result<bool, Error> {
+        self.getopt_long(curl_sys::CURLINFO_CONDITION_UNMET).map(|r| {
+            if r==0 {
+                false
+            } else {
+                true
+            }
+        })
+    }
+
     /// Get the last used URL
     ///
     /// In cases when you've asked libcurl to follow redirects, it may

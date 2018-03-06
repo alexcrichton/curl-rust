@@ -47,7 +47,8 @@ use easy::{Easy2, Handler};
 /// let mut handle = Easy::new();
 /// handle.url("https://www.rust-lang.org/").unwrap();
 /// handle.write_function(|data| {
-///     Ok(stdout().write(data).unwrap())
+///     stdout().write_all(data).unwrap();
+///     Ok(data.len())
 /// }).unwrap();
 /// handle.perform().unwrap();
 /// ```

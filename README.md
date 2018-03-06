@@ -21,7 +21,8 @@ fn main() {
     let mut easy = Easy::new();
     easy.url("https://www.rust-lang.org/").unwrap();
     easy.write_function(|data| {
-        Ok(stdout().write(data).unwrap())
+        stdout().write_all(data).unwrap();
+        Ok(data.len())
     }).unwrap();
     easy.perform().unwrap();
 

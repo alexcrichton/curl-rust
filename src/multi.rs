@@ -254,6 +254,30 @@ impl Multi {
         }
     }
 
+    /// Enable or disable HTTP pipelining and multiplexing.
+    ///
+    /// When http_1 is true, enable HTTP/1.1 pipelining, which means that if
+    /// you add a second request that can use an already existing connection,
+    /// the second request will be "piped" on the same connection rather than
+    /// being executed in parallel.
+    ///
+    /// When multiplex is true, enable HTTP/2 multiplexing, which means that
+    /// follow-up requests can re-use an existing connection and send the new
+    /// request multiplexed over that at the same time as other transfers are
+    /// already using that single connection.
+    pub fn pipelining(&mut self, http_1: bool, multiplex: bool) -> Result<(), MultiError> {
+        let bitmask = if http_1 { curl_sys::CURLPIPE_HTTP1 } else { 0 } | if multiplex { curl_sys::CURLPIPE_MULTIPLEX } else { 0 };
+        self.setopt_long(curl_sys::CURLMOPT_PIPELINING, bitmask)
+    }
+
+    fn setopt_long(&mut self,
+                   opt: curl_sys::CURLMoption,
+                   val: c_long) -> Result<(), MultiError> {
+        unsafe {
+            cvt(curl_sys::curl_multi_setopt(self.raw, opt, val))
+        }
+    }
+
     fn setopt_ptr(&mut self,
                   opt: curl_sys::CURLMoption,
                   val: *const c_char) -> Result<(), MultiError> {

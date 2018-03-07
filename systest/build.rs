@@ -45,13 +45,16 @@ fn main() {
     });
 
     cfg.skip_const(|s| {
-        // Ubuntu Xenial 16.04 ships with version 7.47.0 of curl, so explicitly
-        // skip constants introduced after that.
+        // Ubuntu 14.04 (Trusty) which we test on ships with version 7.35.0 of
+        // curl, so explicitly skip constants introduced after that.
         // CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE was introduced in 7.49.0
         s == "CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE" ||
 
         // OSX doesn't have this yet
         s == "CURLSSLOPT_NO_REVOKE" ||
+
+        // CURLPIPE helpers were added in 7.43.0
+        s.starts_with("CURLPIPE_") ||
 
         // Disable HTTP/2 checking if feature not enabled
         (!cfg!(feature = "http2") && s.starts_with("CURL_HTTP_VERSION_2")) ||

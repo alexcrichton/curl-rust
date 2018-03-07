@@ -926,6 +926,11 @@ pub const CURLMOPT_TIMERDATA: CURLMoption = CURLOPTTYPE_OBJECTPOINT + 5;
 // pub const CURLMOPT_PIPELINING_SERVER_BL: CURLMoption = CURLOPTTYPE_OBJECTPOINT + 12;
 // pub const CURLMOPT_MAX_TOTAL_CONNECTIONS: CURLMoption = CURLOPTTYPE_LONG + 13;
 
+// These enums are for use with the CURLMOPT_PIPELINING option.
+pub const CURLPIPE_NOTHING: c_long = 0;
+pub const CURLPIPE_HTTP1: c_long = 1;
+pub const CURLPIPE_MULTIPLEX: c_long = 2;
+
 pub const CURL_ERROR_SIZE: usize = 256;
 
 pub type curl_opensocket_callback = extern fn(*mut c_void,

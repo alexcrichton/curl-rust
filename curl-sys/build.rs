@@ -25,9 +25,14 @@ fn main() {
     let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
     let windows = target.contains("windows");
 
-    // OSX and Haiku ships libcurl by default, so we just use that version
+    // Haiku ships libcurl by default, so we just use that version
     // unconditionally.
-    if target.contains("apple") || target.contains("haiku") {
+    if target.contains("haiku") {
+        return println!("cargo:rustc-flags=-l curl");
+    }
+    // OSX ships libcurl by default, so we just use that version
+    // unless the user objects.
+    if target.contains("apple") && env::var("RUST_CURL_DONT_USE_OSX_SHIPPED").is_err() {
         return println!("cargo:rustc-flags=-l curl");
     }
 

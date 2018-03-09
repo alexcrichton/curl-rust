@@ -42,7 +42,11 @@ matrix:
         - travis-cargo doc-upload
 sudo: false
 before_install:
-  - if [ -n "$RUST_CURL_DONT_USE_OSX_SHIPPED" ]; then brew update && brew install curl; fi
+  - if [[ "$RUST_CURL_DONT_USE_OSX_SHIPPED" == "1" ]]; then
+      brew update;
+      brew install curl;
+      brew outdated curl || brew upgrade curl;
+    fi
 install:
   - if [ -z "$NO_ADD" ]; then rustup target add $TARGET; fi
 script:

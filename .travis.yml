@@ -26,7 +26,7 @@ matrix:
       env: TARGET=x86_64-apple-darwin NO_ADD=1
     - os: osx
       rust: stable
-      env: TARGET=x86_64-apple-darwin NO_ADD=1 HOMEBREW=1
+      env: TARGET=x86_64-apple-darwin NO_ADD=1 RUST_CURL_DONT_USE_OSX_SHIPPED=1
     - os: osx
       rust: stable
       env: TARGET=i686-apple-darwin
@@ -42,7 +42,7 @@ matrix:
         - travis-cargo doc-upload
 sudo: false
 before_install:
-  - if [ -n "HOMEBREW" ]; then brew update && brew install curl; fi
+  - if [ -n "$RUST_CURL_DONT_USE_OSX_SHIPPED" ]; then brew update && brew install curl; fi
 install:
   - if [ -z "$NO_ADD" ]; then rustup target add $TARGET; fi
 script:

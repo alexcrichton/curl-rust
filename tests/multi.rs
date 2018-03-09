@@ -2,6 +2,7 @@
 
 extern crate curl;
 extern crate mio;
+extern crate mio_extras;
 
 use std::collections::HashMap;
 use std::io::{Read, Cursor};
@@ -91,7 +92,7 @@ fn upload_lots() {
 
     let mut m = Multi::new();
     let poll = t!(mio::Poll::new());
-    let (tx, rx) = mio::channel::channel();
+    let (tx, rx) = mio_extras::channel::channel();
     let tx2 = tx.clone();
     t!(m.socket_function(move |socket, events, token| {
         t!(tx2.send(Message::Wait(socket, events, token)));

@@ -22,11 +22,6 @@ environment:
     ARCH: amd64
     VS: C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat
 
-  # Ensure getting libcurl from vcpkg works
-  - TARGET: x86_64-pc-windows-msvc
-    VCPKGRS_DYNAMIC: 1
-    VCPKG_DEFAULT_TRIPLET: x64-windows
-
 install:
   # Install rust, x86_64-pc-windows-msvc host
   - appveyor-retry appveyor DownloadFile https://win.rustup.rs/ -FileName rustup-init.exe
@@ -59,7 +54,7 @@ install:
   - if defined VCPKG_DEFAULT_TRIPLET git clone https://github.com/Microsoft/vcpkg c:\projects\vcpkg
   - if defined VCPKG_DEFAULT_TRIPLET c:\projects\vcpkg\bootstrap-vcpkg.bat
   - if defined VCPKG_DEFAULT_TRIPLET set VCPKG_ROOT=c:\projects\vcpkg
-  - if defined VCPKG_DEFAULT_TRIPLET echo yes > %VCPKG_ROOT%\Downloads\AlwaysAllowDownloads  
+  - if defined VCPKG_DEFAULT_TRIPLET echo yes > %VCPKG_ROOT%\Downloads\AlwaysAllowDownloads
   - if defined VCPKG_DEFAULT_TRIPLET %VCPKG_ROOT%\vcpkg.exe install curl
 
 build: false

@@ -4,21 +4,21 @@ use libc::c_void;
 
 #[cfg(target_env = "msvc")]
 mod win {
-    use kernel32;
     use std::ffi::CString;
     use std::mem;
     use std::ptr;
     use schannel::cert_context::ValidUses;
     use schannel::cert_store::CertStore;
     use winapi::{self, c_void, c_uchar, c_long, c_int};
+    use winapi::um::libloaderapi::{GetModuleHandleW, GetProcAddress};
 
     fn lookup(module: &str, symbol: &str) -> Option<*const c_void> {
         unsafe {
             let symbol = CString::new(symbol).unwrap();
             let mut mod_buf: Vec<u16> = module.encode_utf16().collect();
             mod_buf.push(0);
-            let handle = kernel32::GetModuleHandleW(mod_buf.as_mut_ptr());
-            let n = kernel32::GetProcAddress(handle, symbol.as_ptr());
+            let handle = GetModuleHandleW(mod_buf.as_mut_ptr());
+            let n = GetProcAddress(handle, symbol.as_ptr());
             if n == ptr::null() {
                 None
             } else {

@@ -20,8 +20,8 @@ name = "curl_sys"
 path = "lib.rs"
 
 [dependencies]
-libz-sys = ">= 0"
-libc = "0.2"
+libz-sys = "0.1.2"
+libc = "0.2.2"
 
 [target."cfg(all(unix, not(target_os = \"macos\")))".dependencies]
 openssl-sys = "0.9"
@@ -33,5 +33,5 @@ winapi = { version = "0.3", features = ["winsock2", "ws2def"] }
 vcpkg = "0.2"
 
 [build-dependencies]
-pkg-config = "0.3"
+pkg-config = "0.3.2"
 cc = "1.0"

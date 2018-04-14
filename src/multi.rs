@@ -8,7 +8,7 @@ use libc::{c_int, c_char, c_void, c_long, c_short};
 use curl_sys;
 
 #[cfg(windows)]
-use winapi::winsock2::fd_set;
+use winapi::um::winsock2::fd_set;
 #[cfg(unix)]
 use libc::{fd_set, pollfd, POLLIN, POLLPRI, POLLOUT};
 

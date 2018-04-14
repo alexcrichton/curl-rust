@@ -1,6 +1,5 @@
 extern crate curl;
 
-use std::str;
 use std::time::Duration;
 
 macro_rules! t {

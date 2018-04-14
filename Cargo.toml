@@ -24,7 +24,7 @@ openssl-sys = "0.9.0"
 openssl-probe = "0.1"
 
 [target."cfg(windows)".dependencies]
-winapi = "0.2"
+winapi = { version = "0.3", features = ["winsock2", "wincrypt", "std"] }
 
 [target.'cfg(target_env="msvc")'.dependencies]
 schannel = "0.1.8"

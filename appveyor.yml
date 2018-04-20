@@ -1,15 +1,6 @@
 environment:
   matrix:
 
-  # Ensure MinGW works, but we need to download the 32-bit MinGW compiler from a
-  # custom location.
-  - TARGET: i686-pc-windows-gnu
-    MINGW_URL: https://s3.amazonaws.com/rust-lang-ci
-    MINGW_ARCHIVE: i686-4.9.2-release-win32-dwarf-rt_v4-rev4.7z
-    MINGW_DIR: mingw32
-  - TARGET: x86_64-pc-windows-gnu
-    MSYS_BITS: 64
-
   # Ensure vanilla builds work
   - TARGET: i686-pc-windows-msvc
   - TARGET: x86_64-pc-windows-msvc
@@ -33,14 +24,6 @@ install:
   # Install the target we're compiling for
   - if NOT "%TARGET%" == "x86_64-pc-windows-msvc" rustup target add %TARGET%
 
-  # Use the system msys if we can
-  - if defined MSYS_BITS set PATH=C:\msys64\mingw%MSYS_BITS%\bin;C:\msys64\usr\bin;%PATH%
-
-  # download a custom compiler otherwise
-  - if defined MINGW_URL appveyor DownloadFile %MINGW_URL%/%MINGW_ARCHIVE%
-  - if defined MINGW_URL 7z x -y %MINGW_ARCHIVE% > nul
-  - if defined MINGW_URL set PATH=C:\Python27;%CD%\%MINGW_DIR%\bin;C:\msys64\usr\bin;%PATH%
-
   # If we're pinning to a specific visual studio, do so now
   - if defined VS call "%VS%" %ARCH%
 
@@ -49,13 +32,6 @@ install:
   - rustc -vV
   - cargo -vV
   - set CARGO_TARGET_DIR=%CD%\target
-
-  # install vcpkg if required
-  - if defined VCPKG_DEFAULT_TRIPLET git clone https://github.com/Microsoft/vcpkg c:\projects\vcpkg
-  - if defined VCPKG_DEFAULT_TRIPLET c:\projects\vcpkg\bootstrap-vcpkg.bat
-  - if defined VCPKG_DEFAULT_TRIPLET set VCPKG_ROOT=c:\projects\vcpkg
-  - if defined VCPKG_DEFAULT_TRIPLET echo yes > %VCPKG_ROOT%\Downloads\AlwaysAllowDownloads
-  - if defined VCPKG_DEFAULT_TRIPLET %VCPKG_ROOT%\vcpkg.exe install curl
 
 build: false
 

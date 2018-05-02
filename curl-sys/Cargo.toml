@@ -1,6 +1,6 @@
 [package]
 name = "curl-sys"
-version = "0.4.4"
+version = "0.4.5"
 authors = ["Carl Lerche <me@carllerche.com>",
            "Alex Crichton <alex@alexcrichton.com>"]
 links = "curl"

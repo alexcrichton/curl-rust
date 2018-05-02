@@ -318,6 +318,11 @@ fn build_msvc(target: &str) {
     cmd.env_remove("MAKEFLAGS")
        .env_remove("MFLAGS");
 
+    // While in theory clang-cl can be used it doesn't work because we can't
+    // configure CFLAGS which means cross-compilation to 32-bit doesn't work.
+    // Just require MSVC cl.exe here.
+    cmd.env_remove("CC");
+
     let features = env::var("CARGO_CFG_TARGET_FEATURE")
                       .unwrap_or(String::new());
     if features.contains("crt-static") {

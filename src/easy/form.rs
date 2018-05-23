@@ -2,9 +2,12 @@ use std::ffi::CString;
 use std::fmt;
 use std::path::Path;
 
+use libc::c_void;
+
 use FormError;
 use curl_sys;
-use easy::{list, List};
+use easy::list;
+use easy::{List, ReadError};
 
 /// Multipart/formdata for an HTTP POST request.
 ///
@@ -16,6 +19,7 @@ pub struct Form {
     headers: Vec<List>,
     buffers: Vec<Vec<u8>>,
     strings: Vec<CString>,
+    streams: Option<Box<StreamNode>>,
 }
 
 /// One part in a multipart upload, added to a `Form`.
@@ -26,8 +30,17 @@ pub struct Part<'form, 'data> {
     error: Option<FormError>,
 }
 
+struct StreamNode {
+    stream: Box<FnMut(&mut [u8]) -> Result<usize, ReadError>>,
+    _next: Option<Box<StreamNode>>,
+}
+
 pub fn raw(form: &Form) -> *mut curl_sys::curl_httppost {
     form.head
+}
+
+pub unsafe fn read(raw: *mut c_void, into: &mut [u8]) -> Result<usize, ReadError> {
+    ((*(raw as *mut StreamNode)).stream)(into)
 }
 
 impl Form {
@@ -39,6 +52,7 @@ impl Form {
             headers: Vec::new(),
             buffers: Vec::new(),
             strings: Vec::new(),
+            streams: None,
         }
     }
 
@@ -262,6 +276,48 @@ impl<'form, 'data> Part<'form, 'data> {
         });
         self.form.headers.push(headers);
         self
+    }
+
+    /// Tells libcurl to use the callback provided to get data.
+    ///
+    /// If you want the part to look like a file upload one, set the `filename`
+    /// parameter as well. Note that when using `stream` the `len` option must
+    /// also be set with the total expected length of the part unless the
+    /// formpost is sent chunked encoded in which case it can be `None`.
+    ///
+    /// The callback provided must live for the `'static` lifetime and must
+    /// adhere to the `Send` bound.
+    pub fn stream<F>(&mut self,
+                     len: Option<usize>,
+                     f: F) -> &mut Self
+        where F: FnMut(&mut [u8]) -> Result<usize, ReadError> + 'static + Send,
+    {
+        self._stream(len, Box::new(f));
+        self
+    }
+
+    fn _stream(&mut self,
+               len: Option<usize>,
+               stream: Box<FnMut(&mut [u8]) -> Result<usize, ReadError> + Send>)
+    {
+        let mut node = Box::new(StreamNode {
+            stream: stream,
+            _next: self.form.streams.take(),
+        });
+        let pos = self.array.len() - 1;
+        let ptr = &mut *node as *mut StreamNode as usize;
+        assert!(ptr & 1 == 0);
+        self.array.insert(pos, curl_sys::curl_forms {
+            option: curl_sys::CURLFORM_STREAM,
+            value: (ptr | 1) as *mut _,
+        });
+        if let Some(len) = len {
+            self.array.insert(pos + 1, curl_sys::curl_forms {
+                option: curl_sys::CURLFORM_CONTENTSLENGTH,
+                value: len as *mut _,
+            });
+        }
+        self.form.streams = Some(node);
     }
 
     /// Attempts to add this part to the `Form` that it was created from.

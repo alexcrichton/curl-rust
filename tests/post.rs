@@ -1,5 +1,6 @@
 extern crate curl;
 
+use std::io::Read;
 use std::str;
 use std::time::Duration;
 
@@ -103,6 +104,47 @@ Content-Type: application/octet-stream\r\n\
     t!(form.part("foo")
            .file("tests/formdata")
            .add());
+    t!(handle.url(&s.url("/")));
+    t!(handle.httppost(form));
+    t!(handle.perform());
+}
+
+#[test]
+fn stream() {
+    let s = Server::new();
+    s.receive("\
+POST / HTTP/1.1\r\n\
+Host: 127.0.0.1:$PORT\r\n\
+Accept: */*\r\n\
+Content-Length: 238\r\n\
+Expect: 100-continue\r\n\
+Content-Type: multipart/form-data; boundary=--[..]\r\n\
+\r\n\
+--[..]\r\n\
+Content-Disposition: form-data; name=\"foo\"\r\n\
+\r\n\
+1234\r\n\
+--[..]\r\n\
+Content-Disposition: form-data; name=\"bar\"\r\n\
+\r\n\
+5678\r\n\
+--[..]\r\n\
+");
+    s.send("HTTP/1.1 200 OK\r\n\r\n");
+
+    let mut handle = handle();
+    let mut form = Form::new();
+
+    let mut contents = "1234".as_bytes();
+    t!(form.part("foo").stream(Some(contents.len()), move |buf| {
+        Ok(contents.read(buf).unwrap())
+    }).add());
+
+    let mut contents = "5678".as_bytes();
+    t!(form.part("bar").stream(Some(contents.len()), move |buf| {
+        Ok(contents.read(buf).unwrap())
+    }).add());
+
     t!(handle.url(&s.url("/")));
     t!(handle.httppost(form));
     t!(handle.perform());

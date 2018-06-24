@@ -300,6 +300,74 @@ pub trait Handler {
     }
 }
 
+impl<'a, T> Handler for &'a mut T where T: Handler + ?Sized {
+    fn write(&mut self, data: &[u8]) -> Result<usize, WriteError> {
+        (**self).write(data)
+    }
+
+    fn read(&mut self, data: &mut [u8]) -> Result<usize, ReadError> {
+        (**self).read(data)
+    }
+
+    fn seek(&mut self, whence: SeekFrom) -> SeekResult {
+        (**self).seek(whence)
+    }
+
+    fn debug(&mut self, kind: InfoType, data: &[u8]) {
+        (**self).debug(kind, data)
+    }
+
+    fn header(&mut self, data: &[u8]) -> bool {
+        (**self).header(data)
+    }
+
+    fn progress(&mut self,
+                dltotal: f64,
+                dlnow: f64,
+                ultotal: f64,
+                ulnow: f64) -> bool {
+        (**self).progress(dltotal, dlnow, ultotal, ulnow)
+    }
+
+    fn ssl_ctx(&mut self, cx: *mut c_void) -> Result<(), Error> {
+        (**self).ssl_ctx(cx)
+    }
+}
+
+impl<T> Handler for Box<T> where T: Handler + ?Sized {
+    fn write(&mut self, data: &[u8]) -> Result<usize, WriteError> {
+        (**self).write(data)
+    }
+
+    fn read(&mut self, data: &mut [u8]) -> Result<usize, ReadError> {
+        (**self).read(data)
+    }
+
+    fn seek(&mut self, whence: SeekFrom) -> SeekResult {
+        (**self).seek(whence)
+    }
+
+    fn debug(&mut self, kind: InfoType, data: &[u8]) {
+        (**self).debug(kind, data)
+    }
+
+    fn header(&mut self, data: &[u8]) -> bool {
+        (**self).header(data)
+    }
+
+    fn progress(&mut self,
+                dltotal: f64,
+                dlnow: f64,
+                ultotal: f64,
+                ulnow: f64) -> bool {
+        (**self).progress(dltotal, dlnow, ultotal, ulnow)
+    }
+
+    fn ssl_ctx(&mut self, cx: *mut c_void) -> Result<(), Error> {
+        (**self).ssl_ctx(cx)
+    }
+}
+
 pub fn debug(kind: InfoType, data: &[u8]) {
     let out = io::stderr();
     let prefix = match kind {

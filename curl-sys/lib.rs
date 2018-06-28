@@ -2,7 +2,6 @@
 #![doc(html_root_url = "https://docs.rs/curl-sys/0.3")]
 
 extern crate libc;
-#[cfg(not(target_env = "msvc"))]
 extern crate libz_sys;
 #[cfg(all(unix, not(target_os = "macos")))]
 extern crate openssl_sys;

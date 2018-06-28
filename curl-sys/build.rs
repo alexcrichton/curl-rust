@@ -3,6 +3,7 @@ extern crate pkg_config;
 extern crate vcpkg;
 extern crate cc;
 
+#[allow(unused_imports, deprecated)]
 use std::ascii::AsciiExt;
 use std::env;
 use std::ffi::OsString;

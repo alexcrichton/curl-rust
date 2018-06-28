@@ -1,13 +1,25 @@
 extern crate ctest;
+extern crate cc;
 
 use std::env;
+use std::str;
 
 fn main() {
     let mut cfg = ctest::TestGenerator::new();
 
+    let mut build = cc::Build::new();
+    build.file("version_detect.c");
     if let Ok(out) = env::var("DEP_CURL_INCLUDE") {
         cfg.include(&out);
+        build.include(&out);
     }
+    let version = build.expand();
+    let version = str::from_utf8(&version).unwrap();
+    let version = version.lines()
+        .filter(|l| !l.is_empty() && !l.starts_with("#"))
+        .next()
+        .and_then(|s| s.parse::<u32>().ok())
+        .unwrap_or(10000);
 
     if env::var("TARGET").unwrap().contains("msvc") {
         cfg.flag("/wd4574"); // did you mean to use '#if INCL_WINSOCK_API_TYPEDEFS'
@@ -44,17 +56,40 @@ fn main() {
         s.ends_with("callback") || s.ends_with("function")
     });
 
-    cfg.skip_const(|s| {
-        // Ubuntu 14.04 (Trusty) which we test on ships with version 7.35.0 of
-        // curl, so explicitly skip constants introduced after that.
-        // CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE was introduced in 7.49.0
-        s == "CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE" ||
+    cfg.skip_struct(move |s| {
+        if version < 60 {
+            match s {
+                "curl_version_info_data" => return true,
+                _ => {}
+            }
+        }
+
+        false
+    });
+
+    cfg.skip_const(move |s| {
+        if version < 60 {
+            match s {
+                "CURLVERSION_FIFTH" |
+                "CURLVERSION_NOW" => return true,
+                _ => {}
+            }
+        }
+
+        if version < 49 {
+            if s.starts_with("CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE") {
+                return true
+            }
+        }
+
+        if version < 43 {
+            if s.starts_with("CURLPIPE_") {
+                return true
+            }
+        }
 
         // OSX doesn't have this yet
         s == "CURLSSLOPT_NO_REVOKE" ||
-
-        // CURLPIPE helpers were added in 7.43.0
-        s.starts_with("CURLPIPE_") ||
 
         // Disable HTTP/2 checking if feature not enabled
         (!cfg!(feature = "http2") && s.starts_with("CURL_HTTP_VERSION_2")) ||

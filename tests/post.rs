@@ -29,7 +29,6 @@ POST / HTTP/1.1\r\n\
 Host: 127.0.0.1:$PORT\r\n\
 Accept: */*\r\n\
 Content-Length: 142\r\n\
-Expect: 100-continue\r\n\
 Content-Type: multipart/form-data; boundary=--[..]\r\n\
 \r\n\
 --[..]\r\n\
@@ -55,7 +54,6 @@ POST / HTTP/1.1\r\n\
 Host: 127.0.0.1:$PORT\r\n\
 Accept: */*\r\n\
 Content-Length: 181\r\n\
-Expect: 100-continue\r\n\
 Content-Type: multipart/form-data; boundary=--[..]\r\n\
 \r\n\
 --[..]\r\n\
@@ -86,7 +84,6 @@ POST / HTTP/1.1\r\n\
 Host: 127.0.0.1:$PORT\r\n\
 Accept: */*\r\n\
 Content-Length: {}\r\n\
-Expect: 100-continue\r\n\
 Content-Type: multipart/form-data; boundary=--[..]\r\n\
 \r\n\
 --[..]\r\n\

@@ -180,7 +180,7 @@ impl Version {
     /// against.
     pub fn ares_version(&self) -> Option<&str> {
         unsafe {
-            if (*self.inner).age >= 1 {
+            if (*self.inner).age >= curl_sys::CURLVERSION_SECOND {
                 ::opt_str((*self.inner).ares)
             } else {
                 None
@@ -191,7 +191,7 @@ impl Version {
     /// If available, the version of ares that libcurl is linked against.
     pub fn ares_version_num(&self) -> Option<u32> {
         unsafe {
-            if (*self.inner).age >= 1 {
+            if (*self.inner).age >= curl_sys::CURLVERSION_SECOND {
                 Some((*self.inner).ares_num as u32)
             } else {
                 None
@@ -202,7 +202,7 @@ impl Version {
     /// If available, the version of libidn that libcurl is linked against.
     pub fn libidn_version(&self) -> Option<&str> {
         unsafe {
-            if (*self.inner).age >= 2 {
+            if (*self.inner).age >= curl_sys::CURLVERSION_THIRD {
                 ::opt_str((*self.inner).libidn)
             } else {
                 None
@@ -213,7 +213,7 @@ impl Version {
     /// If available, the version of iconv libcurl is linked against.
     pub fn iconv_version_num(&self) -> Option<u32> {
         unsafe {
-            if (*self.inner).age >= 3 {
+            if (*self.inner).age >= curl_sys::CURLVERSION_FOURTH {
                 Some((*self.inner).iconv_ver_num as u32)
             } else {
                 None
@@ -224,8 +224,30 @@ impl Version {
     /// If available, the version of iconv libcurl is linked against.
     pub fn libssh_version(&self) -> Option<&str> {
         unsafe {
-            if (*self.inner).age >= 3 {
+            if (*self.inner).age >= curl_sys::CURLVERSION_FOURTH {
                 ::opt_str((*self.inner).libssh_version)
+            } else {
+                None
+            }
+        }
+    }
+
+    /// If available, the version of brotli libcurl is linked against.
+    pub fn brotli_version_num(&self) -> Option<u32> {
+        unsafe {
+            if (*self.inner).age >= curl_sys::CURLVERSION_FIFTH {
+                Some((*self.inner).brotli_ver_num)
+            } else {
+                None
+            }
+        }
+    }
+
+    /// If available, the version of brotli libcurl is linked against.
+    pub fn brotli_version(&self) -> Option<&str> {
+        unsafe {
+            if (*self.inner).age >= curl_sys::CURLVERSION_FIFTH {
+                ::opt_str((*self.inner).brotli_version)
             } else {
                 None
             }

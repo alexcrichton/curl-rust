@@ -1,6 +1,5 @@
 extern crate curl;
 
-use std::str;
 use std::time::Duration;
 
 macro_rules! t {
@@ -10,7 +9,7 @@ macro_rules! t {
     })
 }
 
-use curl::easy::{Easy, Form};
+use curl::easy::{Easy, List, Form};
 
 use server::Server;
 mod server;
@@ -18,6 +17,9 @@ mod server;
 fn handle() -> Easy {
     let mut e = Easy::new();
     t!(e.timeout(Duration::new(20, 0)));
+    let mut list = List::new();
+    t!(list.append("Expect:"));
+    t!(e.http_headers(list));
     return e
 }
 

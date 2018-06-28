@@ -1,6 +1,5 @@
 extern crate curl;
 
-use std::str;
 use std::time::Duration;
 
 macro_rules! t {
@@ -10,7 +9,7 @@ macro_rules! t {
     })
 }
 
-use curl::easy::{Easy, Form};
+use curl::easy::{Easy, List, Form};
 
 use server::Server;
 mod server;
@@ -18,6 +17,9 @@ mod server;
 fn handle() -> Easy {
     let mut e = Easy::new();
     t!(e.timeout(Duration::new(20, 0)));
+    let mut list = List::new();
+    t!(list.append("Expect:"));
+    t!(e.http_headers(list));
     return e
 }
 
@@ -29,7 +31,6 @@ POST / HTTP/1.1\r\n\
 Host: 127.0.0.1:$PORT\r\n\
 Accept: */*\r\n\
 Content-Length: 142\r\n\
-Expect: 100-continue\r\n\
 Content-Type: multipart/form-data; boundary=--[..]\r\n\
 \r\n\
 --[..]\r\n\
@@ -55,7 +56,6 @@ POST / HTTP/1.1\r\n\
 Host: 127.0.0.1:$PORT\r\n\
 Accept: */*\r\n\
 Content-Length: 181\r\n\
-Expect: 100-continue\r\n\
 Content-Type: multipart/form-data; boundary=--[..]\r\n\
 \r\n\
 --[..]\r\n\
@@ -86,7 +86,6 @@ POST / HTTP/1.1\r\n\
 Host: 127.0.0.1:$PORT\r\n\
 Accept: */*\r\n\
 Content-Length: {}\r\n\
-Expect: 100-continue\r\n\
 Content-Type: multipart/form-data; boundary=--[..]\r\n\
 \r\n\
 --[..]\r\n\

@@ -34,6 +34,8 @@ pub struct Multi {
     data: Box<MultiData>,
 }
 
+unsafe impl Send for Multi {}
+
 struct MultiData {
     socket: Box<FnMut(Socket, SocketEvents, usize) + Send>,
     timer: Box<FnMut(Option<Duration>) -> bool + Send>,

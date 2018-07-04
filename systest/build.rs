@@ -82,6 +82,12 @@ fn main() {
             }
         }
 
+        if version < 47 {
+            if s.starts_with("CURL_HTTP_VERSION_2") {
+                return true
+            }
+        }
+
         if version < 43 {
             if s.starts_with("CURLPIPE_") {
                 return true
@@ -90,9 +96,6 @@ fn main() {
 
         // OSX doesn't have this yet
         s == "CURLSSLOPT_NO_REVOKE" ||
-
-        // Disable HTTP/2 checking if feature not enabled
-        (!cfg!(feature = "http2") && s.starts_with("CURL_HTTP_VERSION_2")) ||
 
         // A lot of curl versions doesn't support unix sockets
         s == "CURLOPT_UNIX_SOCKET_PATH" || s == "CURL_VERSION_UNIX_SOCKETS"

@@ -20,7 +20,7 @@ name = "curl_sys"
 path = "lib.rs"
 
 [dependencies]
-libz-sys = ">= 0.1.2"
+libz-sys = "1.0.18"
 libc = "0.2.2"
 
 [target."cfg(all(unix, not(target_os = \"macos\")))".dependencies]

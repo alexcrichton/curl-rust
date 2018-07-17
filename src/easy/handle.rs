@@ -1038,6 +1038,10 @@ impl Easy {
     pub fn download_size(&mut self) -> Result<f64, Error> {
         self.inner.download_size()
     }
+    /// Same as [`Easy2::content_length_download`](struct.Easy2.html#method.content_length_download)
+    pub fn content_length_download(&mut self) -> Result<f64, Error> {
+        self.inner.content_length_download()
+    }
 
     /// Same as [`Easy2::total_time`](struct.Easy2.html#method.total_time)
     pub fn total_time(&mut self) -> Result<Duration, Error> {

@@ -2291,6 +2291,18 @@ impl<H> Easy2<H> {
             .map(|r| r as f64)
     }
 
+    /// Get the content-length of the download
+    ///
+    /// Returns the content-length of the download.
+    /// This is the value read from the Content-Length: field
+    ///
+    /// This corresponds to `CURLINFO_CONTENT_LENGTH_DOWNLOAD` and may return an error if the
+    /// option is not supported
+    pub fn content_length_download(&mut self) -> Result<f64, Error> {
+        self.getopt_double(curl_sys::CURLINFO_CONTENT_LENGTH_DOWNLOAD)
+            .map(|r| r as f64)
+    }
+
     /// Get total time of previous transfer
     ///
     /// Returns the total time for the previous transfer,

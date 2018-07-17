@@ -1733,7 +1733,7 @@ impl<H> Easy2<H> {
     /// use curl::easy::{Easy, List};
     ///
     /// let mut list = List::new();
-    /// list.append("www.rust-lang.org:443:13.32.234.49").unwrap();
+    /// list.append("www.rust-lang.org:443:185.199.108.153").unwrap();
     ///
     /// let mut handle = Easy::new();
     /// handle.url("https://www.rust-lang.org/").unwrap();

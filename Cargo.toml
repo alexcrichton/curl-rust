@@ -1,6 +1,6 @@
 [package]
 name = "curl"
-version = "0.4.12"
+version = "0.4.13"
 authors = ["Alex Crichton <alex@alexcrichton.com>"]
 license = "MIT"
 repository = "https://github.com/alexcrichton/curl-rust"
@@ -14,21 +14,21 @@ travis-ci = { repository = "alexcrichton/curl-rust" }
 appveyor = { repository = "alexcrichton/curl-rust" }
 
 [dependencies]
-libc = "0.2"
-curl-sys = { path = "curl-sys", version = "0.4.2" }
-socket2 = "0.3.2"
+libc = "0.2.42"
+curl-sys = { path = "curl-sys", version = "0.4.7" }
+socket2 = "0.3.7"
 
 # Unix platforms use OpenSSL for now to provide SSL functionality
 [target."cfg(all(unix, not(target_os = \"macos\")))".dependencies]
-openssl-sys = "0.9.0"
-openssl-probe = "0.1"
+openssl-sys = "0.9.33"
+openssl-probe = "0.1.2"
 
 [target."cfg(windows)".dependencies]
 winapi = "0.2.7"
 
 [target.'cfg(target_env="msvc")'.dependencies]
-schannel = "0.1.8"
-kernel32-sys = "0.2"
+schannel = "0.1.13"
+kernel32-sys = "0.2.2"
 
 [dev-dependencies]
 mio = "0.6"

@@ -270,6 +270,27 @@ impl Multi {
         self.setopt_long(curl_sys::CURLMOPT_PIPELINING, bitmask)
     }
 
+    /// Sets the max number of connections to a single host.
+    ///
+    /// Pass a long to indicate the max number of simultaneously open connections
+    /// to a single host (a host being the same as a host name + port number pair).
+    /// For each new session to a host, libcurl will open up a new connection up to the
+    /// limit set by the provided value. When the limit is reached, the sessions will
+    /// be pending until a connection becomes available. If pipelining is enabled,
+    /// libcurl will try to pipeline if the host is capable of it.
+    pub fn set_max_host_connections(&mut self, val: usize) -> Result<(), MultiError> {
+        self.setopt_long(curl_sys::CURLMOPT_MAX_HOST_CONNECTIONS, val as c_long)
+    }
+
+    /// Sets the pipeline length.
+    ///
+    /// This sets the max number that will be used as the maximum amount of
+    /// outstanding reuqests in an HTTP/1.1 pipelined connection. This option
+    /// is only used for HTTP/1.1 pipelining, and not HTTP/2 multiplexing.
+    pub fn set_pipeline_length(&mut self, val: usize) -> Result<(), MultiError> {
+        self.setopt_long(curl_sys::CURLMOPT_MAX_PIPELINE_LENGTH, val as c_long)
+    }
+
     fn setopt_long(&mut self,
                    opt: curl_sys::CURLMoption,
                    val: c_long) -> Result<(), MultiError> {

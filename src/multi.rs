@@ -708,6 +708,34 @@ impl EasyHandle {
                                              token))
         }
     }
+
+    /// Unpause reading on a connection.
+    ///
+    /// Using this function, you can explicitly unpause a connection that was
+    /// previously paused.
+    ///
+    /// A connection can be paused by letting the read or the write callbacks
+    /// return `ReadError::Pause` or `WriteError::Pause`.
+    ///
+    /// The chance is high that you will get your write callback called before
+    /// this function returns.
+    pub fn unpause_read(&self) -> Result<(), Error> {
+        self.easy.unpause_read()
+    }
+
+    /// Unpause writing on a connection.
+    ///
+    /// Using this function, you can explicitly unpause a connection that was
+    /// previously paused.
+    ///
+    /// A connection can be paused by letting the read or the write callbacks
+    /// return `ReadError::Pause` or `WriteError::Pause`. A write callback that
+    /// returns pause signals to the library that it couldn't take care of any
+    /// data at all, and that data will then be delivered again to the callback
+    /// when the writing is later unpaused.
+    pub fn unpause_write(&self) -> Result<(), Error> {
+        self.easy.unpause_write()
+    }
 }
 
 impl fmt::Debug for EasyHandle {
@@ -734,6 +762,34 @@ impl<H> Easy2Handle<H> {
                                              curl_sys::CURLOPT_PRIVATE,
                                              token))
         }
+    }
+
+    /// Unpause reading on a connection.
+    ///
+    /// Using this function, you can explicitly unpause a connection that was
+    /// previously paused.
+    ///
+    /// A connection can be paused by letting the read or the write callbacks
+    /// return `ReadError::Pause` or `WriteError::Pause`.
+    ///
+    /// The chance is high that you will get your write callback called before
+    /// this function returns.
+    pub fn unpause_read(&self) -> Result<(), Error> {
+        self.easy.unpause_read()
+    }
+
+    /// Unpause writing on a connection.
+    ///
+    /// Using this function, you can explicitly unpause a connection that was
+    /// previously paused.
+    ///
+    /// A connection can be paused by letting the read or the write callbacks
+    /// return `ReadError::Pause` or `WriteError::Pause`. A write callback that
+    /// returns pause signals to the library that it couldn't take care of any
+    /// data at all, and that data will then be delivered again to the callback
+    /// when the writing is later unpaused.
+    pub fn unpause_write(&self) -> Result<(), Error> {
+        self.easy.unpause_write()
     }
 }
 

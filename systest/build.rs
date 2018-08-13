@@ -36,7 +36,7 @@ fn main() {
             field.to_string()
         }
     });
-    cfg.type_name(|s, is_struct| {
+    cfg.type_name(|s, is_struct, _is_union| {
         match s {
             "CURL" |
             "CURLM" |

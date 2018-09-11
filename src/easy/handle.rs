@@ -1145,7 +1145,7 @@ impl Easy {
 
     /// Same as [`Easy2::pipewait`](struct.Easy2.html#method.pipewait)
     pub fn pipewait(&mut self, wait: bool) -> Result<(), Error>  {
-        self.setopt_long(curl_sys::CURLOPT_PIPEWAIT, wait as c_long)
+        self.inner.pipewait(wait)
     }
 
     // =========================================================================

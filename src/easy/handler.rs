@@ -2544,6 +2544,37 @@ impl<H> Easy2<H> {
         }
     }
 
+    /// Wait for pipelining/multiplexing
+    ///
+    /// Set wait to `true` to tell libcurl to prefer to wait for a connection to
+    /// confirm or deny that it can do pipelining or multiplexing before
+    /// continuing.
+    ///
+    /// When about to perform a new transfer that allows pipelining or
+    /// multiplexing, libcurl will check for existing connections to re-use and
+    /// pipeline on. If no such connection exists it will immediately continue
+    /// and create a fresh new connection to use.
+    ///
+    /// By setting this option to `true` - and having `pipelining(true, true)`
+    /// enabled for the multi handle this transfer is associated with - libcurl
+    /// will instead wait for the connection to reveal if it is possible to
+    /// pipeline/multiplex on before it continues. This enables libcurl to much
+    /// better keep the number of connections to a minimum when using pipelining
+    /// or multiplexing protocols.
+    ///
+    /// The effect thus becomes that with this option set, libcurl prefers to
+    /// wait and re-use an existing connection for pipelining rather than the
+    /// opposite: prefer to open a new connection rather than waiting.
+    ///
+    /// The waiting time is as long as it takes for the connection to get up and
+    /// for libcurl to get the necessary response back that informs it about its
+    /// protocol and support level.
+    ///
+    /// This corresponds to the `CURLOPT_PIPEWAIT` option.
+    pub fn pipewait(&mut self, wait: bool) -> Result<(), Error>  {
+        self.setopt_long(curl_sys::CURLOPT_PIPEWAIT, wait as c_long)
+    }
+
     // =========================================================================
     // Other methods
 

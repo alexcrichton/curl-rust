@@ -36,3 +36,6 @@ mio-extras = "2.0.3"
 
 [workspace]
 members = ["systest"]
+
+[features]
+http2 = ['curl-sys/http2']

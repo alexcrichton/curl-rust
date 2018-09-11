@@ -316,7 +316,7 @@ pub fn debug(kind: InfoType, data: &[u8]) {
     drop(write!(out, "{} ", prefix));
     match str::from_utf8(data) {
         Ok(s) => drop(out.write_all(s.as_bytes())),
-        Err(_) => drop(write!(out, "({} bytes of data)\n", out.len())),
+        Err(_) => drop(write!(out, "({} bytes of data)\n", data.len())),
     }
 }
 

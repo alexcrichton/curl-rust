@@ -68,6 +68,12 @@ fn main() {
     });
 
     cfg.skip_const(move |s| {
+        if version < 61 {
+            match s {
+                "CURLOPT_PIPEWAIT" => return true,
+                _ => {}
+            }
+        }
         if version < 60 {
             match s {
                 "CURLVERSION_FIFTH" |

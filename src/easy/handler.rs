@@ -314,10 +314,9 @@ pub fn debug(kind: InfoType, data: &[u8]) {
     };
     let mut out = out.lock();
     drop(write!(out, "{} ", prefix));
-    match kind {
-        InfoType::SslDataIn |
-        InfoType::SslDataOut => drop(write!(out, "({} bytes of data)\n", data.len())),
-        _ => drop(out.write_all(data)),
+    match str::from_utf8(data) {
+        Ok(s) => drop(out.write_all(s.as_bytes())),
+        Err(_) => drop(write!(out, "({} bytes of data)\n", out.len())),
     }
 }
 

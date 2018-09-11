@@ -314,7 +314,11 @@ pub fn debug(kind: InfoType, data: &[u8]) {
     };
     let mut out = out.lock();
     drop(write!(out, "{} ", prefix));
-    drop(out.write_all(data));
+    match kind {
+        InfoType::SslDataIn |
+        InfoType::SslDataOut => drop(write!(out, "({} bytes of data)\n", data.len())),
+        _ => drop(out.write_all(data)),
+    }
 }
 
 pub fn ssl_ctx(cx: *mut c_void) -> Result<(), Error> {

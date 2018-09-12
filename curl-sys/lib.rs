@@ -8,7 +8,7 @@ extern crate openssl_sys;
 #[cfg(windows)]
 extern crate winapi;
 #[cfg(feature = "http2")]
-extern crate nghttp2_sys;
+extern crate libnghttp2_sys;
 
 use libc::{c_int, c_char, c_uint, c_short, c_long, c_double, c_void, size_t, time_t};
 use libc::c_ulong;

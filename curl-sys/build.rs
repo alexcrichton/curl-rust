@@ -48,6 +48,24 @@ fn main() {
     fs::copy("curl/include/curl/stdcheaders.h", include.join("curl/stdcheaders.h")).unwrap();
     fs::copy("curl/include/curl/system.h", include.join("curl/system.h")).unwrap();
     fs::copy("curl/include/curl/typecheck-gcc.h", include.join("curl/typecheck-gcc.h")).unwrap();
+
+    let pkgconfig = dst.join("lib/pkgconfig");
+    fs::create_dir_all(&pkgconfig).unwrap();
+    let contents = fs::read_to_string("curl/libcurl.pc.in").unwrap();
+    fs::write(
+        pkgconfig.join("libcurl.pc"),
+        contents
+            .replace("@prefix@", dst.to_str().unwrap())
+            .replace("@exec_prefix@", "")
+            .replace("@libdir@", dst.join("lib").to_str().unwrap())
+            .replace("@includedir@", include.to_str().unwrap())
+            .replace("@CPPFLAG_CURL_STATICLIB@", "")
+            .replace("@LIBCURL_LIBS@", "")
+            .replace("@SUPPORT_FEATURES@", "")
+            .replace("@SUPPORT_PROTOCOLS@", "")
+            .replace("@CURLVERSION@", "7.61.1"),
+    ).unwrap();
+
     let mut cfg = cc::Build::new();
     cfg.out_dir(&build)
         .include("curl/lib")

@@ -39,6 +39,7 @@ fn main() {
     let build = dst.join("build");
     println!("cargo:root={}", dst.display());
     println!("cargo:include={}", include.display());
+    println!("cargo:static=1");
     fs::create_dir_all(include.join("curl")).unwrap();
     fs::copy("curl/include/curl/curl.h", include.join("curl/curl.h")).unwrap();
     fs::copy("curl/include/curl/curlver.h", include.join("curl/curlver.h")).unwrap();

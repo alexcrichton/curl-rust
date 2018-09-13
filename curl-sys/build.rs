@@ -59,7 +59,7 @@ fn main() {
             .replace("@exec_prefix@", "")
             .replace("@libdir@", dst.join("lib").to_str().unwrap())
             .replace("@includedir@", include.to_str().unwrap())
-            .replace("@CPPFLAG_CURL_STATICLIB@", "")
+            .replace("@CPPFLAG_CURL_STATICLIB@", "-DCURL_STATICLIB")
             .replace("@LIBCURL_LIBS@", "")
             .replace("@SUPPORT_FEATURES@", "")
             .replace("@SUPPORT_PROTOCOLS@", "")

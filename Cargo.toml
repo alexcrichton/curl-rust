@@ -8,6 +8,7 @@ homepage = "https://github.com/alexcrichton/curl-rust"
 documentation = "https://docs.rs/curl"
 description = "Rust bindings to libcurl for making HTTP requests"
 categories = ["api-bindings", "web-programming::http-client"]
+autotests = true
 
 [badges]
 travis-ci = { repository = "alexcrichton/curl-rust" }
@@ -39,3 +40,7 @@ members = ["systest"]
 
 [features]
 http2 = ['curl-sys/http2']
+
+[[test]]
+name = "atexit"
+harness = false

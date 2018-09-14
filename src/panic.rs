@@ -7,8 +7,12 @@ thread_local!(static LAST_ERROR: RefCell<Option<Box<Any + Send>>> = {
 });
 
 pub fn catch<T, F: FnOnce() -> T>(f: F) -> Option<T> {
-    if LAST_ERROR.with(|slot| slot.borrow().is_some()) {
-        return None
+	match LAST_ERROR.try_with(|slot| slot.borrow().is_some()) {
+        Ok(true) => return None,
+        Ok(false) => {}
+        // we're in thread shutdown, so we're for sure not panicking and
+        // panicking again will abort, so no need to worry!
+        Err(_) => {}
     }
 
     // Note that `AssertUnwindSafe` is used here as we prevent reentering
@@ -24,7 +28,7 @@ pub fn catch<T, F: FnOnce() -> T>(f: F) -> Option<T> {
 }
 
 pub fn propagate() {
-    if let Some(t) = LAST_ERROR.with(|slot| slot.borrow_mut().take()) {
+    if let Ok(Some(t)) = LAST_ERROR.try_with(|slot| slot.borrow_mut().take()) {
         panic::resume_unwind(t)
     }
 }

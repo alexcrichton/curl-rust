@@ -2868,18 +2868,40 @@ impl<H> Easy2<H> {
         }
     }
 
-    fn cvt(&self, rc: curl_sys::CURLcode) -> Result<(), Error> {
-        if rc == curl_sys::CURLE_OK {
-            return Ok(())
-        }
+    /// Returns the contents of the internal error buffer, if available.
+    ///
+    /// When an easy handle is created it configured the `CURLOPT_ERRORBUFFER`
+    /// parameter and instructs libcurl to store more error information into a
+    /// buffer for better error messages and better debugging. The contents of
+    /// that buffer are automatically coupled with all errors for methods on
+    /// this type, but if manually invoking APIs the contents will need to be
+    /// extracted with this method.
+    ///
+    /// Put another way, you probably don't need this, you're probably already
+    /// getting nice error messages!
+    ///
+    /// This function will clear the internal buffer, so this is an operation
+    /// that mutates the handle internally.
+    pub fn take_error_buf(&self) -> Option<String> {
         let mut buf = self.inner.error_buf.borrow_mut();
         if buf[0] == 0 {
-            return Err(Error::new(rc))
+            return None
         }
         let pos = buf.iter().position(|i| *i == 0).unwrap_or(buf.len());
         let msg = String::from_utf8_lossy(&buf[..pos]).into_owned();
         buf[0] = 0;
-        Err(::error::error_with_extra(rc, msg.into_boxed_str()))
+        Some(msg)
+    }
+
+    fn cvt(&self, rc: curl_sys::CURLcode) -> Result<(), Error> {
+        if rc == curl_sys::CURLE_OK {
+            return Ok(())
+        }
+        let mut err = Error::new(rc);
+        if let Some(msg) = self.take_error_buf() {
+            err.set_extra(msg);
+        }
+        Err(Error::new(rc))
     }
 }
 

@@ -805,6 +805,10 @@ impl<'multi> Message<'multi> {
     ///
     /// If the message doesn't indicate that a transfer has finished, then
     /// `None` is returned.
+    ///
+    /// Note that the `result*_for` methods below should be preferred as they
+    /// provide better error messages as the associated error data on the
+    /// handle can be associated with the error type.
     pub fn result(&self) -> Option<Result<(), Error>> {
         unsafe {
             if (*self.ptr).msg == curl_sys::CURLMSG_DONE {
@@ -813,6 +817,42 @@ impl<'multi> Message<'multi> {
                 None
             }
         }
+    }
+
+    /// Same as `result`, except only returns `Some` for the specified handle.
+    ///
+    /// Note that this function produces better error messages than `result` as
+    /// it uses `take_error_buf` to associate error information with the
+    /// returned error.
+    pub fn result_for(&self, handle: &EasyHandle) -> Option<Result<(), Error>> {
+        if !self.is_for(handle) {
+            return None
+        }
+        let mut err = self.result();
+        if let Some(Err(e)) = &mut err {
+            if let Some(s) = handle.easy.take_error_buf() {
+                e.set_extra(s);
+            }
+        }
+        return err
+    }
+
+    /// Same as `result`, except only returns `Some` for the specified handle.
+    ///
+    /// Note that this function produces better error messages than `result` as
+    /// it uses `take_error_buf` to associate error information with the
+    /// returned error.
+    pub fn result_for2<H>(&self, handle: &Easy2Handle<H>) -> Option<Result<(), Error>> {
+        if !self.is_for2(handle) {
+            return None
+        }
+        let mut err = self.result();
+        if let Some(Err(e)) = &mut err {
+            if let Some(s) = handle.easy.take_error_buf() {
+                e.set_extra(s);
+            }
+        }
+        return err
     }
 
     /// Returns whether this easy message was for the specified easy handle or

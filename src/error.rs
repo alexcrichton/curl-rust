@@ -15,13 +15,6 @@ pub struct Error {
     extra: Option<Box<str>>,
 }
 
-pub fn error_with_extra(code: curl_sys::CURLcode, extra: Box<str>) -> Error {
-    Error {
-        code: code,
-        extra: Some(extra),
-    }
-}
-
 impl Error {
     /// Creates a new error from the underlying code returned by libcurl.
     pub fn new(code: curl_sys::CURLcode) -> Error {
@@ -29,6 +22,15 @@ impl Error {
             code: code,
             extra: None,
         }
+    }
+
+    /// Stores some extra information about this error inside this error.
+    ///
+    /// This is typically used with `take_error_buf` on the easy handles to
+    /// couple the extra `CURLOPT_ERRORBUFFER` information with an `Error` being
+    /// returned.
+    pub fn set_extra(&mut self, extra: String) {
+        self.extra = Some(extra.into());
     }
 
     /// Returns whether this error corresponds to CURLE_UNSUPPORTED_PROTOCOL.

@@ -1239,6 +1239,11 @@ impl Easy {
     pub fn raw(&self) -> *mut curl_sys::CURL {
         self.inner.raw()
     }
+
+    /// Same as [`Easy2::take_error_buf`](struct.Easy2.html#method.take_error_buf)
+    pub fn take_error_buf(&self) -> Option<String> {
+        self.inner.take_error_buf()
+    }
 }
 
 impl EasyData {

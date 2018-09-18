@@ -71,6 +71,7 @@ fn main() {
         if version < 61 {
             match s {
                 "CURLOPT_PIPEWAIT" => return true,
+                "CURLE_PEER_FAILED_VERIFICATION" => return true,
                 _ => {}
             }
         }

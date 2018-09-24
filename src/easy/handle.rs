@@ -1418,7 +1418,7 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
         Ok(())
     }
 
-    /// Same as `Easy::transfer`.
+    /// Same as `Easy::perform`.
     pub fn perform(&self) -> Result<(), Error> {
         let inner = self.easy.inner.get_ref();
 

@@ -893,7 +893,7 @@ impl<H> Easy2<H> {
     /// `CURLOPT_NOPROXY`.
     pub fn noproxy(&mut self, skip: &str) -> Result<(), Error> {
         let skip = try!(CString::new(skip));
-        self.setopt_str(curl_sys::CURLOPT_PROXYTYPE, &skip)
+        self.setopt_str(curl_sys::CURLOPT_NOPROXY, &skip)
     }
 
     /// Inform curl whether it should tunnel all operations through the proxy.

@@ -25,7 +25,7 @@ libc = "0.2.2"
 libnghttp2-sys = { optional = true, version = "0.1" }
 
 [target."cfg(all(unix, not(target_os = \"macos\")))".dependencies]
-openssl-sys = "0.9"
+openssl-sys = { version = "0.9", optional = true}
 
 [target."cfg(windows)".dependencies]
 winapi = { version = "0.3", features = ["winsock2", "ws2def"] }
@@ -38,4 +38,6 @@ pkg-config = "0.3.3"
 cc = "1.0"
 
 [features]
+default = ['openssl']
+openssl = ['openssl-sys']
 http2 = ['libnghttp2-sys']

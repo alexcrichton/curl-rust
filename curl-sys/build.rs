@@ -209,7 +209,6 @@ fn main() {
             .define("HAVE_STERRROR_R", None)
             .define("HAVE_STRUCT_TIMEVAL", None)
             .define("USE_THREADS_POSIX", None)
-            .define("USE_OPENSSL", None)
             .define("RECV_TYPE_ARG2", "void*")
             .define("RECV_TYPE_ARG3", "size_t")
             .define("RECV_TYPE_ARG4", "int")
@@ -222,8 +221,16 @@ fn main() {
             .define("SEND_TYPE_RETV", "ssize_t")
             .define("SIZEOF_CURL_OFF_T", "8")
             .define("SIZEOF_INT", "4")
-            .define("SIZEOF_SHORT", "2")
-            .file("curl/lib/vtls/openssl.c");
+            .define("SIZEOF_SHORT", "2");
+
+        if cfg!(feature = "openssl") {
+            cfg.define("USE_OPENSSL", None)
+                .file("curl/lib/vtls/openssl.c");
+
+            if let Some(path) = env::var_os("DEP_OPENSSL_INCLUDE") {
+                cfg.include(path);
+            }
+        }
 
         let width = env::var("CARGO_CFG_TARGET_POINTER_WIDTH")
             .unwrap()
@@ -232,10 +239,6 @@ fn main() {
         cfg.define("SIZEOF_SSIZE_T", Some(&(width / 8).to_string()[..]));
         cfg.define("SIZEOF_SIZE_T", Some(&(width / 8).to_string()[..]));
         cfg.define("SIZEOF_LONG", Some(&(width / 8).to_string()[..]));
-
-        if let Some(path) = env::var_os("DEP_OPENSSL_INCLUDE") {
-            cfg.include(path);
-        }
 
         cfg.flag("-fvisibility=hidden");
     }

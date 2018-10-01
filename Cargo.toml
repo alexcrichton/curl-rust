@@ -16,13 +16,13 @@ appveyor = { repository = "alexcrichton/curl-rust" }
 
 [dependencies]
 libc = "0.2.42"
-curl-sys = { path = "curl-sys", version = "0.4.9" }
+curl-sys = { path = "curl-sys", version = "0.4.9" , default-features = false}
 socket2 = "0.3.7"
 
 # Unix platforms use OpenSSL for now to provide SSL functionality
 [target."cfg(all(unix, not(target_os = \"macos\")))".dependencies]
-openssl-sys = "0.9.33"
-openssl-probe = "0.1.2"
+openssl-sys = { version = "0.9.33", optional = true }
+openssl-probe = { version = "0.1.2", optional = true }
 
 [target."cfg(windows)".dependencies]
 winapi = "0.2.7"
@@ -39,6 +39,8 @@ mio-extras = "2.0.3"
 members = ["systest"]
 
 [features]
+default = ['openssl']
+openssl = ['openssl-sys', 'openssl-probe', 'curl-sys/openssl']
 http2 = ['curl-sys/http2']
 
 [[test]]

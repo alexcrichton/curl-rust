@@ -3,7 +3,7 @@
 
 extern crate libc;
 extern crate libz_sys;
-#[cfg(all(unix, not(target_os = "macos")))]
+#[cfg(all(unix, not(target_os = "macos"), feature = "openssl"))]
 extern crate openssl_sys;
 #[cfg(windows)]
 extern crate winapi;

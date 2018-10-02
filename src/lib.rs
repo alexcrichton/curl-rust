@@ -54,9 +54,9 @@ extern crate curl_sys;
 extern crate libc;
 extern crate socket2;
 
-#[cfg(all(unix, not(target_os = "macos")))]
+#[cfg(all(unix, not(target_os = "macos"), feature = "ssl"))]
 extern crate openssl_sys;
-#[cfg(all(unix, not(target_os = "macos")))]
+#[cfg(all(unix, not(target_os = "macos"), feature = "ssl"))]
 extern crate openssl_probe;
 #[cfg(windows)]
 extern crate winapi;
@@ -103,12 +103,12 @@ pub fn init() {
         // function.
     });
 
-    #[cfg(all(unix, not(target_os = "macos")))]
+    #[cfg(all(unix, not(target_os = "macos"), feature = "ssl"))]
     fn platform_init() {
         openssl_sys::init();
     }
 
-    #[cfg(not(all(unix, not(target_os = "macos"))))]
+    #[cfg(not(all(unix, not(target_os = "macos"), feature = "ssl")))]
     fn platform_init() {}
 }
 

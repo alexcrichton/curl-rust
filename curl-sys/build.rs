@@ -179,7 +179,8 @@ fn main() {
     if windows {
         cfg.define("USE_THREADS_WIN32", None)
             .define("HAVE_IOCTLSOCKET_FIONBIO", None)
-            .define("USE_WINSOCK", None);
+            .define("USE_WINSOCK", None)
+            .file("curl/lib/system_win32.c");
 
         if cfg!(feature = "ssl") {
             cfg.define("USE_WINDOWS_SSPI", None)
@@ -187,7 +188,6 @@ fn main() {
                 .file("curl/lib/x509asn1.c")
                 .file("curl/lib/curl_sspi.c")
                 .file("curl/lib/socks_sspi.c")
-                .file("curl/lib/system_win32.c")
                 .file("curl/lib/vtls/schannel.c")
                 .file("curl/lib/vtls/schannel_verify.c");
         }

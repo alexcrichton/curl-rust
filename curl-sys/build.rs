@@ -179,15 +179,18 @@ fn main() {
     if windows {
         cfg.define("USE_THREADS_WIN32", None)
             .define("HAVE_IOCTLSOCKET_FIONBIO", None)
-            .define("USE_WINSOCK", None)
-            .define("USE_WINDOWS_SSPI", None)
-            .define("USE_SCHANNEL", None)
-            .file("curl/lib/x509asn1.c")
-            .file("curl/lib/curl_sspi.c")
-            .file("curl/lib/socks_sspi.c")
-            .file("curl/lib/system_win32.c")
-            .file("curl/lib/vtls/schannel.c")
-            .file("curl/lib/vtls/schannel_verify.c");
+            .define("USE_WINSOCK", None);
+
+        if cfg!(feature = "ssl") {
+            cfg.define("USE_WINDOWS_SSPI", None)
+                .define("USE_SCHANNEL", None)
+                .file("curl/lib/x509asn1.c")
+                .file("curl/lib/curl_sspi.c")
+                .file("curl/lib/socks_sspi.c")
+                .file("curl/lib/system_win32.c")
+                .file("curl/lib/vtls/schannel.c")
+                .file("curl/lib/vtls/schannel_verify.c");
+        }
     } else {
         cfg.define("RECV_TYPE_ARG1", "int")
             .define("HAVE_PTHREAD_H", None)
@@ -223,7 +226,7 @@ fn main() {
             .define("SIZEOF_INT", "4")
             .define("SIZEOF_SHORT", "2");
 
-        if cfg!(feature = "openssl") {
+        if cfg!(feature = "ssl") {
             cfg.define("USE_OPENSSL", None)
                 .file("curl/lib/vtls/openssl.c");
 

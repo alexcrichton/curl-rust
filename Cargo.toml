@@ -39,8 +39,8 @@ mio-extras = "2.0.3"
 members = ["systest"]
 
 [features]
-default = ['openssl']
-openssl = ['openssl-sys', 'openssl-probe', 'curl-sys/openssl']
+default = ['ssl']
+ssl = ['openssl-sys', 'openssl-probe', 'curl-sys/ssl']
 http2 = ['curl-sys/http2']
 
 [[test]]

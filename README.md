@@ -126,6 +126,17 @@ simultaneously through the "multi" interface. This is currently bound in the
 `multi` module of this crate and provides the ability to execute multiple
 transfers simultaneously. For more information, see that module.
 
+## Building
+
+By default, this crate will attempt to dynamically link to the system-wide
+libcurl and the system-wide SSL library. Some of this behavior can be customized
+with various Cargo features:
+
+- `ssl`: Enable SSL support. Enabled by default.
+- `http2`: Enable HTTP/2 support via libnghttp2. Disabled by default.
+- `static-curl`: Use a bundled libcurl version and statically link to it. Disabled by default.
+- `static-ssl`: Use a bundled OpenSSL version and statically link to it. Only applies on platforms that use OpenSSL. Disabled by default.
+
 ## Version Support
 
 The bindings have been developed using curl version 7.24.0. They should

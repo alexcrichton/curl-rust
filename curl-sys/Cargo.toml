@@ -24,10 +24,10 @@ libz-sys = "1.0.18"
 libc = "0.2.2"
 libnghttp2-sys = { optional = true, version = "0.1" }
 
-[target."cfg(all(unix, not(target_os = \"macos\")))".dependencies]
-openssl-sys = { version = "0.9", optional = true}
+[target.'cfg(all(unix, not(target_os = "macos")))'.dependencies]
+openssl-sys = { version = "0.9", optional = true }
 
-[target."cfg(windows)".dependencies]
+[target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["winsock2", "ws2def"] }
 
 [target.'cfg(target_env = "msvc")'.build-dependencies]
@@ -38,6 +38,8 @@ pkg-config = "0.3.3"
 cc = "1.0"
 
 [features]
-default = ['ssl']
-ssl = ['openssl-sys']
-http2 = ['libnghttp2-sys']
+default = ["ssl"]
+ssl = ["openssl-sys"]
+http2 = ["libnghttp2-sys"]
+static-curl = []
+static-ssl = ["openssl-sys/vendored"]

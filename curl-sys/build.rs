@@ -12,20 +12,23 @@ fn main() {
     let target = env::var("TARGET").unwrap();
     let windows = target.contains("windows");
 
-    // OSX and Haiku ships libcurl by default, so we just use that version
-    // unconditionally.
-    if target.contains("apple") || target.contains("haiku") {
-        return println!("cargo:rustc-flags=-l curl");
-    }
-
-    // Next, fall back and try to use pkg-config if its available.
-    if windows {
-        if try_vcpkg() {
-            return
+    // If the static-curl feature is disabled, probe for a system-wide libcurl.
+    if !cfg!(feature = "static-curl") {
+        // OSX and Haiku ships libcurl by default, so we just use that version
+        // unconditionally.
+        if target.contains("apple") || target.contains("haiku") {
+            return println!("cargo:rustc-flags=-l curl");
         }
-    } else {
-        if try_pkg_config() {
-            return
+
+        // Next, fall back and try to use pkg-config if its available.
+        if windows {
+            if try_vcpkg() {
+                return
+            }
+        } else {
+            if try_pkg_config() {
+                return
+            }
         }
     }
 

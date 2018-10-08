@@ -230,11 +230,16 @@ fn main() {
             .define("SIZEOF_SHORT", "2");
 
         if cfg!(feature = "ssl") {
-            cfg.define("USE_OPENSSL", None)
-                .file("curl/lib/vtls/openssl.c");
+            if target.contains("-apple-") {
+                cfg.define("USE_DARWINSSL", None)
+                    .file("curl/lib/vtls/darwinssl.c");
+            } else {
+                cfg.define("USE_OPENSSL", None)
+                    .file("curl/lib/vtls/openssl.c");
 
-            if let Some(path) = env::var_os("DEP_OPENSSL_INCLUDE") {
-                cfg.include(path);
+                if let Some(path) = env::var_os("DEP_OPENSSL_INCLUDE") {
+                    cfg.include(path);
+                }
             }
         }
 
@@ -259,6 +264,11 @@ fn main() {
     // Illumos/Solaris requires explicit linking with libnsl
     if target.contains("solaris") {
         println!("cargo:rustc-link-lib=nsl");
+    }
+
+    if target.contains("-apple-") {
+        println!("cargo:rustc-link-lib=framework=Security");
+        println!("cargo:rustc-link-lib=framework=CoreFoundation");
     }
 }
 

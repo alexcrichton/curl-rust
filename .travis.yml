@@ -24,9 +24,15 @@ matrix:
     - os: osx
       rust: stable
       env: TARGET=x86_64-apple-darwin NO_ADD=1
+      script: sh ci/run.sh
+    - os: osx
+      rust: stable
+      install: true
+      script: cargo build --features curl-sys/static-curl
     - os: osx
       rust: stable
       env: TARGET=i686-apple-darwin
+      script: sh ci/run.sh
     - os: linux
       rust: beta
       env: TARGET=x86_64-unknown-linux-gnu DOCKER=linux64 NO_ADD=1
@@ -43,24 +49,20 @@ install:
 script:
   - curl --version
   - cargo generate-lockfile
-  - cargo generate-lockfile --manifest-path systest/Cargo.toml
-  - if [ -z "$DOCKER" ]; then
-      sh ci/run.sh;
-    else
-      mkdir .cargo target;
-      docker build -t rust -f ci/Dockerfile-$DOCKER ci;
-      docker run
-        -w /src
-        -v `pwd`:/src:ro
-        -v `pwd`/target:/src/target
-        -v `pwd`/ci/.cargo:/src/.cargo:ro
-        -v `rustc --print sysroot`:/usr/local:ro
-        -e TARGET=$TARGET
-        -e NO_RUN=$NO_RUN
-        -e CARGO_TARGET_DIR=/src/target
-        -it rust
-        sh ci/run.sh;
-    fi
+  - mkdir .cargo target;
+    docker build -t rust -f ci/Dockerfile-$DOCKER ci;
+    docker run
+     -w /src
+     -v `pwd`:/src:ro
+     -v `pwd`/target:/src/target
+     -v `pwd`/ci/.cargo:/src/.cargo:ro
+     -v `rustc --print sysroot`:/usr/local:ro
+     -e TARGET=$TARGET
+     -e NO_RUN=$NO_RUN
+     -e CARGO_TARGET_DIR=/src/target
+     -it rust
+     sh ci/run.sh
+
 notifications:
   email:
     on_success: never

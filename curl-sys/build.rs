@@ -179,6 +179,12 @@ fn main() {
         cfg.include(path);
     }
 
+    if cfg!(feature = "spnego") {
+        cfg.define("USE_SPNEGO", None)
+            .file("curl/lib/http_negotiate.c")
+            .file("curl/lib/vauth/vauth.c");
+    }
+
     if windows {
         cfg.define("USE_THREADS_WIN32", None)
             .define("HAVE_IOCTLSOCKET_FIONBIO", None)
@@ -193,6 +199,10 @@ fn main() {
                 .file("curl/lib/socks_sspi.c")
                 .file("curl/lib/vtls/schannel.c")
                 .file("curl/lib/vtls/schannel_verify.c");
+        }
+
+        if cfg!(feature = "spnego") {
+            cfg.file("curl/lib/vauth/spnego_sspi.c");
         }
     } else {
         cfg.define("RECV_TYPE_ARG1", "int")
@@ -241,6 +251,17 @@ fn main() {
                     cfg.include(path);
                 }
             }
+        }
+
+        if cfg!(feature = "spnego") {
+            cfg.define("HAVE_GSSAPI", None)
+                .file("curl/lib/curl_gssapi.c")
+                .file("curl/lib/socks_gssapi.c")
+                .file("curl/lib/vauth/spnego_gssapi.c");
+
+            // Link against the MIT gssapi library. It might be desirable to add support for
+            // choosing between MIT and Heimdal libraries in the future.
+            println!("cargo:rustc-link-lib=gssapi_krb5");
         }
 
         let width = env::var("CARGO_CFG_TARGET_POINTER_WIDTH")

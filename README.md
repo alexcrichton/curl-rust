@@ -136,6 +136,7 @@ with various Cargo features:
 - `http2`: Enable HTTP/2 support via libnghttp2. Disabled by default.
 - `static-curl`: Use a bundled libcurl version and statically link to it. Disabled by default.
 - `static-ssl`: Use a bundled OpenSSL version and statically link to it. Only applies on platforms that use OpenSSL. Disabled by default.
+- `spengo`: Enable SPENGO support. Disabled by default.
 
 ## Version Support
 

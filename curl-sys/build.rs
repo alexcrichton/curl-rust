@@ -242,6 +242,7 @@ fn main() {
         if cfg!(feature = "ssl") {
             if target.contains("-apple-") {
                 cfg.define("USE_DARWINSSL", None)
+                    .define("HAVE_BUILTIN_AVAILABLE", "1")
                     .file("curl/lib/vtls/darwinssl.c");
             } else {
                 cfg.define("USE_OPENSSL", None)

@@ -15,9 +15,11 @@ fn main() {
     // If the static-curl feature is disabled, probe for a system-wide libcurl.
     if !cfg!(feature = "static-curl") {
         // OSX and Haiku ships libcurl by default, so we just use that version
-        // unconditionally.
+        // so long as it has the right features enabled.
         if target.contains("apple") || target.contains("haiku") {
-            return println!("cargo:rustc-flags=-l curl");
+            if !cfg!(feature = "http2") || curl_config_reports_http2() {
+                return println!("cargo:rustc-flags=-l curl");
+            }
         }
 
         // Next, fall back and try to use pkg-config if its available.
@@ -360,27 +362,8 @@ fn try_pkg_config() -> bool {
 
     // Not all system builds of libcurl have http2 features enabled, so if we've
     // got a http2-requested build then we may fall back to a build from source.
-    if cfg!(feature = "http2") {
-        let output = Command::new("curl-config")
-            .arg("--features")
-            .output();
-        let output = match output {
-            Ok(out) => out,
-            Err(e) => {
-                println!("failed to run curl-config ({}), building from source", e);
-                return false
-            }
-        };
-        if !output.status.success() {
-            println!("curl-config failed: {}", output.status);
-            return false
-        }
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        if !stdout.contains("HTTP2") {
-            println!("failed to find http-2 feature enabled in pkg-config-found \
-                      libcurl, building from source");
-            return false
-        }
+    if cfg!(feature = "http2") && !curl_config_reports_http2() {
+        return false
     }
 
     // Re-find the library to print cargo's metadata, then print some extra
@@ -391,5 +374,30 @@ fn try_pkg_config() -> bool {
     for path in lib.include_paths.iter() {
         println!("cargo:include={}", path.display());
     }
+    return true
+}
+
+fn curl_config_reports_http2() -> bool {
+    let output = Command::new("curl-config")
+        .arg("--features")
+        .output();
+    let output = match output {
+        Ok(out) => out,
+        Err(e) => {
+            println!("failed to run curl-config ({}), building from source", e);
+            return false
+        }
+    };
+    if !output.status.success() {
+        println!("curl-config failed: {}", output.status);
+        return false
+    }
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    if !stdout.contains("HTTP2") {
+        println!("failed to find http-2 feature enabled in pkg-config-found \
+                  libcurl, building from source");
+        return false
+    }
+
     return true
 }

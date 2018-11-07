@@ -12,6 +12,13 @@ fn main() {
     let target = env::var("TARGET").unwrap();
     let windows = target.contains("windows");
 
+    // This feature trumps all others, and is largely set by rustbuild to force
+    // usage of the system library to ensure that we're always building an
+    // ABI-compatible Cargo.
+    if cfg!(feature = "force-system-lib-on-osx") && target.contains("apple") {
+        return println!("cargo:rustc-flags=-l curl");
+    }
+
     // If the static-curl feature is disabled, probe for a system-wide libcurl.
     if !cfg!(feature = "static-curl") {
         // OSX and Haiku ships libcurl by default, so we just use that version

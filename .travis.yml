@@ -1,6 +1,4 @@
 language: rust
-sudo: required
-dist: trusty
 services:
   - docker
 
@@ -36,16 +34,19 @@ matrix:
     - os: linux
       rust: beta
       env: TARGET=x86_64-unknown-linux-gnu DOCKER=linux64 NO_ADD=1
-    - os: linux
+    - name: "master doc to gh-pages"
       rust: nightly
       env: TARGET=x86_64-unknown-linux-gnu DOCKER=linux64 NO_ADD=1
-      before_script:
-        - pip install 'travis-cargo<0.2' --user && export PATH=$HOME/.local/bin:$PATH
-      after_success:
-        - travis-cargo doc-upload
-sudo: false
+      deploy:
+        provider: script
+        script: curl -LsSf https://git.io/fhJ8n | rustc - && (cd target/doc && ../../rust_out)
+        skip_cleanup: true
+        on:
+          branch: master
+
 install:
   - if [ -z "$NO_ADD" ]; then rustup target add $TARGET; fi
+
 script:
   - curl --version
   - cargo generate-lockfile
@@ -66,6 +67,3 @@ script:
 notifications:
   email:
     on_success: never
-env:
-  global:
-    secure: "j4son34/PmqogLMUHgcvOk+XtyUtcd0aAA8Sa/h4pyupw8AEM7+5DMMIrcrRh7ieKqmL2RSSGnYtYbd2b5yYroudypsqmQhK0StzrtPaftl/8zxw8liXzA9rat8MP0vuEAe5w9KLRdFKUCU7TzcYXcKttpbavqdNsJae+OFzHJc="

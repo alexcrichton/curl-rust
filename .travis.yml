@@ -36,7 +36,8 @@ matrix:
       env: TARGET=x86_64-unknown-linux-gnu DOCKER=linux64 NO_ADD=1
     - name: "master doc to gh-pages"
       rust: nightly
-      env: TARGET=x86_64-unknown-linux-gnu DOCKER=linux64 NO_ADD=1
+      install: true
+      script: cargo doc --no-deps
       deploy:
         provider: script
         script: curl -LsSf https://git.io/fhJ8n | rustc - && (cd target/doc && ../../rust_out)

@@ -393,20 +393,14 @@ fn try_pkg_config() -> bool {
 fn xcode_major_version() -> Option<u8> {
     let output = Command::new("xcodebuild")
         .arg("-version")
-        .output();
-    if let Ok(output) = output {
-        if output.status.success() {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            let mut words = stdout.split_whitespace();
-            if let Some("Xcode") = words.next() {
-                if let Some(version) = words.next() {
-                    if let Some(index) = version.find('.') {
-                        if let Ok(major) = version[..index].parse::<u8>() {
-                            return Some(major);
-                        }
-                    }
-                }
-            }
+        .output()
+        .ok()?;
+    if output.status.success() {
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let mut words = stdout.split_whitespace();
+        if words.next()? == "Xcode" {
+            let version = words.next()?;
+            return version[..version.find('.')?].parse().ok()
         }
     }
     println!("unable to determine Xcode version, assuming >= 9");

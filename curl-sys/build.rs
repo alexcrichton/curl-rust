@@ -251,8 +251,10 @@ fn main() {
         if cfg!(feature = "ssl") {
             if target.contains("-apple-") {
                 cfg.define("USE_DARWINSSL", None)
-                    .define("HAVE_BUILTIN_AVAILABLE", "1")
                     .file("curl/lib/vtls/darwinssl.c");
+                if xcode_major_version().map_or(true, |v| v >= 9) {
+                    cfg.define("HAVE_BUILTIN_AVAILABLE", "1");
+                }
             } else {
                 cfg.define("USE_OPENSSL", None)
                     .file("curl/lib/vtls/openssl.c");
@@ -382,6 +384,29 @@ fn try_pkg_config() -> bool {
         println!("cargo:include={}", path.display());
     }
     return true
+}
+
+fn xcode_major_version() -> Option<u8> {
+    let output = Command::new("xcodebuild")
+        .arg("-version")
+        .output();
+    if let Ok(output) = output {
+        if output.status.success() {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let mut words = stdout.split_whitespace();
+            if let Some("Xcode") = words.next() {
+                if let Some(version) = words.next() {
+                    if let Some(index) = version.find('.') {
+                        if let Ok(major) = version[..index].parse::<u8>() {
+                            return Some(major);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    println!("unable to determine Xcode version, assuming >= 9");
+    None
 }
 
 fn curl_config_reports_http2() -> bool {

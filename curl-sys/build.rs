@@ -253,6 +253,10 @@ fn main() {
                 cfg.define("USE_DARWINSSL", None)
                     .file("curl/lib/vtls/darwinssl.c");
                 if xcode_major_version().map_or(true, |v| v >= 9) {
+                    // On earlier Xcode versions (<9), defining HAVE_BUILTIN_AVAILABLE
+                    // would cause __bultin_available() to fail to compile due to
+                    // unrecognized platform names, so we try to check for Xcode
+                    // version first (if unknown, assume it's recent, as in >= 9).
                     cfg.define("HAVE_BUILTIN_AVAILABLE", "1");
                 }
             } else {

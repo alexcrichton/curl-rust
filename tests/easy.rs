@@ -267,6 +267,17 @@ fn misc() {
 }
 
 #[test]
+fn dns_servers() {
+    let mut h = handle();
+    // Tests are not using a libcurl with c-ares, so this
+    // always fails. Test anyway to make sure it returns
+    // an error instead of panicing.
+    assert!(h.dns_servers("").is_err());
+    assert!(h.dns_servers("nonsense").is_err());
+    assert!(h.dns_servers("8.8.8.8,8.8.4.4").is_err());
+}
+
+#[test]
 fn userpass() {
     let s = Server::new();
     s.receive("\

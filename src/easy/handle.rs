@@ -586,6 +586,11 @@ impl Easy {
         self.inner.local_port_range(range)
     }
 
+    /// Same as [`Easy2::dns_servers`](struct.Easy2.html#method.dns_servers)
+    pub fn dns_servers(&mut self, servers: &str) -> Result<(), Error> {
+        self.inner.dns_servers(servers)
+    }
+
     /// Same as [`Easy2::dns_cache_timeout`](struct.Easy2.html#method.dns_cache_timeout)
     pub fn dns_cache_timeout(&mut self, dur: Duration) -> Result<(), Error> {
         self.inner.dns_cache_timeout(dur)

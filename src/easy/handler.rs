@@ -937,6 +937,19 @@ impl<H> Easy2<H> {
                          range as c_long)
     }
 
+    /// Sets the DNS servers that wil be used.
+    ///
+    /// Provide a comma separated list, for example: `8.8.8.8,8.8.4.4`.
+    ///
+    /// By default this option is not set and the OS's DNS resolver is used.
+    /// This option can only be used if libcurl is linked against
+    /// [c-ares](https://c-ares.haxx.se), otherwise setting it will return
+    /// an error.
+    pub fn dns_servers(&mut self, servers: &str) -> Result<(), Error> {
+        let s = try!(CString::new(servers));
+        self.setopt_str(curl_sys::CURLOPT_DNS_SERVERS, &s)
+    }
+
     /// Sets the timeout of how long name resolves will be kept in memory.
     ///
     /// This is distinct from DNS TTL options and is entirely speculative.

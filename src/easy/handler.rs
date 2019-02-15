@@ -482,6 +482,7 @@ pub enum SslVersion {
     Tlsv10 = curl_sys::CURL_SSLVERSION_TLSv1_0 as isize,
     Tlsv11 = curl_sys::CURL_SSLVERSION_TLSv1_1 as isize,
     Tlsv12 = curl_sys::CURL_SSLVERSION_TLSv1_2 as isize,
+    Tlsv13 = curl_sys::CURL_SSLVERSION_TLSv1_3 as isize,
 
     /// Hidden variant to indicate that this enum should not be matched on, it
     /// may grow over time.

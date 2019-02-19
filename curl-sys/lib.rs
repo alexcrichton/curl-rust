@@ -621,9 +621,10 @@ pub const CURL_SSLVERSION_DEFAULT: CURLoption = 0;
 pub const CURL_SSLVERSION_TLSv1: CURLoption = 1;
 pub const CURL_SSLVERSION_SSLv2: CURLoption = 2;
 pub const CURL_SSLVERSION_SSLv3: CURLoption = 3;
-// pub const CURL_SSLVERSION_TLSv1_0: CURLoption = 4;
-// pub const CURL_SSLVERSION_TLSv1_1: CURLoption = 5;
-// pub const CURL_SSLVERSION_TLSv1_2: CURLoption = 6;
+pub const CURL_SSLVERSION_TLSv1_0: CURLoption = 4;
+pub const CURL_SSLVERSION_TLSv1_1: CURLoption = 5;
+pub const CURL_SSLVERSION_TLSv1_2: CURLoption = 6;
+pub const CURL_SSLVERSION_TLSv1_3: CURLoption = 7;
 
 pub const CURLOPT_READDATA: CURLoption = CURLOPT_INFILE;
 pub const CURLOPT_WRITEDATA: CURLoption = CURLOPT_FILE;

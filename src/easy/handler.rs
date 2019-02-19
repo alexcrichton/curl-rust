@@ -1745,7 +1745,8 @@ impl<H> Easy2<H> {
     /// system resolver.
     ///
     /// # Examples
-    /// ```
+    ///
+    /// ```no_run
     /// use curl::easy::{Easy, List};
     ///
     /// let mut list = List::new();

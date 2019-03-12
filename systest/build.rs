@@ -82,6 +82,12 @@ fn main() {
                 _ => {}
             }
         }
+        if version < 54 {
+            match s {
+                "CURL_SSLVERSION_TLSv1_3" => return true,
+                _ => {}
+            }
+        }
 
         if version < 49 {
             if s.starts_with("CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE") {

@@ -222,7 +222,7 @@ impl Version {
         }
     }
 
-    /// If available, the version of iconv libcurl is linked against.
+    /// If available, the version of libssh that libcurl is linked against.
     pub fn libssh_version(&self) -> Option<&str> {
         unsafe {
             if (*self.inner).age >= curl_sys::CURLVERSION_FOURTH {

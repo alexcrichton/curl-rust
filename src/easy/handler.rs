@@ -1214,7 +1214,7 @@ impl<H> Easy2<H> {
     /// Configures the size of data that's going to be uploaded as part of a
     /// POST operation.
     ///
-    /// This is called automaticsally as part of `post_fields` and should only
+    /// This is called automatically as part of `post_fields` and should only
     /// be called if data is being provided in a read callback (and even then
     /// it's optional).
     ///

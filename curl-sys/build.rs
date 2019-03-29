@@ -178,12 +178,14 @@ fn main() {
         cfg.define("USE_NGHTTP2", None)
             .define("NGHTTP2_STATICLIB", None);
 
+        println!("cargo:rustc-cfg=link_libnghttp2");
         if let Some(path) = env::var_os("DEP_NGHTTP2_ROOT") {
             let path = PathBuf::from(path);
             cfg.include(path.join("include"));
         }
     }
 
+    println!("cargo:rustc-cfg=link_libz");
     if let Some(path) = env::var_os("DEP_Z_INCLUDE") {
         cfg.include(path);
     }
@@ -263,6 +265,7 @@ fn main() {
                 cfg.define("USE_OPENSSL", None)
                     .file("curl/lib/vtls/openssl.c");
 
+                println!("cargo:rustc-cfg=link_openssl");
                 if let Some(path) = env::var_os("DEP_OPENSSL_INCLUDE") {
                     cfg.include(path);
                 }

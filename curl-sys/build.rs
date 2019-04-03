@@ -252,8 +252,8 @@ fn main() {
 
         if cfg!(feature = "ssl") {
             if target.contains("-apple-") {
-                cfg.define("USE_DARWINSSL", None)
-                    .file("curl/lib/vtls/darwinssl.c");
+                cfg.define("USE_SECTRANSP", None)
+                    .file("curl/lib/vtls/sectransp.c");
                 if xcode_major_version().map_or(true, |v| v >= 9) {
                     // On earlier Xcode versions (<9), defining HAVE_BUILTIN_AVAILABLE
                     // would cause __bultin_available() to fail to compile due to

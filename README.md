@@ -2,8 +2,7 @@
 
 libcurl bindings for Rust
 
-[![Build Status](https://travis-ci.org/alexcrichton/curl-rust.svg?branch=master)](https://travis-ci.org/alexcrichton/curl-rust)
-[![Build status](https://ci.appveyor.com/api/projects/status/lx98wtbxhhhajpr9?svg=true)](https://ci.appveyor.com/project/alexcrichton/curl-rust)
+[![Build Status](https://dev.azure.com/alexcrichton/curl-rust/_apis/build/status/alexcrichton.curl-rust?branchName=master)](https://dev.azure.com/alexcrichton/curl-rust/_build/latest?definitionId=6&branchName=master)
 
 [Documentation](https://docs.rs/curl)
 

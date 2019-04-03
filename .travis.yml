@@ -19,6 +19,9 @@ matrix:
     - os: linux
       rust: stable
       env: TARGET=x86_64-unknown-linux-gnu DOCKER=linux64-curl NO_ADD=1
+    - os: linux
+      rust: stable
+      env: TARGET=x86_64-unknown-linux-gnu DOCKER=centos7 NO_ADD=1
     - os: osx
       rust: stable
       env: TARGET=x86_64-apple-darwin NO_ADD=1

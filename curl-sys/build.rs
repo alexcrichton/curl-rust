@@ -400,6 +400,7 @@ fn xcode_major_version() -> Option<u8> {
         .ok()?;
     if output.status.success() {
         let stdout = String::from_utf8_lossy(&output.stdout);
+        println!("xcode version: {}", stdout);
         let mut words = stdout.split_whitespace();
         if words.next()? == "Xcode" {
             let version = words.next()?;

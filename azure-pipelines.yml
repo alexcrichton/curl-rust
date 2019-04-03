@@ -57,7 +57,7 @@ jobs:
       - checkout: self
         submodules: true
       - template: ci/azure-install-rust.yml
-      - script: cargo test --features curl-sys/static-curl
+      - script: cargo test --features curl-sys/static-curl -vvv
 
   - job: Windows_vs2019
     pool:

@@ -1,19 +1,21 @@
 extern crate curl;
 
-use std::cell::{RefCell, Cell};
+use std::cell::{Cell, RefCell};
 use std::io::Read;
 use std::rc::Rc;
 use std::str;
 use std::time::Duration;
 
 macro_rules! t {
-    ($e:expr) => (match $e {
-        Ok(e) => e,
-        Err(e) => panic!("{} failed with {:?}", stringify!($e), e),
-    })
+    ($e:expr) => {
+        match $e {
+            Ok(e) => e,
+            Err(e) => panic!("{} failed with {:?}", stringify!($e), e),
+        }
+    };
 }
 
-use curl::easy::{Easy, List, WriteError, ReadError, Transfer};
+use curl::easy::{Easy, List, ReadError, Transfer, WriteError};
 
 use server::Server;
 mod server;
@@ -21,7 +23,7 @@ mod server;
 fn handle() -> Easy {
     let mut e = Easy::new();
     t!(e.timeout(Duration::new(20, 0)));
-    return e
+    return e;
 }
 
 fn sink(data: &[u8]) -> Result<usize, WriteError> {
@@ -31,11 +33,13 @@ fn sink(data: &[u8]) -> Result<usize, WriteError> {
 #[test]
 fn get_smoke() {
     let s = Server::new();
-    s.receive("\
-GET / HTTP/1.1\r\n\
-Host: 127.0.0.1:$PORT\r\n\
-Accept: */*\r\n\
-\r\n");
+    s.receive(
+        "\
+         GET / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         \r\n",
+    );
     s.send("HTTP/1.1 200 OK\r\n\r\n");
 
     let mut handle = handle();
@@ -46,11 +50,13 @@ Accept: */*\r\n\
 #[test]
 fn get_path() {
     let s = Server::new();
-    s.receive("\
-GET /foo HTTP/1.1\r\n\
-Host: 127.0.0.1:$PORT\r\n\
-Accept: */*\r\n\
-\r\n");
+    s.receive(
+        "\
+         GET /foo HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         \r\n",
+    );
     s.send("HTTP/1.1 200 OK\r\n\r\n");
 
     let mut handle = handle();
@@ -61,11 +67,13 @@ Accept: */*\r\n\
 #[test]
 fn write_callback() {
     let s = Server::new();
-    s.receive("\
-GET / HTTP/1.1\r\n\
-Host: 127.0.0.1:$PORT\r\n\
-Accept: */*\r\n\
-\r\n");
+    s.receive(
+        "\
+         GET / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         \r\n",
+    );
     s.send("HTTP/1.1 200 OK\r\n\r\nhello!");
 
     let mut all = Vec::<u8>::new();
@@ -85,11 +93,13 @@ Accept: */*\r\n\
 #[test]
 fn resolve() {
     let s = Server::new();
-    s.receive("\
-GET / HTTP/1.1\r\n\
-Host: example.com:$PORT\r\n\
-Accept: */*\r\n\
-\r\n");
+    s.receive(
+        "\
+         GET / HTTP/1.1\r\n\
+         Host: example.com:$PORT\r\n\
+         Accept: */*\r\n\
+         \r\n",
+    );
     s.send("HTTP/1.1 200 OK\r\n\r\n");
 
     let mut list = List::new();
@@ -103,11 +113,13 @@ Accept: */*\r\n\
 #[test]
 fn progress() {
     let s = Server::new();
-    s.receive("\
-GET /foo HTTP/1.1\r\n\
-Host: 127.0.0.1:$PORT\r\n\
-Accept: */*\r\n\
-\r\n");
+    s.receive(
+        "\
+         GET /foo HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         \r\n",
+    );
     s.send("HTTP/1.1 200 OK\r\n\r\nHello!");
 
     let mut hits = 0;
@@ -133,17 +145,21 @@ Accept: */*\r\n\
 #[test]
 fn headers() {
     let s = Server::new();
-    s.receive("\
-GET / HTTP/1.1\r\n\
-Host: 127.0.0.1:$PORT\r\n\
-Accept: */*\r\n\
-\r\n");
-    s.send("\
+    s.receive(
+        "\
+         GET / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         \r\n",
+    );
+    s.send(
+        "\
 HTTP/1.1 200 OK\r\n\
 Foo: bar\r\n\
 Bar: baz\r\n\
 \r\n
-Hello!");
+Hello!",
+    );
 
     let mut headers = Vec::new();
     {
@@ -158,25 +174,32 @@ Hello!");
         t!(handle.write_function(sink));
         t!(handle.perform());
     }
-    assert_eq!(headers, vec![
-        "HTTP/1.1 200 OK\r\n".to_string(),
-        "Foo: bar\r\n".to_string(),
-        "Bar: baz\r\n".to_string(),
-        "\r\n".to_string(),
-    ]);
+    assert_eq!(
+        headers,
+        vec![
+            "HTTP/1.1 200 OK\r\n".to_string(),
+            "Foo: bar\r\n".to_string(),
+            "Bar: baz\r\n".to_string(),
+            "\r\n".to_string(),
+        ]
+    );
 }
 
 #[test]
 fn fail_on_error() {
     let s = Server::new();
-    s.receive("\
-GET / HTTP/1.1\r\n\
-Host: 127.0.0.1:$PORT\r\n\
-Accept: */*\r\n\
-\r\n");
-    s.send("\
-HTTP/1.1 401 Not so good\r\n\
-\r\n");
+    s.receive(
+        "\
+         GET / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         \r\n",
+    );
+    s.send(
+        "\
+         HTTP/1.1 401 Not so good\r\n\
+         \r\n",
+    );
 
     let mut h = handle();
     t!(h.url(&s.url("/")));
@@ -184,14 +207,18 @@ HTTP/1.1 401 Not so good\r\n\
     assert!(h.perform().is_err());
 
     let s = Server::new();
-    s.receive("\
-GET / HTTP/1.1\r\n\
-Host: 127.0.0.1:$PORT\r\n\
-Accept: */*\r\n\
-\r\n");
-    s.send("\
-HTTP/1.1 401 Not so good\r\n\
-\r\n");
+    s.receive(
+        "\
+         GET / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         \r\n",
+    );
+    s.send(
+        "\
+         HTTP/1.1 401 Not so good\r\n\
+         \r\n",
+    );
 
     let mut h = handle();
     t!(h.url(&s.url("/")));
@@ -202,14 +229,18 @@ HTTP/1.1 401 Not so good\r\n\
 #[test]
 fn port() {
     let s = Server::new();
-    s.receive("\
-GET / HTTP/1.1\r\n\
-Host: localhost:$PORT\r\n\
-Accept: */*\r\n\
-\r\n");
-    s.send("\
-HTTP/1.1 200 OK\r\n\
-\r\n");
+    s.receive(
+        "\
+         GET / HTTP/1.1\r\n\
+         Host: localhost:$PORT\r\n\
+         Accept: */*\r\n\
+         \r\n",
+    );
+    s.send(
+        "\
+         HTTP/1.1 200 OK\r\n\
+         \r\n",
+    );
 
     let mut h = handle();
     t!(h.url("http://localhost/"));
@@ -220,14 +251,18 @@ HTTP/1.1 200 OK\r\n\
 #[test]
 fn proxy() {
     let s = Server::new();
-    s.receive("\
-GET http://example.com/ HTTP/1.1\r\n\
-Host: example.com\r\n\
-Accept: */*\r\n\
-\r\n");
-    s.send("\
-HTTP/1.1 200 OK\r\n\
-\r\n");
+    s.receive(
+        "\
+         GET http://example.com/ HTTP/1.1\r\n\
+         Host: example.com\r\n\
+         Accept: */*\r\n\
+         \r\n",
+    );
+    s.send(
+        "\
+         HTTP/1.1 200 OK\r\n\
+         \r\n",
+    );
 
     let mut h = handle();
     t!(h.url("http://example.com/"));
@@ -239,14 +274,18 @@ HTTP/1.1 200 OK\r\n\
 #[ignore] // fails on newer curl versions? seems benign
 fn noproxy() {
     let s = Server::new();
-    s.receive("\
-GET / HTTP/1.1\r\n\
-Host: 127.0.0.1:$PORT\r\n\
-Accept: */*\r\n\
-\r\n");
-    s.send("\
-HTTP/1.1 200 OK\r\n\
-\r\n");
+    s.receive(
+        "\
+         GET / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         \r\n",
+    );
+    s.send(
+        "\
+         HTTP/1.1 200 OK\r\n\
+         \r\n",
+    );
 
     let mut h = handle();
     t!(h.url(&s.url("/")));
@@ -280,15 +319,19 @@ fn dns_servers() {
 #[test]
 fn userpass() {
     let s = Server::new();
-    s.receive("\
-GET / HTTP/1.1\r\n\
-Authorization: Basic YmFyOg==\r\n\
-Host: 127.0.0.1:$PORT\r\n\
-Accept: */*\r\n\
-\r\n");
-    s.send("\
-HTTP/1.1 200 OK\r\n\
-\r\n");
+    s.receive(
+        "\
+         GET / HTTP/1.1\r\n\
+         Authorization: Basic YmFyOg==\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         \r\n",
+    );
+    s.send(
+        "\
+         HTTP/1.1 200 OK\r\n\
+         \r\n",
+    );
 
     let mut h = handle();
     t!(h.url(&s.url("/")));
@@ -300,15 +343,19 @@ HTTP/1.1 200 OK\r\n\
 #[test]
 fn accept_encoding() {
     let s = Server::new();
-    s.receive("\
-GET / HTTP/1.1\r\n\
-Host: 127.0.0.1:$PORT\r\n\
-Accept: */*\r\n\
-Accept-Encoding: gzip\r\n\
-\r\n");
-    s.send("\
-HTTP/1.1 200 OK\r\n\
-\r\n");
+    s.receive(
+        "\
+         GET / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         Accept-Encoding: gzip\r\n\
+         \r\n",
+    );
+    s.send(
+        "\
+         HTTP/1.1 200 OK\r\n\
+         \r\n",
+    );
 
     let mut h = handle();
     t!(h.url(&s.url("/")));
@@ -320,24 +367,33 @@ HTTP/1.1 200 OK\r\n\
 fn follow_location() {
     let s1 = Server::new();
     let s2 = Server::new();
-    s1.receive("\
-GET / HTTP/1.1\r\n\
-Host: 127.0.0.1:$PORT\r\n\
-Accept: */*\r\n\
-\r\n");
-    s1.send(&format!("\
-HTTP/1.1 301 Moved Permanently\r\n\
-Location: http://{}/foo\r\n\
-\r\n", s2.addr()));
+    s1.receive(
+        "\
+         GET / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         \r\n",
+    );
+    s1.send(&format!(
+        "\
+         HTTP/1.1 301 Moved Permanently\r\n\
+         Location: http://{}/foo\r\n\
+         \r\n",
+        s2.addr()
+    ));
 
-    s2.receive("\
-GET /foo HTTP/1.1\r\n\
-Host: 127.0.0.1:$PORT\r\n\
-Accept: */*\r\n\
-\r\n");
-    s2.send("\
-HTTP/1.1 200 OK\r\n\
-\r\n");
+    s2.receive(
+        "\
+         GET /foo HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         \r\n",
+    );
+    s2.send(
+        "\
+         HTTP/1.1 200 OK\r\n\
+         \r\n",
+    );
 
     let mut h = handle();
     t!(h.url(&s1.url("/")));
@@ -348,16 +404,20 @@ HTTP/1.1 200 OK\r\n\
 #[test]
 fn put() {
     let s = Server::new();
-    s.receive("\
-PUT / HTTP/1.1\r\n\
-Host: 127.0.0.1:$PORT\r\n\
-Accept: */*\r\n\
-Content-Length: 5\r\n\
-\r\n\
-data\n");
-    s.send("\
-HTTP/1.1 200 OK\r\n\
-\r\n");
+    s.receive(
+        "\
+         PUT / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         Content-Length: 5\r\n\
+         \r\n\
+         data\n",
+    );
+    s.send(
+        "\
+         HTTP/1.1 200 OK\r\n\
+         \r\n",
+    );
 
     let mut data = "data\n".as_bytes();
     let mut list = List::new();
@@ -369,26 +429,28 @@ HTTP/1.1 200 OK\r\n\
     t!(h.upload(true));
     t!(h.http_headers(list));
     let mut h = h.transfer();
-    t!(h.read_function(|buf| {
-        Ok(data.read(buf).unwrap())
-    }));
+    t!(h.read_function(|buf| Ok(data.read(buf).unwrap())));
     t!(h.perform());
 }
 
 #[test]
 fn post1() {
     let s = Server::new();
-    s.receive("\
-POST / HTTP/1.1\r\n\
-Host: 127.0.0.1:$PORT\r\n\
-Accept: */*\r\n\
-Content-Length: 5\r\n\
-Content-Type: application/x-www-form-urlencoded\r\n\
-\r\n\
-data\n");
-    s.send("\
-HTTP/1.1 200 OK\r\n\
-\r\n");
+    s.receive(
+        "\
+         POST / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         Content-Length: 5\r\n\
+         Content-Type: application/x-www-form-urlencoded\r\n\
+         \r\n\
+         data\n",
+    );
+    s.send(
+        "\
+         HTTP/1.1 200 OK\r\n\
+         \r\n",
+    );
 
     let mut h = handle();
     t!(h.url(&s.url("/")));
@@ -400,17 +462,21 @@ HTTP/1.1 200 OK\r\n\
 #[test]
 fn post2() {
     let s = Server::new();
-    s.receive("\
-POST / HTTP/1.1\r\n\
-Host: 127.0.0.1:$PORT\r\n\
-Accept: */*\r\n\
-Content-Length: 5\r\n\
-Content-Type: application/x-www-form-urlencoded\r\n\
-\r\n\
-data\n");
-    s.send("\
-HTTP/1.1 200 OK\r\n\
-\r\n");
+    s.receive(
+        "\
+         POST / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         Content-Length: 5\r\n\
+         Content-Type: application/x-www-form-urlencoded\r\n\
+         \r\n\
+         data\n",
+    );
+    s.send(
+        "\
+         HTTP/1.1 200 OK\r\n\
+         \r\n",
+    );
 
     let mut h = handle();
     t!(h.url(&s.url("/")));
@@ -423,17 +489,21 @@ HTTP/1.1 200 OK\r\n\
 #[test]
 fn post3() {
     let s = Server::new();
-    s.receive("\
-POST / HTTP/1.1\r\n\
-Host: 127.0.0.1:$PORT\r\n\
-Accept: */*\r\n\
-Content-Length: 5\r\n\
-Content-Type: application/x-www-form-urlencoded\r\n\
-\r\n\
-data\n");
-    s.send("\
-HTTP/1.1 200 OK\r\n\
-\r\n");
+    s.receive(
+        "\
+         POST / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         Content-Length: 5\r\n\
+         Content-Type: application/x-www-form-urlencoded\r\n\
+         \r\n\
+         data\n",
+    );
+    s.send(
+        "\
+         HTTP/1.1 200 OK\r\n\
+         \r\n",
+    );
 
     let mut data = "data\n".as_bytes();
     let mut h = handle();
@@ -441,24 +511,26 @@ HTTP/1.1 200 OK\r\n\
     t!(h.post(true));
     t!(h.post_field_size(5));
     let mut h = h.transfer();
-    t!(h.read_function(|buf| {
-        Ok(data.read(buf).unwrap())
-    }));
+    t!(h.read_function(|buf| Ok(data.read(buf).unwrap())));
     t!(h.perform());
 }
 
 #[test]
 fn referer() {
     let s = Server::new();
-    s.receive("\
-GET / HTTP/1.1\r\n\
-Host: 127.0.0.1:$PORT\r\n\
-Accept: */*\r\n\
-Referer: foo\r\n\
-\r\n");
-    s.send("\
-HTTP/1.1 200 OK\r\n\
-\r\n");
+    s.receive(
+        "\
+         GET / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         Referer: foo\r\n\
+         \r\n",
+    );
+    s.send(
+        "\
+         HTTP/1.1 200 OK\r\n\
+         \r\n",
+    );
 
     let mut h = handle();
     t!(h.url(&s.url("/")));
@@ -469,15 +541,19 @@ HTTP/1.1 200 OK\r\n\
 #[test]
 fn useragent() {
     let s = Server::new();
-    s.receive("\
-GET / HTTP/1.1\r\n\
-User-Agent: foo\r\n\
-Host: 127.0.0.1:$PORT\r\n\
-Accept: */*\r\n\
-\r\n");
-    s.send("\
-HTTP/1.1 200 OK\r\n\
-\r\n");
+    s.receive(
+        "\
+         GET / HTTP/1.1\r\n\
+         User-Agent: foo\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         \r\n",
+    );
+    s.send(
+        "\
+         HTTP/1.1 200 OK\r\n\
+         \r\n",
+    );
 
     let mut h = handle();
     t!(h.url(&s.url("/")));
@@ -488,14 +564,18 @@ HTTP/1.1 200 OK\r\n\
 #[test]
 fn custom_headers() {
     let s = Server::new();
-    s.receive("\
-GET / HTTP/1.1\r\n\
-Host: 127.0.0.1:$PORT\r\n\
-Foo: bar\r\n\
-\r\n");
-    s.send("\
-HTTP/1.1 200 OK\r\n\
-\r\n");
+    s.receive(
+        "\
+         GET / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Foo: bar\r\n\
+         \r\n",
+    );
+    s.send(
+        "\
+         HTTP/1.1 200 OK\r\n\
+         \r\n",
+    );
 
     let mut custom = List::new();
     t!(custom.append("Foo: bar"));
@@ -509,15 +589,19 @@ HTTP/1.1 200 OK\r\n\
 #[test]
 fn cookie() {
     let s = Server::new();
-    s.receive("\
-GET / HTTP/1.1\r\n\
-Host: 127.0.0.1:$PORT\r\n\
-Accept: */*\r\n\
-Cookie: foo\r\n\
-\r\n");
-    s.send("\
-HTTP/1.1 200 OK\r\n\
-\r\n");
+    s.receive(
+        "\
+         GET / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         Cookie: foo\r\n\
+         \r\n",
+    );
+    s.send(
+        "\
+         HTTP/1.1 200 OK\r\n\
+         \r\n",
+    );
 
     let mut h = handle();
     t!(h.url(&s.url("/")));
@@ -543,14 +627,18 @@ fn url_encoding() {
 #[test]
 fn getters() {
     let s = Server::new();
-    s.receive("\
-GET / HTTP/1.1\r\n\
-Host: 127.0.0.1:$PORT\r\n\
-Accept: */*\r\n\
-\r\n");
-    s.send("\
-HTTP/1.1 200 OK\r\n\
-\r\n");
+    s.receive(
+        "\
+         GET / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         \r\n",
+    );
+    s.send(
+        "\
+         HTTP/1.1 200 OK\r\n\
+         \r\n",
+    );
 
     let mut h = handle();
     t!(h.url(&s.url("/")));
@@ -575,14 +663,18 @@ HTTP/1.1 200 OK\r\n\
 #[should_panic]
 fn panic_in_callback() {
     let s = Server::new();
-    s.receive("\
-GET / HTTP/1.1\r\n\
-Host: 127.0.0.1:$PORT\r\n\
-Accept: */*\r\n\
-\r\n");
-    s.send("\
-HTTP/1.1 200 OK\r\n\
-\r\n");
+    s.receive(
+        "\
+         GET / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         \r\n",
+    );
+    s.send(
+        "\
+         HTTP/1.1 200 OK\r\n\
+         \r\n",
+    );
 
     let mut h = handle();
     t!(h.url(&s.url("/")));
@@ -593,15 +685,19 @@ HTTP/1.1 200 OK\r\n\
 #[test]
 fn abort_read() {
     let s = Server::new();
-    s.receive("\
-PUT / HTTP/1.1\r\n\
-Host: 127.0.0.1:$PORT\r\n\
-Accept: */*\r\n\
-Content-Length: 2\r\n\
-\r\n");
-    s.send("\
-HTTP/1.1 200 OK\r\n\
-\r\n");
+    s.receive(
+        "\
+         PUT / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         Content-Length: 2\r\n\
+         \r\n",
+    );
+    s.send(
+        "\
+         HTTP/1.1 200 OK\r\n\
+         \r\n",
+    );
 
     let mut h = handle();
     t!(h.url(&s.url("/")));
@@ -618,16 +714,20 @@ HTTP/1.1 200 OK\r\n\
 #[test]
 fn pause_write_then_resume() {
     let s = Server::new();
-    s.receive("\
-GET / HTTP/1.1\r\n\
-Host: 127.0.0.1:$PORT\r\n\
-Accept: */*\r\n\
-\r\n");
-    s.send("\
+    s.receive(
+        "\
+         GET / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         \r\n",
+    );
+    s.send(
+        "\
 HTTP/1.1 200 OK\r\n\
 \r\n
 a\n
-b");
+b",
+    );
 
     let mut h = handle();
     t!(h.url(&s.url("/")));
@@ -646,40 +746,46 @@ b");
     });
 
     let h2 = h.clone();
-    t!(h.transfer.borrow_mut().write_function(move |data| {
-        if h2.unpaused.get() {
+    t!(h.transfer
+        .borrow_mut()
+        .write_function(move |data| if h2.unpaused.get() {
             h2.unpaused.set(false);
             Ok(data.len())
         } else {
             h2.paused.set(true);
             Err(WriteError::Pause)
-        }
-    }));
+        }));
     let h2 = h.clone();
-    t!(h.transfer.borrow_mut().progress_function(move |_, _, _, _| {
-        if h2.paused.get() {
-            h2.paused.set(false);
-            h2.unpaused.set(true);
-            t!(h2.transfer.borrow().unpause_write());
-        }
-        true
-    }));
+    t!(h.transfer
+        .borrow_mut()
+        .progress_function(move |_, _, _, _| {
+            if h2.paused.get() {
+                h2.paused.set(false);
+                h2.unpaused.set(true);
+                t!(h2.transfer.borrow().unpause_write());
+            }
+            true
+        }));
     t!(h.transfer.borrow().perform());
 }
 
 #[test]
 fn perform_in_perform_is_bad() {
     let s = Server::new();
-    s.receive("\
-GET / HTTP/1.1\r\n\
-Host: 127.0.0.1:$PORT\r\n\
-Accept: */*\r\n\
-\r\n");
-    s.send("\
+    s.receive(
+        "\
+         GET / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         \r\n",
+    );
+    s.send(
+        "\
 HTTP/1.1 200 OK\r\n\
 \r\n
 a\n
-b");
+b",
+    );
 
     let mut h = handle();
     t!(h.url(&s.url("/")));
@@ -701,4 +807,3 @@ fn check_unix_socket() {
     let mut h = handle();
     h.unix_socket("/var/something.socks").is_ok();
 }
-

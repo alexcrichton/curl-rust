@@ -5,17 +5,19 @@ extern crate mio;
 extern crate mio_extras;
 
 use std::collections::HashMap;
-use std::io::{Read, Cursor};
+use std::io::{Cursor, Read};
 use std::time::Duration;
 
 use curl::easy::{Easy, List};
 use curl::multi::Multi;
 
 macro_rules! t {
-    ($e:expr) => (match $e {
-        Ok(e) => e,
-        Err(e) => panic!("{} failed with {:?}", stringify!($e), e),
-    })
+    ($e:expr) => {
+        match $e {
+            Ok(e) => e,
+            Err(e) => panic!("{} failed with {:?}", stringify!($e), e),
+        }
+    };
 }
 
 use server::Server;
@@ -27,11 +29,13 @@ fn smoke() {
     let mut e = Easy::new();
 
     let s = Server::new();
-    s.receive("\
-GET / HTTP/1.1\r\n\
-Host: 127.0.0.1:$PORT\r\n\
-Accept: */*\r\n\
-\r\n");
+    s.receive(
+        "\
+         GET / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         \r\n",
+    );
     s.send("HTTP/1.1 200 OK\r\n\r\n");
 
     t!(e.url(&s.url("/")));
@@ -46,19 +50,23 @@ fn smoke2() {
     let m = Multi::new();
 
     let s1 = Server::new();
-    s1.receive("\
-GET / HTTP/1.1\r\n\
-Host: 127.0.0.1:$PORT\r\n\
-Accept: */*\r\n\
-\r\n");
+    s1.receive(
+        "\
+         GET / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         \r\n",
+    );
     s1.send("HTTP/1.1 200 OK\r\n\r\n");
 
     let s2 = Server::new();
-    s2.receive("\
-GET / HTTP/1.1\r\n\
-Host: 127.0.0.1:$PORT\r\n\
-Accept: */*\r\n\
-\r\n");
+    s2.receive(
+        "\
+         GET / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         \r\n",
+    );
     s2.send("HTTP/1.1 200 OK\r\n\r\n");
 
     let mut e1 = Easy::new();
@@ -82,7 +90,7 @@ Accept: */*\r\n\
 
 #[test]
 fn upload_lots() {
-    use curl::multi::{Socket, SocketEvents, Events};
+    use curl::multi::{Events, Socket, SocketEvents};
 
     #[derive(Debug)]
     enum Message {
@@ -103,16 +111,21 @@ fn upload_lots() {
     }));
 
     let s = Server::new();
-    s.receive(&format!("\
-PUT / HTTP/1.1\r\n\
-Host: 127.0.0.1:$PORT\r\n\
-Accept: */*\r\n\
-Content-Length: 131072\r\n\
-\r\n\
-{}\n", vec!["a"; 128 * 1024 - 1].join("")));
-    s.send("\
-HTTP/1.1 200 OK\r\n\
-\r\n");
+    s.receive(&format!(
+        "\
+         PUT / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         Content-Length: 131072\r\n\
+         \r\n\
+         {}\n",
+        vec!["a"; 128 * 1024 - 1].join("")
+    ));
+    s.send(
+        "\
+         HTTP/1.1 200 OK\r\n\
+         \r\n",
+    );
 
     let mut data = vec![b'a'; 128 * 1024 - 1];
     data.push(b'\n');
@@ -122,17 +135,12 @@ HTTP/1.1 200 OK\r\n\
     let mut h = Easy::new();
     t!(h.url(&s.url("/")));
     t!(h.put(true));
-    t!(h.read_function(move |buf| {
-        Ok(data.read(buf).unwrap())
-    }));
+    t!(h.read_function(move |buf| Ok(data.read(buf).unwrap())));
     t!(h.in_filesize(128 * 1024));
     t!(h.upload(true));
     t!(h.http_headers(list));
 
-    t!(poll.register(&rx,
-                     mio::Token(0),
-                     mio::Ready::all(),
-                     mio::PollOpt::level()));
+    t!(poll.register(&rx, mio::Token(0), mio::Ready::all(), mio::PollOpt::level()));
 
     let e = t!(m.add(h));
 
@@ -173,15 +181,19 @@ HTTP/1.1 200 OK\r\n\
                                 next_token += 1;
                                 t!(m.assign(socket, token));
                                 token_map.insert(token, socket);
-                                t!(poll.register(&evented,
-                                                 mio::Token(token),
-                                                 e,
-                                                 mio::PollOpt::level()));
+                                t!(poll.register(
+                                    &evented,
+                                    mio::Token(token),
+                                    e,
+                                    mio::PollOpt::level()
+                                ));
                             } else {
-                                t!(poll.reregister(&evented,
-                                                   mio::Token(token),
-                                                   e,
-                                                   mio::PollOpt::level()));
+                                t!(poll.reregister(
+                                    &evented,
+                                    mio::Token(token),
+                                    e,
+                                    mio::PollOpt::level()
+                                ));
                             }
                         }
                     }
@@ -190,7 +202,7 @@ HTTP/1.1 200 OK\r\n\
             }
 
             if event.token() == mio::Token(0) {
-                continue
+                continue;
             }
 
             let token = event.token();
@@ -229,20 +241,24 @@ HTTP/1.1 200 OK\r\n\
 #[cfg(target_os = "linux")]
 #[test]
 fn waitfds() {
+    use curl::multi::WaitFd;
     use std::fs::File;
     use std::os::unix::io::AsRawFd;
-    use curl::multi::WaitFd;
 
     let filenames = ["/dev/null", "/dev/zero", "/dev/urandom"];
-    let files: Vec<File> = filenames.iter()
+    let files: Vec<File> = filenames
+        .iter()
         .map(|filename| File::open(filename).unwrap())
         .collect();
-    let mut waitfds: Vec<WaitFd> = files.iter().map(|f| {
-        let mut waitfd = WaitFd::new();
-        waitfd.set_fd(f.as_raw_fd());
-        waitfd.poll_on_read(true);
-        waitfd
-    }).collect();
+    let mut waitfds: Vec<WaitFd> = files
+        .iter()
+        .map(|f| {
+            let mut waitfd = WaitFd::new();
+            waitfd.set_fd(f.as_raw_fd());
+            waitfd.poll_on_read(true);
+            waitfd
+        })
+        .collect();
 
     let m = Multi::new();
     let events = t!(m.wait(&mut waitfds, Duration::from_secs(1)));

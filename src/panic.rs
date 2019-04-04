@@ -7,7 +7,7 @@ thread_local!(static LAST_ERROR: RefCell<Option<Box<Any + Send>>> = {
 });
 
 pub fn catch<T, F: FnOnce() -> T>(f: F) -> Option<T> {
-	match LAST_ERROR.try_with(|slot| slot.borrow().is_some()) {
+    match LAST_ERROR.try_with(|slot| slot.borrow().is_some()) {
         Ok(true) => return None,
         Ok(false) => {}
         // we're in thread shutdown, so we're for sure not panicking and

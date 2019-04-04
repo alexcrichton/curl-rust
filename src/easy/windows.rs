@@ -5,12 +5,12 @@ use libc::c_void;
 #[cfg(target_env = "msvc")]
 mod win {
     use kernel32;
+    use schannel::cert_context::ValidUses;
+    use schannel::cert_store::CertStore;
     use std::ffi::CString;
     use std::mem;
     use std::ptr;
-    use schannel::cert_context::ValidUses;
-    use schannel::cert_store::CertStore;
-    use winapi::{self, c_void, c_uchar, c_long, c_int};
+    use winapi::{self, c_int, c_long, c_uchar, c_void};
 
     fn lookup(module: &str, symbol: &str) -> Option<*const c_void> {
         unsafe {
@@ -37,10 +37,9 @@ mod win {
         length: c_long,
     ) -> *mut X509;
     type X509_free_fn = unsafe extern "C" fn(x: *mut X509);
-    type X509_STORE_add_cert_fn = unsafe extern "C" fn(store: *mut X509_STORE, x: *mut X509)
-        -> c_int;
-    type SSL_CTX_get_cert_store_fn = unsafe extern "C" fn(ctx: *const SSL_CTX)
-        -> *mut X509_STORE;
+    type X509_STORE_add_cert_fn =
+        unsafe extern "C" fn(store: *mut X509_STORE, x: *mut X509) -> c_int;
+    type SSL_CTX_get_cert_store_fn = unsafe extern "C" fn(ctx: *const SSL_CTX) -> *mut X509_STORE;
 
     struct OpenSSL {
         d2i_X509: d2i_X509_fn,
@@ -49,9 +48,7 @@ mod win {
         SSL_CTX_get_cert_store: SSL_CTX_get_cert_store_fn,
     }
 
-    unsafe fn lookup_functions(crypto_module: &str, ssl_module: &str)
-        -> Option<OpenSSL>
-    {
+    unsafe fn lookup_functions(crypto_module: &str, ssl_module: &str) -> Option<OpenSSL> {
         macro_rules! get {
             ($(let $sym:ident in $module:expr;)*) => ($(
                 let $sym = match lookup($module, stringify!($sym)) {
@@ -108,15 +105,13 @@ mod win {
                 ValidUses::Oids(ref oids) => {
                     let oid = winapi::wincrypt::szOID_PKIX_KP_SERVER_AUTH.to_owned();
                     if !oids.contains(&oid) {
-                        continue
+                        continue;
                     }
                 }
             }
 
             let der = cert.to_der();
-            let x509 = (openssl.d2i_X509)(ptr::null_mut(),
-                                          &mut der.as_ptr(),
-                                          der.len() as c_long);
+            let x509 = (openssl.d2i_X509)(ptr::null_mut(), &mut der.as_ptr(), der.len() as c_long);
             if !x509.is_null() {
                 (openssl.X509_STORE_add_cert)(openssl_store, x509);
                 (openssl.X509_free)(x509);

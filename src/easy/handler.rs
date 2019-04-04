@@ -8,15 +8,15 @@ use std::str;
 use std::time::Duration;
 
 use curl_sys;
-use libc::{self, c_void, c_char, c_long, size_t, c_int, c_double, c_ulong};
+use libc::{self, c_char, c_double, c_int, c_long, c_ulong, c_void, size_t};
 use socket2::Socket;
 
-use Error;
 use easy::form;
 use easy::list;
-use easy::{List, Form};
 use easy::windows;
+use easy::{Form, List};
 use panic;
+use Error;
 
 /// A trait for the various callbacks used by libcurl to invoke user code.
 ///
@@ -219,11 +219,7 @@ pub trait Handler {
     ///
     /// By default this function calls an internal method and corresponds to
     /// `CURLOPT_PROGRESSFUNCTION` and `CURLOPT_PROGRESSDATA`.
-    fn progress(&mut self,
-                dltotal: f64,
-                dlnow: f64,
-                ultotal: f64,
-                ulnow: f64) -> bool {
+    fn progress(&mut self, dltotal: f64, dlnow: f64, ultotal: f64, ulnow: f64) -> bool {
         drop((dltotal, dlnow, ultotal, ulnow));
         true
     }
@@ -275,16 +271,18 @@ pub trait Handler {
     ///
     /// By default this function opens a standard socket and
     /// corresponds to `CURLOPT_OPENSOCKETFUNCTION `.
-    fn open_socket(&mut self,
-                   family: c_int,
-                   socktype: c_int,
-                   protocol: c_int) -> Option<curl_sys::curl_socket_t> {
+    fn open_socket(
+        &mut self,
+        family: c_int,
+        socktype: c_int,
+        protocol: c_int,
+    ) -> Option<curl_sys::curl_socket_t> {
         // Note that we override this to calling a function in `socket2` to
         // ensure that we open all sockets with CLOEXEC. Otherwise if we rely on
         // libcurl to open sockets it won't use CLOEXEC.
         return Socket::new(family.into(), socktype.into(), Some(protocol.into()))
-                    .ok()
-                    .map(cvt);
+            .ok()
+            .map(cvt);
 
         #[cfg(unix)]
         fn cvt(socket: Socket) -> curl_sys::curl_socket_t {
@@ -306,10 +304,8 @@ pub fn debug(kind: InfoType, data: &[u8]) {
         InfoType::Text => "*",
         InfoType::HeaderIn => "<",
         InfoType::HeaderOut => ">",
-        InfoType::DataIn |
-        InfoType::SslDataIn => "{",
-        InfoType::DataOut |
-        InfoType::SslDataOut => "}",
+        InfoType::DataIn | InfoType::SslDataIn => "{",
+        InfoType::DataOut | InfoType::SslDataOut => "}",
         InfoType::__Nonexhaustive => " ",
     };
     let mut out = out.lock();
@@ -624,7 +620,7 @@ impl<H: Handler> Easy2<H> {
                 }),
             };
             ret.default_configure();
-            return ret
+            return ret;
         }
     }
 
@@ -641,16 +637,17 @@ impl<H: Handler> Easy2<H> {
     }
 
     fn default_configure(&mut self) {
-        self.setopt_ptr(curl_sys::CURLOPT_ERRORBUFFER,
-                        self.inner.error_buf.borrow().as_ptr() as *const _)
-              .expect("failed to set error buffer");
+        self.setopt_ptr(
+            curl_sys::CURLOPT_ERRORBUFFER,
+            self.inner.error_buf.borrow().as_ptr() as *const _,
+        )
+        .expect("failed to set error buffer");
         let _ = self.signal(false);
         self.ssl_configure();
 
         let ptr = &*self.inner as *const _ as *const _;
 
-        let cb: extern fn(*mut c_char, size_t, size_t, *mut c_void) -> size_t
-            = header_cb::<H>;
+        let cb: extern "C" fn(*mut c_char, size_t, size_t, *mut c_void) -> size_t = header_cb::<H>;
         self.setopt_ptr(curl_sys::CURLOPT_HEADERFUNCTION, cb as *const _)
             .expect("failed to set header callback");
         self.setopt_ptr(curl_sys::CURLOPT_HEADERDATA, ptr)
@@ -691,7 +688,7 @@ impl<H: Handler> Easy2<H> {
         drop(self.setopt_ptr(curl_sys::CURLOPT_SSL_CTX_DATA, ptr));
 
         let cb: curl_sys::curl_opensocket_callback = opensocket_cb::<H>;
-        self.setopt_ptr(curl_sys::CURLOPT_OPENSOCKETFUNCTION , cb as *const _)
+        self.setopt_ptr(curl_sys::CURLOPT_OPENSOCKETFUNCTION, cb as *const _)
             .expect("failed to set open socket callback");
         self.setopt_ptr(curl_sys::CURLOPT_OPENSOCKETDATA, ptr)
             .expect("failed to set open socket callback");
@@ -752,8 +749,7 @@ impl<H> Easy2<H> {
     /// By default this option is `false` and corresponds to
     /// `CURLOPT_NOPROGRESS`.
     pub fn progress(&mut self, progress: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_NOPROGRESS,
-                         (!progress) as c_long)
+        self.setopt_long(curl_sys::CURLOPT_NOPROGRESS, (!progress) as c_long)
     }
 
     /// Inform libcurl whether or not it should install signal handlers or
@@ -770,8 +766,7 @@ impl<H> Easy2<H> {
     ///
     /// [libcurl docs]: https://curl.haxx.se/libcurl/c/threadsafe.html
     pub fn signal(&mut self, signal: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_NOSIGNAL,
-                         (!signal) as c_long)
+        self.setopt_long(curl_sys::CURLOPT_NOSIGNAL, (!signal) as c_long)
     }
 
     /// Indicates whether multiple files will be transferred based on the file
@@ -796,7 +791,6 @@ impl<H> Easy2<H> {
         let socket = try!(CString::new(unix_domain_socket));
         self.setopt_str(curl_sys::CURLOPT_UNIX_SOCKET_PATH, &socket)
     }
-
 
     // =========================================================================
     // Internal accessors
@@ -905,8 +899,7 @@ impl<H> Easy2<H> {
     /// By default this option is `false` and corresponds to
     /// `CURLOPT_HTTPPROXYTUNNEL`.
     pub fn http_proxy_tunnel(&mut self, tunnel: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_HTTPPROXYTUNNEL,
-                         tunnel as c_long)
+        self.setopt_long(curl_sys::CURLOPT_HTTPPROXYTUNNEL, tunnel as c_long)
     }
 
     /// Tell curl which interface to bind to for an outgoing network interface.
@@ -934,8 +927,7 @@ impl<H> Easy2<H> {
     /// By default this option is 1 and corresponds to
     /// `CURLOPT_LOCALPORTRANGE`.
     pub fn local_port_range(&mut self, range: u16) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_LOCALPORTRANGE,
-                         range as c_long)
+        self.setopt_long(curl_sys::CURLOPT_LOCALPORTRANGE, range as c_long)
     }
 
     /// Sets the DNS servers that wil be used.
@@ -958,8 +950,7 @@ impl<H> Easy2<H> {
     /// By default this option is 60s and corresponds to
     /// `CURLOPT_DNS_CACHE_TIMEOUT`.
     pub fn dns_cache_timeout(&mut self, dur: Duration) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_DNS_CACHE_TIMEOUT,
-                         dur.as_secs() as c_long)
+        self.setopt_long(curl_sys::CURLOPT_DNS_CACHE_TIMEOUT, dur.as_secs() as c_long)
     }
 
     /// Specify the preferred receive buffer size, in bytes.
@@ -1012,16 +1003,14 @@ impl<H> Easy2<H> {
     ///
     /// By default this corresponds to `CURLOPT_TCP_KEEPIDLE`.
     pub fn tcp_keepidle(&mut self, amt: Duration) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_TCP_KEEPIDLE,
-                         amt.as_secs() as c_long)
+        self.setopt_long(curl_sys::CURLOPT_TCP_KEEPIDLE, amt.as_secs() as c_long)
     }
 
     /// Configures the delay between keepalive probes.
     ///
     /// By default this corresponds to `CURLOPT_TCP_KEEPINTVL`.
     pub fn tcp_keepintvl(&mut self, amt: Duration) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_TCP_KEEPINTVL,
-                         amt.as_secs() as c_long)
+        self.setopt_long(curl_sys::CURLOPT_TCP_KEEPINTVL, amt.as_secs() as c_long)
     }
 
     /// Configures the scope for local IPv6 addresses.
@@ -1031,8 +1020,7 @@ impl<H> Easy2<H> {
     ///
     /// By default this value is 0 and corresponds to `CURLOPT_ADDRESS_SCOPE`
     pub fn address_scope(&mut self, scope: u32) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_ADDRESS_SCOPE,
-                         scope as c_long)
+        self.setopt_long(curl_sys::CURLOPT_ADDRESS_SCOPE, scope as c_long)
     }
 
     // =========================================================================
@@ -1207,8 +1195,7 @@ impl<H> Easy2<H> {
     pub fn post_fields_copy(&mut self, data: &[u8]) -> Result<(), Error> {
         // Set the length before the pointer so libcurl knows how much to read
         try!(self.post_field_size(data.len() as u64));
-        self.setopt_ptr(curl_sys::CURLOPT_COPYPOSTFIELDS,
-                        data.as_ptr() as *const _)
+        self.setopt_ptr(curl_sys::CURLOPT_COPYPOSTFIELDS, data.as_ptr() as *const _)
     }
 
     /// Configures the size of data that's going to be uploaded as part of a
@@ -1223,8 +1210,10 @@ impl<H> Easy2<H> {
     pub fn post_field_size(&mut self, size: u64) -> Result<(), Error> {
         // Clear anything previous to ensure we don't read past a buffer
         try!(self.setopt_ptr(curl_sys::CURLOPT_POSTFIELDS, 0 as *const _));
-        self.setopt_off_t(curl_sys::CURLOPT_POSTFIELDSIZE_LARGE,
-                          size as curl_sys::curl_off_t)
+        self.setopt_off_t(
+            curl_sys::CURLOPT_POSTFIELDSIZE_LARGE,
+            size as curl_sys::curl_off_t,
+        )
     }
 
     /// Tells libcurl you want a multipart/formdata HTTP POST to be made and you
@@ -1233,8 +1222,7 @@ impl<H> Easy2<H> {
     /// By default this option is set to null and corresponds to
     /// `CURLOPT_HTTPPOST`.
     pub fn httppost(&mut self, form: Form) -> Result<(), Error> {
-        try!(self.setopt_ptr(curl_sys::CURLOPT_HTTPPOST,
-                             form::raw(&form) as *const _));
+        try!(self.setopt_ptr(curl_sys::CURLOPT_HTTPPOST, form::raw(&form) as *const _));
         self.inner.form = Some(form);
         Ok(())
     }
@@ -1417,8 +1405,7 @@ impl<H> Easy2<H> {
     /// By default this option is `false` and corresponds to
     /// `CURLOPT_IGNORE_CONTENT_LENGTH`.
     pub fn ignore_content_length(&mut self, ignore: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_IGNORE_CONTENT_LENGTH,
-                         ignore as c_long)
+        self.setopt_long(curl_sys::CURLOPT_IGNORE_CONTENT_LENGTH, ignore as c_long)
     }
 
     /// Enable or disable HTTP content decoding.
@@ -1426,8 +1413,7 @@ impl<H> Easy2<H> {
     /// By default this option is `true` and corresponds to
     /// `CURLOPT_HTTP_CONTENT_DECODING`.
     pub fn http_content_decoding(&mut self, enable: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_HTTP_CONTENT_DECODING,
-                         enable as c_long)
+        self.setopt_long(curl_sys::CURLOPT_HTTP_CONTENT_DECODING, enable as c_long)
     }
 
     /// Enable or disable HTTP transfer decoding.
@@ -1435,8 +1421,7 @@ impl<H> Easy2<H> {
     /// By default this option is `true` and corresponds to
     /// `CURLOPT_HTTP_TRANSFER_DECODING`.
     pub fn http_transfer_decoding(&mut self, enable: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_HTTP_TRANSFER_DECODING,
-                         enable as c_long)
+        self.setopt_long(curl_sys::CURLOPT_HTTP_TRANSFER_DECODING, enable as c_long)
     }
 
     // /// Timeout for the Expect: 100-continue response
@@ -1475,7 +1460,6 @@ impl<H> Easy2<H> {
     // pub fn http_pipewait(&mut self, enable: bool) -> Result<(), Error> {
     // }
 
-
     // =========================================================================
     // Protocol Options
 
@@ -1498,8 +1482,10 @@ impl<H> Easy2<H> {
     /// By default this option is 0 and corresponds to
     /// `CURLOPT_RESUME_FROM_LARGE`.
     pub fn resume_from(&mut self, from: u64) -> Result<(), Error> {
-        self.setopt_off_t(curl_sys::CURLOPT_RESUME_FROM_LARGE,
-                          from as curl_sys::curl_off_t)
+        self.setopt_off_t(
+            curl_sys::CURLOPT_RESUME_FROM_LARGE,
+            from as curl_sys::curl_off_t,
+        )
     }
 
     /// Set a custom request string
@@ -1542,8 +1528,10 @@ impl<H> Easy2<H> {
     /// By default this option is not set and corresponds to
     /// `CURLOPT_INFILESIZE_LARGE`.
     pub fn in_filesize(&mut self, size: u64) -> Result<(), Error> {
-        self.setopt_off_t(curl_sys::CURLOPT_INFILESIZE_LARGE,
-                          size as curl_sys::curl_off_t)
+        self.setopt_off_t(
+            curl_sys::CURLOPT_INFILESIZE_LARGE,
+            size as curl_sys::curl_off_t,
+        )
     }
 
     /// Enable or disable data upload.
@@ -1562,8 +1550,10 @@ impl<H> Easy2<H> {
     /// By default this option is not set and corresponds to
     /// `CURLOPT_MAXFILESIZE_LARGE`.
     pub fn max_filesize(&mut self, size: u64) -> Result<(), Error> {
-        self.setopt_off_t(curl_sys::CURLOPT_MAXFILESIZE_LARGE,
-                          size as curl_sys::curl_off_t)
+        self.setopt_off_t(
+            curl_sys::CURLOPT_MAXFILESIZE_LARGE,
+            size as curl_sys::curl_off_t,
+        )
     }
 
     /// Selects a condition for a time request.
@@ -1614,10 +1604,8 @@ impl<H> Easy2<H> {
     pub fn timeout(&mut self, timeout: Duration) -> Result<(), Error> {
         // TODO: checked arithmetic and casts
         // TODO: use CURLOPT_TIMEOUT if the timeout is too great
-        let ms = timeout.as_secs() * 1000 +
-                 (timeout.subsec_nanos() / 1_000_000) as u64;
+        let ms = timeout.as_secs() * 1000 + (timeout.subsec_nanos() / 1_000_000) as u64;
         self.setopt_long(curl_sys::CURLOPT_TIMEOUT_MS, ms as c_long)
-
     }
 
     /// Set the low speed limit in bytes per second.
@@ -1640,8 +1628,7 @@ impl<H> Easy2<H> {
     /// By default this option is not set and corresponds to
     /// `CURLOPT_LOW_SPEED_TIME`.
     pub fn low_speed_time(&mut self, dur: Duration) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_LOW_SPEED_TIME,
-                         dur.as_secs() as c_long)
+        self.setopt_long(curl_sys::CURLOPT_LOW_SPEED_TIME, dur.as_secs() as c_long)
     }
 
     /// Rate limit data upload speed
@@ -1653,8 +1640,10 @@ impl<H> Easy2<H> {
     /// By default this option is not set (unlimited speed) and corresponds to
     /// `CURLOPT_MAX_SEND_SPEED_LARGE`.
     pub fn max_send_speed(&mut self, speed: u64) -> Result<(), Error> {
-        self.setopt_off_t(curl_sys::CURLOPT_MAX_SEND_SPEED_LARGE,
-                          speed as curl_sys::curl_off_t)
+        self.setopt_off_t(
+            curl_sys::CURLOPT_MAX_SEND_SPEED_LARGE,
+            speed as curl_sys::curl_off_t,
+        )
     }
 
     /// Rate limit data download speed
@@ -1666,8 +1655,10 @@ impl<H> Easy2<H> {
     /// By default this option is not set (unlimited speed) and corresponds to
     /// `CURLOPT_MAX_RECV_SPEED_LARGE`.
     pub fn max_recv_speed(&mut self, speed: u64) -> Result<(), Error> {
-        self.setopt_off_t(curl_sys::CURLOPT_MAX_RECV_SPEED_LARGE,
-                          speed as curl_sys::curl_off_t)
+        self.setopt_off_t(
+            curl_sys::CURLOPT_MAX_RECV_SPEED_LARGE,
+            speed as curl_sys::curl_off_t,
+        )
     }
 
     /// Set the maximum connection cache size.
@@ -1724,8 +1715,7 @@ impl<H> Easy2<H> {
     /// By default this value is 300 seconds and corresponds to
     /// `CURLOPT_CONNECTTIMEOUT_MS`.
     pub fn connect_timeout(&mut self, timeout: Duration) -> Result<(), Error> {
-        let ms = timeout.as_secs() * 1000 +
-                 (timeout.subsec_nanos() / 1_000_000) as u64;
+        let ms = timeout.as_secs() * 1000 + (timeout.subsec_nanos() / 1_000_000) as u64;
         self.setopt_long(curl_sys::CURLOPT_CONNECTTIMEOUT_MS, ms as c_long)
     }
 
@@ -1763,7 +1753,6 @@ impl<H> Easy2<H> {
         self.inner.resolve_list = Some(list);
         self.setopt_ptr(curl_sys::CURLOPT_RESOLVE, ptr as *const _)
     }
-
 
     /// Configure whether to stop when connected to target server
     ///
@@ -1972,7 +1961,7 @@ impl<H> Easy2<H> {
     /// By default this option is set to `true` and corresponds to
     /// `CURLOPT_SSL_VERIFYHOST`.
     pub fn ssl_verify_host(&mut self, verify: bool) -> Result<(), Error> {
-        let val = if verify {2} else {0};
+        let val = if verify { 2 } else { 0 };
         self.setopt_long(curl_sys::CURLOPT_SSL_VERIFYHOST, val)
     }
 
@@ -2164,8 +2153,7 @@ impl<H> Easy2<H> {
     ///
     /// This corresponds to the `CURLOPT_SSL_SESSIONID_CACHE` option.
     pub fn ssl_sessionid_cache(&mut self, enable: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_SSL_SESSIONID_CACHE,
-                         enable as c_long)
+        self.setopt_long(curl_sys::CURLOPT_SSL_SESSIONID_CACHE, enable as c_long)
     }
 
     /// Set SSL behavior options
@@ -2205,7 +2193,6 @@ impl<H> Easy2<H> {
     // =========================================================================
     // getters
 
-
     /// Get info on unmet time conditional
     ///
     /// Returns if the condition provided in the previous request didn't match
@@ -2213,13 +2200,15 @@ impl<H> Easy2<H> {
     //// This corresponds to `CURLINFO_CONDITION_UNMET` and may return an error if the
     /// option is not supported
     pub fn time_condition_unmet(&mut self) -> Result<bool, Error> {
-        self.getopt_long(curl_sys::CURLINFO_CONDITION_UNMET).map(|r| {
-            if r==0 {
-                false
-            } else {
-                true
-            }
-        })
+        self.getopt_long(curl_sys::CURLINFO_CONDITION_UNMET).map(
+            |r| {
+                if r == 0 {
+                    false
+                } else {
+                    true
+                }
+            },
+        )
     }
 
     /// Get the last used URL
@@ -2257,7 +2246,8 @@ impl<H> Easy2<H> {
     /// Corresponds to `CURLINFO_RESPONSE_CODE` and returns an error if this
     /// option is not supported.
     pub fn response_code(&mut self) -> Result<u32, Error> {
-        self.getopt_long(curl_sys::CURLINFO_RESPONSE_CODE).map(|c| c as u32)
+        self.getopt_long(curl_sys::CURLINFO_RESPONSE_CODE)
+            .map(|c| c as u32)
     }
 
     /// Get the CONNECT response code
@@ -2268,7 +2258,8 @@ impl<H> Easy2<H> {
     /// Corresponds to `CURLINFO_HTTP_CONNECTCODE` and returns an error if this
     /// option is not supported.
     pub fn http_connectcode(&mut self) -> Result<u32, Error> {
-        self.getopt_long(curl_sys::CURLINFO_HTTP_CONNECTCODE).map(|c| c as u32)
+        self.getopt_long(curl_sys::CURLINFO_HTTP_CONNECTCODE)
+            .map(|c| c as u32)
     }
 
     /// Get the remote time of the retrieved document
@@ -2419,7 +2410,8 @@ impl<H> Easy2<H> {
     /// Corresponds to `CURLINFO_REDIRECT_COUNT` and may return an error if the
     /// option isn't supported.
     pub fn redirect_count(&mut self) -> Result<u32, Error> {
-        self.getopt_long(curl_sys::CURLINFO_REDIRECT_COUNT).map(|c| c as u32)
+        self.getopt_long(curl_sys::CURLINFO_REDIRECT_COUNT)
+            .map(|c| c as u32)
     }
 
     /// Get the URL a redirect would go to
@@ -2454,7 +2446,8 @@ impl<H> Easy2<H> {
     /// Corresponds to `CURLINFO_HEADER_SIZE` and may return an error if the
     /// option isn't supported.
     pub fn header_size(&mut self) -> Result<u64, Error> {
-        self.getopt_long(curl_sys::CURLINFO_HEADER_SIZE).map(|c| c as u64)
+        self.getopt_long(curl_sys::CURLINFO_HEADER_SIZE)
+            .map(|c| c as u64)
     }
 
     /// Get size of sent request.
@@ -2462,7 +2455,8 @@ impl<H> Easy2<H> {
     /// Corresponds to `CURLINFO_REQUEST_SIZE` and may return an error if the
     /// option isn't supported.
     pub fn request_size(&mut self) -> Result<u64, Error> {
-        self.getopt_long(curl_sys::CURLINFO_REQUEST_SIZE).map(|c| c as u64)
+        self.getopt_long(curl_sys::CURLINFO_REQUEST_SIZE)
+            .map(|c| c as u64)
     }
 
     /// Get Content-Type
@@ -2499,7 +2493,8 @@ impl<H> Easy2<H> {
     /// Corresponds to `CURLINFO_OS_ERRNO` and may return an error if the
     /// option isn't supported.
     pub fn os_errno(&mut self) -> Result<i32, Error> {
-        self.getopt_long(curl_sys::CURLINFO_OS_ERRNO).map(|c| c as i32)
+        self.getopt_long(curl_sys::CURLINFO_OS_ERRNO)
+            .map(|c| c as i32)
     }
 
     /// Get IP address of last connection.
@@ -2519,7 +2514,8 @@ impl<H> Easy2<H> {
     /// Corresponds to `CURLINFO_PRIMARY_PORT` and may return an error if the
     /// option isn't supported.
     pub fn primary_port(&mut self) -> Result<u16, Error> {
-        self.getopt_long(curl_sys::CURLINFO_PRIMARY_PORT).map(|c| c as u16)
+        self.getopt_long(curl_sys::CURLINFO_PRIMARY_PORT)
+            .map(|c| c as u16)
     }
 
     /// Get local IP address of last connection
@@ -2539,7 +2535,8 @@ impl<H> Easy2<H> {
     /// Corresponds to `CURLINFO_LOCAL_PORT` and may return an error if the
     /// option isn't supported.
     pub fn local_port(&mut self) -> Result<u16, Error> {
-        self.getopt_long(curl_sys::CURLINFO_LOCAL_PORT).map(|c| c as u16)
+        self.getopt_long(curl_sys::CURLINFO_LOCAL_PORT)
+            .map(|c| c as u16)
     }
 
     /// Get all known cookies
@@ -2551,9 +2548,11 @@ impl<H> Easy2<H> {
     pub fn cookies(&mut self) -> Result<List, Error> {
         unsafe {
             let mut list = 0 as *mut _;
-            let rc = curl_sys::curl_easy_getinfo(self.inner.handle,
-                                                 curl_sys::CURLINFO_COOKIELIST,
-                                                 &mut list);
+            let rc = curl_sys::curl_easy_getinfo(
+                self.inner.handle,
+                curl_sys::CURLINFO_COOKIELIST,
+                &mut list,
+            );
             try!(self.cvt(rc));
             Ok(list::from_raw(list))
         }
@@ -2586,7 +2585,7 @@ impl<H> Easy2<H> {
     /// protocol and support level.
     ///
     /// This corresponds to the `CURLOPT_PIPEWAIT` option.
-    pub fn pipewait(&mut self, wait: bool) -> Result<(), Error>  {
+    pub fn pipewait(&mut self, wait: bool) -> Result<(), Error> {
         self.setopt_long(curl_sys::CURLOPT_PIPEWAIT, wait as c_long)
     }
 
@@ -2609,11 +2608,9 @@ impl<H> Easy2<H> {
     /// call methods like `unpause_write` and `unpause_read` while a transfer is
     /// in progress.
     pub fn perform(&self) -> Result<(), Error> {
-        let ret = unsafe {
-            self.cvt(curl_sys::curl_easy_perform(self.inner.handle))
-        };
+        let ret = unsafe { self.cvt(curl_sys::curl_easy_perform(self.inner.handle)) };
         panic::propagate();
-        return ret
+        return ret;
     }
 
     /// Unpause reading on a connection.
@@ -2632,8 +2629,7 @@ impl<H> Easy2<H> {
     /// this function returns.
     pub fn unpause_read(&self) -> Result<(), Error> {
         unsafe {
-            let rc = curl_sys::curl_easy_pause(self.inner.handle,
-                                               curl_sys::CURLPAUSE_RECV_CONT);
+            let rc = curl_sys::curl_easy_pause(self.inner.handle, curl_sys::CURLPAUSE_RECV_CONT);
             self.cvt(rc)
         }
     }
@@ -2654,8 +2650,7 @@ impl<H> Easy2<H> {
     /// paused.
     pub fn unpause_write(&self) -> Result<(), Error> {
         unsafe {
-            let rc = curl_sys::curl_easy_pause(self.inner.handle,
-                                               curl_sys::CURLPAUSE_SEND_CONT);
+            let rc = curl_sys::curl_easy_pause(self.inner.handle, curl_sys::CURLPAUSE_SEND_CONT);
             self.cvt(rc)
         }
     }
@@ -2663,17 +2658,19 @@ impl<H> Easy2<H> {
     /// URL encodes a string `s`
     pub fn url_encode(&mut self, s: &[u8]) -> String {
         if s.len() == 0 {
-            return String::new()
+            return String::new();
         }
         unsafe {
-            let p = curl_sys::curl_easy_escape(self.inner.handle,
-                                               s.as_ptr() as *const _,
-                                               s.len() as c_int);
+            let p = curl_sys::curl_easy_escape(
+                self.inner.handle,
+                s.as_ptr() as *const _,
+                s.len() as c_int,
+            );
             assert!(!p.is_null());
             let ret = str::from_utf8(CStr::from_ptr(p).to_bytes()).unwrap();
             let ret = String::from(ret);
             curl_sys::curl_free(p as *mut _);
-            return ret
+            return ret;
         }
     }
 
@@ -2690,24 +2687,24 @@ impl<H> Easy2<H> {
         let orig_len = s.len();
         let mut data;
         let mut s = s;
-        if iter.next() == Some('%') ||
-           iter.next() == Some('%') ||
-           iter.next() == Some('%') {
+        if iter.next() == Some('%') || iter.next() == Some('%') || iter.next() == Some('%') {
             data = s.to_string();
             data.push(0u8 as char);
             s = &data[..];
         }
         unsafe {
             let mut len = 0;
-            let p = curl_sys::curl_easy_unescape(self.inner.handle,
-                                                 s.as_ptr() as *const _,
-                                                 orig_len as c_int,
-                                                 &mut len);
+            let p = curl_sys::curl_easy_unescape(
+                self.inner.handle,
+                s.as_ptr() as *const _,
+                orig_len as c_int,
+                &mut len,
+            );
             assert!(!p.is_null());
             let slice = slice::from_raw_parts(p as *const u8, len as usize);
             let ret = slice.to_vec();
             curl_sys::curl_free(p as *mut _);
-            return ret
+            return ret;
         }
     }
 
@@ -2746,10 +2743,12 @@ impl<H> Easy2<H> {
     pub fn recv(&mut self, data: &mut [u8]) -> Result<usize, Error> {
         unsafe {
             let mut n = 0;
-            let r = curl_sys::curl_easy_recv(self.inner.handle,
-                                             data.as_mut_ptr() as *mut _,
-                                             data.len(),
-                                             &mut n);
+            let r = curl_sys::curl_easy_recv(
+                self.inner.handle,
+                data.as_mut_ptr() as *mut _,
+                data.len(),
+                &mut n,
+            );
             if r == curl_sys::CURLE_OK {
                 Ok(n)
             } else {
@@ -2765,10 +2764,12 @@ impl<H> Easy2<H> {
     pub fn send(&mut self, data: &[u8]) -> Result<usize, Error> {
         unsafe {
             let mut n = 0;
-            let rc = curl_sys::curl_easy_send(self.inner.handle,
-                                              data.as_ptr() as *const _,
-                                              data.len(),
-                                              &mut n);
+            let rc = curl_sys::curl_easy_send(
+                self.inner.handle,
+                data.as_ptr() as *const _,
+                data.len(),
+                &mut n,
+            );
             try!(self.cvt(rc));
             Ok(n)
         }
@@ -2780,57 +2781,44 @@ impl<H> Easy2<H> {
     }
 
     #[cfg(unix)]
-    fn setopt_path(&mut self,
-                   opt: curl_sys::CURLoption,
-                   val: &Path) -> Result<(), Error> {
+    fn setopt_path(&mut self, opt: curl_sys::CURLoption, val: &Path) -> Result<(), Error> {
         use std::os::unix::prelude::*;
         let s = try!(CString::new(val.as_os_str().as_bytes()));
         self.setopt_str(opt, &s)
     }
 
     #[cfg(windows)]
-    fn setopt_path(&mut self,
-                   opt: curl_sys::CURLoption,
-                   val: &Path) -> Result<(), Error> {
+    fn setopt_path(&mut self, opt: curl_sys::CURLoption, val: &Path) -> Result<(), Error> {
         match val.to_str() {
             Some(s) => self.setopt_str(opt, &try!(CString::new(s))),
             None => Err(Error::new(curl_sys::CURLE_CONV_FAILED)),
         }
     }
 
-    fn setopt_long(&mut self,
-                   opt: curl_sys::CURLoption,
-                   val: c_long) -> Result<(), Error> {
-        unsafe {
-            self.cvt(curl_sys::curl_easy_setopt(self.inner.handle, opt, val))
-        }
+    fn setopt_long(&mut self, opt: curl_sys::CURLoption, val: c_long) -> Result<(), Error> {
+        unsafe { self.cvt(curl_sys::curl_easy_setopt(self.inner.handle, opt, val)) }
     }
 
-    fn setopt_str(&mut self,
-                  opt: curl_sys::CURLoption,
-                  val: &CStr) -> Result<(), Error> {
+    fn setopt_str(&mut self, opt: curl_sys::CURLoption, val: &CStr) -> Result<(), Error> {
         self.setopt_ptr(opt, val.as_ptr())
     }
 
-    fn setopt_ptr(&self,
-                  opt: curl_sys::CURLoption,
-                  val: *const c_char) -> Result<(), Error> {
-        unsafe {
-            self.cvt(curl_sys::curl_easy_setopt(self.inner.handle, opt, val))
-        }
+    fn setopt_ptr(&self, opt: curl_sys::CURLoption, val: *const c_char) -> Result<(), Error> {
+        unsafe { self.cvt(curl_sys::curl_easy_setopt(self.inner.handle, opt, val)) }
     }
 
-    fn setopt_off_t(&mut self,
-                    opt: curl_sys::CURLoption,
-                    val: curl_sys::curl_off_t) -> Result<(), Error> {
+    fn setopt_off_t(
+        &mut self,
+        opt: curl_sys::CURLoption,
+        val: curl_sys::curl_off_t,
+    ) -> Result<(), Error> {
         unsafe {
             let rc = curl_sys::curl_easy_setopt(self.inner.handle, opt, val);
             self.cvt(rc)
         }
     }
 
-    fn getopt_bytes(&mut self, opt: curl_sys::CURLINFO)
-                    -> Result<Option<&[u8]>, Error> {
+    fn getopt_bytes(&mut self, opt: curl_sys::CURLINFO) -> Result<Option<&[u8]>, Error> {
         unsafe {
             let p = try!(self.getopt_ptr(opt));
             if p.is_null() {
@@ -2841,8 +2829,7 @@ impl<H> Easy2<H> {
         }
     }
 
-    fn getopt_ptr(&mut self, opt: curl_sys::CURLINFO)
-                  -> Result<*const c_char, Error> {
+    fn getopt_ptr(&mut self, opt: curl_sys::CURLINFO) -> Result<*const c_char, Error> {
         unsafe {
             let mut p = 0 as *const c_char;
             let rc = curl_sys::curl_easy_getinfo(self.inner.handle, opt, &mut p);
@@ -2851,17 +2838,14 @@ impl<H> Easy2<H> {
         }
     }
 
-    fn getopt_str(&mut self, opt: curl_sys::CURLINFO)
-                    -> Result<Option<&str>, Error> {
+    fn getopt_str(&mut self, opt: curl_sys::CURLINFO) -> Result<Option<&str>, Error> {
         match self.getopt_bytes(opt) {
             Ok(None) => Ok(None),
             Err(e) => Err(e),
-            Ok(Some(bytes)) => {
-                match str::from_utf8(bytes) {
-                    Ok(s) => Ok(Some(s)),
-                    Err(_) => Err(Error::new(curl_sys::CURLE_CONV_FAILED)),
-                }
-            }
+            Ok(Some(bytes)) => match str::from_utf8(bytes) {
+                Ok(s) => Ok(Some(s)),
+                Err(_) => Err(Error::new(curl_sys::CURLE_CONV_FAILED)),
+            },
         }
     }
 
@@ -2900,7 +2884,7 @@ impl<H> Easy2<H> {
     pub fn take_error_buf(&self) -> Option<String> {
         let mut buf = self.inner.error_buf.borrow_mut();
         if buf[0] == 0 {
-            return None
+            return None;
         }
         let pos = buf.iter().position(|i| *i == 0).unwrap_or(buf.len());
         let msg = String::from_utf8_lossy(&buf[..pos]).into_owned();
@@ -2910,7 +2894,7 @@ impl<H> Easy2<H> {
 
     fn cvt(&self, rc: curl_sys::CURLcode) -> Result<(), Error> {
         if rc == curl_sys::CURLE_OK {
-            return Ok(())
+            return Ok(());
         }
         let mut err = Error::new(rc);
         if let Some(msg) = self.take_error_buf() {
@@ -2923,9 +2907,9 @@ impl<H> Easy2<H> {
 impl<H: fmt::Debug> fmt::Debug for Easy2<H> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("Easy")
-         .field("handle", &self.inner.handle)
-         .field("handler", &self.inner.handle)
-         .finish()
+            .field("handle", &self.inner.handle)
+            .field("handler", &self.inner.handle)
+            .finish()
     }
 }
 
@@ -2937,15 +2921,17 @@ impl<H> Drop for Easy2<H> {
     }
 }
 
-extern fn header_cb<H: Handler>(buffer: *mut c_char,
-                                size: size_t,
-                                nitems: size_t,
-                                userptr: *mut c_void) -> size_t {
+extern "C" fn header_cb<H: Handler>(
+    buffer: *mut c_char,
+    size: size_t,
+    nitems: size_t,
+    userptr: *mut c_void,
+) -> size_t {
     let keep_going = panic::catch(|| unsafe {
-        let data = slice::from_raw_parts(buffer as *const u8,
-                                         size * nitems);
+        let data = slice::from_raw_parts(buffer as *const u8, size * nitems);
         (*(userptr as *mut Inner<H>)).handler.header(data)
-    }).unwrap_or(false);
+    })
+    .unwrap_or(false);
     if keep_going {
         size * nitems
     } else {
@@ -2953,44 +2939,48 @@ extern fn header_cb<H: Handler>(buffer: *mut c_char,
     }
 }
 
-extern fn write_cb<H: Handler>(ptr: *mut c_char,
-                               size: size_t,
-                               nmemb: size_t,
-                               data: *mut c_void) -> size_t {
+extern "C" fn write_cb<H: Handler>(
+    ptr: *mut c_char,
+    size: size_t,
+    nmemb: size_t,
+    data: *mut c_void,
+) -> size_t {
     panic::catch(|| unsafe {
-        let input = slice::from_raw_parts(ptr as *const u8,
-                                          size * nmemb);
+        let input = slice::from_raw_parts(ptr as *const u8, size * nmemb);
         match (*(data as *mut Inner<H>)).handler.write(input) {
             Ok(s) => s,
-            Err(WriteError::Pause) |
-            Err(WriteError::__Nonexhaustive) => curl_sys::CURL_WRITEFUNC_PAUSE,
+            Err(WriteError::Pause) | Err(WriteError::__Nonexhaustive) => {
+                curl_sys::CURL_WRITEFUNC_PAUSE
+            }
         }
-    }).unwrap_or(!0)
+    })
+    .unwrap_or(!0)
 }
 
-extern fn read_cb<H: Handler>(ptr: *mut c_char,
-                              size: size_t,
-                              nmemb: size_t,
-                              data: *mut c_void) -> size_t {
+extern "C" fn read_cb<H: Handler>(
+    ptr: *mut c_char,
+    size: size_t,
+    nmemb: size_t,
+    data: *mut c_void,
+) -> size_t {
     panic::catch(|| unsafe {
-        let input = slice::from_raw_parts_mut(ptr as *mut u8,
-                                              size * nmemb);
+        let input = slice::from_raw_parts_mut(ptr as *mut u8, size * nmemb);
         match (*(data as *mut Inner<H>)).handler.read(input) {
             Ok(s) => s,
-            Err(ReadError::Pause) => {
-                curl_sys::CURL_READFUNC_PAUSE
-            }
-            Err(ReadError::__Nonexhaustive) |
-            Err(ReadError::Abort) => {
+            Err(ReadError::Pause) => curl_sys::CURL_READFUNC_PAUSE,
+            Err(ReadError::__Nonexhaustive) | Err(ReadError::Abort) => {
                 curl_sys::CURL_READFUNC_ABORT
             }
         }
-    }).unwrap_or(!0)
+    })
+    .unwrap_or(!0)
 }
 
-extern fn seek_cb<H: Handler>(data: *mut c_void,
-                              offset: curl_sys::curl_off_t,
-                              origin: c_int) -> c_int {
+extern "C" fn seek_cb<H: Handler>(
+    data: *mut c_void,
+    offset: curl_sys::curl_off_t,
+    origin: c_int,
+) -> c_int {
     panic::catch(|| unsafe {
         let from = if origin == libc::SEEK_SET {
             SeekFrom::Start(offset as u64)
@@ -2998,17 +2988,23 @@ extern fn seek_cb<H: Handler>(data: *mut c_void,
             panic!("unknown origin from libcurl: {}", origin);
         };
         (*(data as *mut Inner<H>)).handler.seek(from) as c_int
-    }).unwrap_or(!0)
+    })
+    .unwrap_or(!0)
 }
 
-extern fn progress_cb<H: Handler>(data: *mut c_void,
-                                  dltotal: c_double,
-                                  dlnow: c_double,
-                                  ultotal: c_double,
-                                  ulnow: c_double) -> c_int {
+extern "C" fn progress_cb<H: Handler>(
+    data: *mut c_void,
+    dltotal: c_double,
+    dlnow: c_double,
+    ultotal: c_double,
+    ulnow: c_double,
+) -> c_int {
     let keep_going = panic::catch(|| unsafe {
-        (*(data as *mut Inner<H>)).handler.progress(dltotal, dlnow, ultotal, ulnow)
-    }).unwrap_or(false);
+        (*(data as *mut Inner<H>))
+            .handler
+            .progress(dltotal, dlnow, ultotal, ulnow)
+    })
+    .unwrap_or(false);
     if keep_going {
         0
     } else {
@@ -3017,11 +3013,13 @@ extern fn progress_cb<H: Handler>(data: *mut c_void,
 }
 
 // TODO: expose `handle`? is that safe?
-extern fn debug_cb<H: Handler>(_handle: *mut curl_sys::CURL,
-                               kind: curl_sys::curl_infotype,
-                               data: *mut c_char,
-                               size: size_t,
-                               userptr: *mut c_void) -> c_int {
+extern "C" fn debug_cb<H: Handler>(
+    _handle: *mut curl_sys::CURL,
+    kind: curl_sys::curl_infotype,
+    data: *mut c_char,
+    size: size_t,
+    userptr: *mut c_void,
+) -> c_int {
     panic::catch(|| unsafe {
         let data = slice::from_raw_parts(data as *const u8, size);
         let kind = match kind {
@@ -3036,12 +3034,14 @@ extern fn debug_cb<H: Handler>(_handle: *mut curl_sys::CURL,
         };
         (*(userptr as *mut Inner<H>)).handler.debug(kind, data)
     });
-    return 0
+    return 0;
 }
 
-extern fn ssl_ctx_cb<H: Handler>(_handle: *mut curl_sys::CURL,
-                                 ssl_ctx: *mut c_void,
-                                 data: *mut c_void) -> curl_sys::CURLcode {
+extern "C" fn ssl_ctx_cb<H: Handler>(
+    _handle: *mut curl_sys::CURL,
+    ssl_ctx: *mut c_void,
+    data: *mut c_void,
+) -> curl_sys::CURLcode {
     let res = panic::catch(|| unsafe {
         match (*(data as *mut Inner<H>)).handler.ssl_ctx(ssl_ctx) {
             Ok(()) => curl_sys::CURLE_OK,
@@ -3055,15 +3055,15 @@ extern fn ssl_ctx_cb<H: Handler>(_handle: *mut curl_sys::CURL,
 }
 
 // TODO: expose `purpose` and `sockaddr` inside of `address`
-extern fn opensocket_cb<H: Handler>(data: *mut c_void,
-                                    _purpose: curl_sys::curlsocktype,
-                                    address: *mut curl_sys::curl_sockaddr)
-    -> curl_sys::curl_socket_t
-{
+extern "C" fn opensocket_cb<H: Handler>(
+    data: *mut c_void,
+    _purpose: curl_sys::curlsocktype,
+    address: *mut curl_sys::curl_sockaddr,
+) -> curl_sys::curl_socket_t {
     let res = panic::catch(|| unsafe {
-        (*(data as *mut Inner<H>)).handler.open_socket((*address).family,
-                                                       (*address).socktype,
-                                                       (*address).protocol)
+        (*(data as *mut Inner<H>))
+            .handler
+            .open_socket((*address).family, (*address).socktype, (*address).protocol)
             .unwrap_or(curl_sys::CURL_SOCKET_BAD)
     });
     res.unwrap_or(curl_sys::CURL_SOCKET_BAD)
@@ -3194,13 +3194,16 @@ impl fmt::Debug for Auth {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let bits = self.bits as c_ulong;
         f.debug_struct("Auth")
-         .field("basic", &(bits & curl_sys::CURLAUTH_BASIC != 0))
-         .field("digest", &(bits & curl_sys::CURLAUTH_DIGEST != 0))
-         .field("digest_ie", &(bits & curl_sys::CURLAUTH_DIGEST_IE != 0))
-         .field("gssnegotiate", &(bits & curl_sys::CURLAUTH_GSSNEGOTIATE != 0))
-         .field("ntlm", &(bits & curl_sys::CURLAUTH_NTLM != 0))
-         .field("ntlm_wb", &(bits & curl_sys::CURLAUTH_NTLM_WB != 0))
-         .finish()
+            .field("basic", &(bits & curl_sys::CURLAUTH_BASIC != 0))
+            .field("digest", &(bits & curl_sys::CURLAUTH_DIGEST != 0))
+            .field("digest_ie", &(bits & curl_sys::CURLAUTH_DIGEST_IE != 0))
+            .field(
+                "gssnegotiate",
+                &(bits & curl_sys::CURLAUTH_GSSNEGOTIATE != 0),
+            )
+            .field("ntlm", &(bits & curl_sys::CURLAUTH_NTLM != 0))
+            .field("ntlm_wb", &(bits & curl_sys::CURLAUTH_NTLM_WB != 0))
+            .finish()
     }
 }
 
@@ -3249,8 +3252,14 @@ impl SslOpt {
 impl fmt::Debug for SslOpt {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("SslOpt")
-         .field("no_revoke", &(self.bits & curl_sys::CURLSSLOPT_NO_REVOKE != 0))
-         .field("allow_beast", &(self.bits & curl_sys::CURLSSLOPT_ALLOW_BEAST != 0))
-         .finish()
+            .field(
+                "no_revoke",
+                &(self.bits & curl_sys::CURLSSLOPT_NO_REVOKE != 0),
+            )
+            .field(
+                "allow_beast",
+                &(self.bits & curl_sys::CURLSSLOPT_ALLOW_BEAST != 0),
+            )
+            .finish()
     }
 }

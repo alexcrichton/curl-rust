@@ -1,11 +1,11 @@
 #![allow(dead_code)]
 
 use std::collections::HashSet;
-use std::net::{TcpListener, SocketAddr, TcpStream};
 use std::io::prelude::*;
-use std::thread;
-use std::sync::mpsc::{Sender, Receiver, channel};
 use std::io::BufReader;
+use std::net::{SocketAddr, TcpListener, TcpStream};
+use std::sync::mpsc::{channel, Receiver, Sender};
+use std::thread;
 
 pub struct Server {
     messages: Option<Sender<Message>>,
@@ -30,7 +30,7 @@ fn run(listener: &TcpListener, rx: &Receiver<Message>) {
                     expected = &expected[i + 1..];
                     expected_headers.insert(line);
                     if line == "\r\n" {
-                        break
+                        break;
                     }
                 }
 
@@ -44,25 +44,27 @@ fn run(listener: &TcpListener, rx: &Receiver<Message>) {
                     }
                     // various versions of libcurl do different things here
                     if actual == "Proxy-Connection: Keep-Alive\r\n" {
-                        continue
+                        continue;
                     }
                     if expected_headers.remove(&actual[..]) {
-                        continue
+                        continue;
                     }
 
                     let mut found = None;
                     for header in expected_headers.iter() {
                         if lines_match(header, &actual) {
                             found = Some(header.clone());
-                            break
+                            break;
                         }
                     }
                     if let Some(found) = found {
                         expected_headers.remove(&found);
-                        continue
+                        continue;
                     }
-                    panic!("unexpected header: {:?} (remaining headers {:?})",
-                           actual, expected_headers);
+                    panic!(
+                        "unexpected header: {:?} (remaining headers {:?})",
+                        actual, expected_headers
+                    );
                 }
                 for header in expected_headers {
                     panic!("expected header but not found: {:?}", header);
@@ -77,7 +79,7 @@ fn run(listener: &TcpListener, rx: &Receiver<Message>) {
                     line.truncate(0);
                     t!(socket.read_line(&mut line));
                     if line.len() == 0 {
-                        break
+                        break;
                     }
                     if expected.len() == 0 {
                         panic!("unexpected line: {:?}", line);
@@ -86,11 +88,14 @@ fn run(listener: &TcpListener, rx: &Receiver<Message>) {
                     let expected_line = &expected[..i + 1];
                     expected = &expected[i + 1..];
                     if lines_match(expected_line, &line) {
-                        continue
+                        continue;
                     }
-                    panic!("lines didn't match:\n\
-                            expected: {:?}\n\
-                            actual:   {:?}\n", expected_line, line)
+                    panic!(
+                        "lines didn't match:\n\
+                         expected: {:?}\n\
+                         actual:   {:?}\n",
+                        expected_line, line
+                    )
                 }
                 if expected.len() != 0 {
                     println!("didn't get expected data: {:?}", expected);
@@ -98,7 +103,7 @@ fn run(listener: &TcpListener, rx: &Receiver<Message>) {
             }
             Message::Write(ref to_write) => {
                 t!(socket.get_mut().write_all(to_write.as_bytes()));
-                return
+                return;
             }
         }
     }
@@ -113,13 +118,11 @@ fn lines_match(expected: &str, mut actual: &str) -> bool {
         match actual.find(part) {
             Some(j) => {
                 if i == 0 && j != 0 {
-                    return false
+                    return false;
                 }
                 actual = &actual[j + part.len()..];
             }
-            None => {
-                return false
-            }
+            None => return false,
         }
     }
     actual.is_empty() || expected.ends_with("[..]")

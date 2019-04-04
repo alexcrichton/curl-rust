@@ -3,7 +3,7 @@ use std::fmt;
 use std::str;
 
 use curl_sys;
-use libc::{c_int, c_char};
+use libc::{c_char, c_int};
 
 /// Version information about libcurl and the capabilities that it supports.
 pub struct Version {
@@ -40,9 +40,7 @@ impl Version {
 
     /// Returns the human readable version string,
     pub fn version(&self) -> &str {
-        unsafe {
-            ::opt_str((*self.inner).version).unwrap()
-        }
+        unsafe { ::opt_str((*self.inner).version).unwrap() }
     }
 
     /// Returns a numeric representation of the version number
@@ -50,18 +48,14 @@ impl Version {
     /// This is a 24 bit number made up of the major number, minor, and then
     /// patch number. For example 7.9.8 will return 0x070908.
     pub fn version_num(&self) -> u32 {
-        unsafe {
-            (*self.inner).version_num as u32
-        }
+        unsafe { (*self.inner).version_num as u32 }
     }
 
     /// Returns a human readable string of the host libcurl is built for.
     ///
     /// This is discovered as part of the build environment.
     pub fn host(&self) -> &str {
-        unsafe {
-            ::opt_str((*self.inner).host).unwrap()
-        }
+        unsafe { ::opt_str((*self.inner).host).unwrap() }
     }
 
     /// Returns whether libcurl supports IPv6
@@ -148,32 +142,29 @@ impl Version {
     }
 
     fn flag(&self, flag: c_int) -> bool {
-        unsafe {
-            (*self.inner).features & flag != 0
-        }
+        unsafe { (*self.inner).features & flag != 0 }
     }
 
     /// Returns the version of OpenSSL that is used, or None if there is no SSL
     /// support.
     pub fn ssl_version(&self) -> Option<&str> {
-        unsafe {
-            ::opt_str((*self.inner).ssl_version)
-        }
+        unsafe { ::opt_str((*self.inner).ssl_version) }
     }
 
     /// Returns the version of libz that is used, or None if there is no libz
     /// support.
     pub fn libz_version(&self) -> Option<&str> {
-        unsafe {
-            ::opt_str((*self.inner).libz_version)
-        }
+        unsafe { ::opt_str((*self.inner).libz_version) }
     }
 
     /// Returns an iterator over the list of protocols that this build of
     /// libcurl supports.
     pub fn protocols(&self) -> Protocols {
         unsafe {
-            Protocols { _inner: self, cur: (*self.inner).protocols }
+            Protocols {
+                _inner: self,
+                cur: (*self.inner).protocols,
+            }
         }
     }
 
@@ -260,22 +251,22 @@ impl fmt::Debug for Version {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut f = f.debug_struct("Version");
         f.field("version", &self.version())
-         .field("host", &self.host())
-         .field("feature_ipv6", &self.feature_ipv6())
-         .field("feature_ssl", &self.feature_ssl())
-         .field("feature_libz", &self.feature_libz())
-         .field("feature_ntlm", &self.feature_ntlm())
-         .field("feature_gss_negotiate", &self.feature_gss_negotiate())
-         .field("feature_debug", &self.feature_debug())
-         .field("feature_spnego", &self.feature_debug())
-         .field("feature_largefile", &self.feature_debug())
-         .field("feature_idn", &self.feature_debug())
-         .field("feature_sspi", &self.feature_debug())
-         .field("feature_async_dns", &self.feature_debug())
-         .field("feature_conv", &self.feature_debug())
-         .field("feature_tlsauth_srp", &self.feature_debug())
-         .field("feature_ntlm_wb", &self.feature_debug())
-         .field("feature_unix_domain_socket", &self.feature_debug());
+            .field("host", &self.host())
+            .field("feature_ipv6", &self.feature_ipv6())
+            .field("feature_ssl", &self.feature_ssl())
+            .field("feature_libz", &self.feature_libz())
+            .field("feature_ntlm", &self.feature_ntlm())
+            .field("feature_gss_negotiate", &self.feature_gss_negotiate())
+            .field("feature_debug", &self.feature_debug())
+            .field("feature_spnego", &self.feature_debug())
+            .field("feature_largefile", &self.feature_debug())
+            .field("feature_idn", &self.feature_debug())
+            .field("feature_sspi", &self.feature_debug())
+            .field("feature_async_dns", &self.feature_debug())
+            .field("feature_conv", &self.feature_debug())
+            .field("feature_tlsauth_srp", &self.feature_debug())
+            .field("feature_ntlm_wb", &self.feature_debug())
+            .field("feature_unix_domain_socket", &self.feature_debug());
 
         if let Some(s) = self.ssl_version() {
             f.field("ssl_version", &s);
@@ -308,7 +299,7 @@ impl<'a> Iterator for Protocols<'a> {
     fn next(&mut self) -> Option<&'a str> {
         unsafe {
             if (*self.cur).is_null() {
-                return None
+                return None;
             }
             let ret = ::opt_str(*self.cur).unwrap();
             self.cur = self.cur.offset(1);
@@ -319,8 +310,6 @@ impl<'a> Iterator for Protocols<'a> {
 
 impl<'a> fmt::Debug for Protocols<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_list()
-         .entries(self.clone())
-         .finish()
+        f.debug_list().entries(self.clone()).finish()
     }
 }

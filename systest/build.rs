@@ -1,5 +1,5 @@
-extern crate ctest;
 extern crate cc;
+extern crate ctest;
 
 use std::env;
 use std::str;
@@ -15,7 +15,8 @@ fn main() {
     }
     let version = build.expand();
     let version = str::from_utf8(&version).unwrap();
-    let version = version.lines()
+    let version = version
+        .lines()
         .filter(|l| !l.is_empty() && !l.starts_with("#"))
         .next()
         .and_then(|s| s.parse::<u32>().ok())
@@ -36,25 +37,16 @@ fn main() {
             field.to_string()
         }
     });
-    cfg.type_name(|s, is_struct, _is_union| {
-        match s {
-            "CURL" |
-            "CURLM" |
-            "CURLSH" |
-            "curl_version_info_data" => s.to_string(),
-            "curl_khtype" |
-            "curl_khstat" |
-            "curl_khmatch" => format!("enum {}", s),
-            s if is_struct => format!("struct {}", s),
-            "sockaddr" => format!("struct sockaddr"),
-            s => s.to_string(),
-        }
+    cfg.type_name(|s, is_struct, _is_union| match s {
+        "CURL" | "CURLM" | "CURLSH" | "curl_version_info_data" => s.to_string(),
+        "curl_khtype" | "curl_khstat" | "curl_khmatch" => format!("enum {}", s),
+        s if is_struct => format!("struct {}", s),
+        "sockaddr" => format!("struct sockaddr"),
+        s => s.to_string(),
     });
     // cfg.fn_cname(|s, l| l.unwrap_or(s).to_string());
     cfg.skip_type(|n| n == "__enum_ty");
-    cfg.skip_signededness(|s| {
-        s.ends_with("callback") || s.ends_with("function")
-    });
+    cfg.skip_signededness(|s| s.ends_with("callback") || s.ends_with("function"));
 
     cfg.skip_struct(move |s| {
         if version < 60 {
@@ -77,8 +69,7 @@ fn main() {
         }
         if version < 60 {
             match s {
-                "CURLVERSION_FIFTH" |
-                "CURLVERSION_NOW" => return true,
+                "CURLVERSION_FIFTH" | "CURLVERSION_NOW" => return true,
                 _ => {}
             }
         }
@@ -91,19 +82,19 @@ fn main() {
 
         if version < 49 {
             if s.starts_with("CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE") {
-                return true
+                return true;
             }
         }
 
         if version < 47 {
             if s.starts_with("CURL_HTTP_VERSION_2") {
-                return true
+                return true;
             }
         }
 
         if version < 43 {
             if s.starts_with("CURLPIPE_") {
-                return true
+                return true;
             }
         }
 

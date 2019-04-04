@@ -2,9 +2,9 @@ use std::ffi::CString;
 use std::fmt;
 use std::path::Path;
 
-use FormError;
 use curl_sys;
 use easy::{list, List};
+use FormError;
 
 /// Multipart/formdata for an HTTP POST request.
 ///
@@ -62,9 +62,7 @@ impl Form {
 impl fmt::Debug for Form {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // TODO: fill this out more
-        f.debug_struct("Form")
-         .field("fields", &"...")
-         .finish()
+        f.debug_struct("Form").field("fields", &"...").finish()
     }
 }
 
@@ -88,16 +86,23 @@ impl<'form, 'data> Part<'form, 'data> {
             b"\x00"
         } else {
             contents
-        }.as_ptr();
+        }
+        .as_ptr();
 
-        self.array.insert(pos, curl_sys::curl_forms {
-            option: curl_sys::CURLFORM_COPYCONTENTS,
-            value: ptr as *mut _,
-        });
-        self.array.insert(pos + 1, curl_sys::curl_forms {
-            option: curl_sys::CURLFORM_CONTENTSLENGTH,
-            value: contents.len() as *mut _,
-        });
+        self.array.insert(
+            pos,
+            curl_sys::curl_forms {
+                option: curl_sys::CURLFORM_COPYCONTENTS,
+                value: ptr as *mut _,
+            },
+        );
+        self.array.insert(
+            pos + 1,
+            curl_sys::curl_forms {
+                option: curl_sys::CURLFORM_CONTENTSLENGTH,
+                value: contents.len() as *mut _,
+            },
+        );
         self
     }
 
@@ -112,7 +117,8 @@ impl<'form, 'data> Part<'form, 'data> {
     /// contain a unicode filename then the `add` function will eventually
     /// return an error.
     pub fn file_content<P>(&mut self, file: P) -> &mut Self
-        where P: AsRef<Path>
+    where
+        P: AsRef<Path>,
     {
         self._file_content(file.as_ref())
     }
@@ -120,10 +126,13 @@ impl<'form, 'data> Part<'form, 'data> {
     fn _file_content(&mut self, file: &Path) -> &mut Self {
         if let Some(bytes) = self.path2cstr(file) {
             let pos = self.array.len() - 1;
-            self.array.insert(pos, curl_sys::curl_forms {
-                option: curl_sys::CURLFORM_FILECONTENT,
-                value: bytes.as_ptr() as *mut _,
-            });
+            self.array.insert(
+                pos,
+                curl_sys::curl_forms {
+                    option: curl_sys::CURLFORM_FILECONTENT,
+                    value: bytes.as_ptr() as *mut _,
+                },
+            );
             self.form.strings.push(bytes);
         }
         self
@@ -150,7 +159,8 @@ impl<'form, 'data> Part<'form, 'data> {
     /// contain a unicode filename then this function will cause `add` to return
     /// an error when called.
     pub fn file<P: ?Sized>(&mut self, file: &'data P) -> &mut Self
-        where P: AsRef<Path>
+    where
+        P: AsRef<Path>,
     {
         self._file(file.as_ref())
     }
@@ -158,10 +168,13 @@ impl<'form, 'data> Part<'form, 'data> {
     fn _file(&mut self, file: &'data Path) -> &mut Self {
         if let Some(bytes) = self.path2cstr(file) {
             let pos = self.array.len() - 1;
-            self.array.insert(pos, curl_sys::curl_forms {
-                option: curl_sys::CURLFORM_FILE,
-                value: bytes.as_ptr() as *mut _,
-            });
+            self.array.insert(
+                pos,
+                curl_sys::curl_forms {
+                    option: curl_sys::CURLFORM_FILE,
+                    value: bytes.as_ptr() as *mut _,
+                },
+            );
             self.form.strings.push(bytes);
         }
         self
@@ -177,10 +190,13 @@ impl<'form, 'data> Part<'form, 'data> {
     pub fn content_type(&mut self, content_type: &'data str) -> &mut Self {
         if let Some(bytes) = self.bytes2cstr(content_type.as_bytes()) {
             let pos = self.array.len() - 1;
-            self.array.insert(pos, curl_sys::curl_forms {
-                option: curl_sys::CURLFORM_CONTENTTYPE,
-                value: bytes.as_ptr() as *mut _,
-            });
+            self.array.insert(
+                pos,
+                curl_sys::curl_forms {
+                    option: curl_sys::CURLFORM_CONTENTTYPE,
+                    value: bytes.as_ptr() as *mut _,
+                },
+            );
             self.form.strings.push(bytes);
         }
         self
@@ -195,7 +211,8 @@ impl<'form, 'data> Part<'form, 'data> {
     /// not valid unicode then this function will return an error when `add` is
     /// called.
     pub fn filename<P: ?Sized>(&mut self, name: &'data P) -> &mut Self
-        where P: AsRef<Path>
+    where
+        P: AsRef<Path>,
     {
         self._filename(name.as_ref())
     }
@@ -203,10 +220,13 @@ impl<'form, 'data> Part<'form, 'data> {
     fn _filename(&mut self, name: &'data Path) -> &mut Self {
         if let Some(bytes) = self.path2cstr(name) {
             let pos = self.array.len() - 1;
-            self.array.insert(pos, curl_sys::curl_forms {
-                option: curl_sys::CURLFORM_FILENAME,
-                value: bytes.as_ptr() as *mut _,
-            });
+            self.array.insert(
+                pos,
+                curl_sys::curl_forms {
+                    option: curl_sys::CURLFORM_FILENAME,
+                    value: bytes.as_ptr() as *mut _,
+                },
+            );
             self.form.strings.push(bytes);
         }
         self
@@ -223,9 +243,9 @@ impl<'form, 'data> Part<'form, 'data> {
     /// If `name` contains an internal nul byte, or if on Windows the path is
     /// not valid unicode then this function will return an error when `add` is
     /// called.
-    pub fn buffer<P: ?Sized>(&mut self, name: &'data P, data: Vec<u8>)
-                             -> &mut Self
-        where P: AsRef<Path>
+    pub fn buffer<P: ?Sized>(&mut self, name: &'data P, data: Vec<u8>) -> &mut Self
+    where
+        P: AsRef<Path>,
     {
         self._buffer(name.as_ref(), data)
     }
@@ -233,19 +253,28 @@ impl<'form, 'data> Part<'form, 'data> {
     fn _buffer(&mut self, name: &'data Path, data: Vec<u8>) -> &mut Self {
         if let Some(bytes) = self.path2cstr(name) {
             let pos = self.array.len() - 1;
-            self.array.insert(pos, curl_sys::curl_forms {
-                option: curl_sys::CURLFORM_BUFFER,
-                value: bytes.as_ptr() as *mut _,
-            });
+            self.array.insert(
+                pos,
+                curl_sys::curl_forms {
+                    option: curl_sys::CURLFORM_BUFFER,
+                    value: bytes.as_ptr() as *mut _,
+                },
+            );
             self.form.strings.push(bytes);
-            self.array.insert(pos + 1, curl_sys::curl_forms {
-                option: curl_sys::CURLFORM_BUFFERPTR,
-                value: data.as_ptr() as *mut _,
-            });
-            self.array.insert(pos + 2, curl_sys::curl_forms {
-                option: curl_sys::CURLFORM_BUFFERLENGTH,
-                value: data.len() as *mut _,
-            });
+            self.array.insert(
+                pos + 1,
+                curl_sys::curl_forms {
+                    option: curl_sys::CURLFORM_BUFFERPTR,
+                    value: data.as_ptr() as *mut _,
+                },
+            );
+            self.array.insert(
+                pos + 2,
+                curl_sys::curl_forms {
+                    option: curl_sys::CURLFORM_BUFFERLENGTH,
+                    value: data.len() as *mut _,
+                },
+            );
             self.form.buffers.push(data);
         }
         self
@@ -256,10 +285,13 @@ impl<'form, 'data> Part<'form, 'data> {
     /// Appends the list of headers to those libcurl automatically generates.
     pub fn content_header(&mut self, headers: List) -> &mut Self {
         let pos = self.array.len() - 1;
-        self.array.insert(pos, curl_sys::curl_forms {
-            option: curl_sys::CURLFORM_CONTENTHEADER,
-            value: list::raw(&headers) as *mut _,
-        });
+        self.array.insert(
+            pos,
+            curl_sys::curl_forms {
+                option: curl_sys::CURLFORM_CONTENTHEADER,
+                value: list::raw(&headers) as *mut _,
+            },
+        );
         self.form.headers.push(headers);
         self
     }
@@ -270,18 +302,20 @@ impl<'form, 'data> Part<'form, 'data> {
     /// `Ok(())` is returned.
     pub fn add(&mut self) -> Result<(), FormError> {
         if let Some(err) = self.error.clone() {
-            return Err(err)
+            return Err(err);
         }
         let rc = unsafe {
-            curl_sys::curl_formadd(&mut self.form.head,
-                                   &mut self.form.tail,
-                                   curl_sys::CURLFORM_COPYNAME,
-                                   self.name.as_ptr(),
-                                   curl_sys::CURLFORM_NAMELENGTH,
-                                   self.name.len(),
-                                   curl_sys::CURLFORM_ARRAY,
-                                   self.array.as_ptr(),
-                                   curl_sys::CURLFORM_END)
+            curl_sys::curl_formadd(
+                &mut self.form.head,
+                &mut self.form.tail,
+                curl_sys::CURLFORM_COPYNAME,
+                self.name.as_ptr(),
+                curl_sys::CURLFORM_NAMELENGTH,
+                self.name.len(),
+                curl_sys::CURLFORM_ARRAY,
+                self.array.as_ptr(),
+                curl_sys::CURLFORM_END,
+            )
         };
         if rc == curl_sys::CURL_FORMADD_OK {
             Ok(())
@@ -326,8 +360,8 @@ impl<'form, 'data> fmt::Debug for Part<'form, 'data> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // TODO: fill this out more
         f.debug_struct("Part")
-         .field("name", &self.name)
-         .field("form", &self.form)
-         .finish()
+            .field("name", &self.name)
+            .field("form", &self.form)
+            .finish()
     }
 }

@@ -1,11 +1,11 @@
+extern crate cc;
 extern crate pkg_config;
 #[cfg(target_env = "msvc")]
 extern crate vcpkg;
-extern crate cc;
 
 use std::env;
 use std::fs;
-use std::path::{PathBuf, Path};
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 fn main() {
@@ -32,18 +32,19 @@ fn main() {
         // Next, fall back and try to use pkg-config if its available.
         if windows {
             if try_vcpkg() {
-                return
+                return;
             }
         } else {
             if try_pkg_config() {
-                return
+                return;
             }
         }
     }
 
     if !Path::new("curl/.git").exists() {
-        let _ = Command::new("git").args(&["submodule", "update", "--init"])
-                                   .status();
+        let _ = Command::new("git")
+            .args(&["submodule", "update", "--init"])
+            .status();
     }
 
     let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
@@ -54,14 +55,30 @@ fn main() {
     println!("cargo:static=1");
     fs::create_dir_all(include.join("curl")).unwrap();
     fs::copy("curl/include/curl/curl.h", include.join("curl/curl.h")).unwrap();
-    fs::copy("curl/include/curl/curlver.h", include.join("curl/curlver.h")).unwrap();
+    fs::copy(
+        "curl/include/curl/curlver.h",
+        include.join("curl/curlver.h"),
+    )
+    .unwrap();
     fs::copy("curl/include/curl/easy.h", include.join("curl/easy.h")).unwrap();
-    fs::copy("curl/include/curl/mprintf.h", include.join("curl/mprintf.h")).unwrap();
+    fs::copy(
+        "curl/include/curl/mprintf.h",
+        include.join("curl/mprintf.h"),
+    )
+    .unwrap();
     fs::copy("curl/include/curl/multi.h", include.join("curl/multi.h")).unwrap();
-    fs::copy("curl/include/curl/stdcheaders.h", include.join("curl/stdcheaders.h")).unwrap();
+    fs::copy(
+        "curl/include/curl/stdcheaders.h",
+        include.join("curl/stdcheaders.h"),
+    )
+    .unwrap();
     fs::copy("curl/include/curl/system.h", include.join("curl/system.h")).unwrap();
     fs::copy("curl/include/curl/urlapi.h", include.join("curl/urlapi.h")).unwrap();
-    fs::copy("curl/include/curl/typecheck-gcc.h", include.join("curl/typecheck-gcc.h")).unwrap();
+    fs::copy(
+        "curl/include/curl/typecheck-gcc.h",
+        include.join("curl/typecheck-gcc.h"),
+    )
+    .unwrap();
 
     let pkgconfig = dst.join("lib/pkgconfig");
     fs::create_dir_all(&pkgconfig).unwrap();
@@ -78,7 +95,8 @@ fn main() {
             .replace("@SUPPORT_FEATURES@", "")
             .replace("@SUPPORT_PROTOCOLS@", "")
             .replace("@CURLVERSION@", "7.61.1"),
-    ).unwrap();
+    )
+    .unwrap();
 
     let mut cfg = cc::Build::new();
     cfg.out_dir(&build)
@@ -105,7 +123,6 @@ fn main() {
         .define("OS", "\"unknown\"") // TODO
         .define("HAVE_ZLIB_H", None)
         .define("HAVE_LIBZ", None)
-
         .file("curl/lib/asyn-thread.c")
         .file("curl/lib/base64.c")
         .file("curl/lib/conncache.c")
@@ -169,9 +186,7 @@ fn main() {
         .file("curl/lib/vtls/vtls.c")
         .file("curl/lib/warnless.c")
         .file("curl/lib/wildcard.c")
-
         .define("HAVE_GETADDRINFO", None)
-
         .warnings(false);
 
     if cfg!(feature = "http2") {
@@ -319,21 +334,25 @@ fn try_vcpkg() -> bool {
 
 #[cfg(target_env = "msvc")]
 fn try_vcpkg() -> bool {
-
     // the import library for the dll is called libcurl_imp
-    let mut successful_probe_details =
-        match vcpkg::Config::new().lib_names("libcurl_imp", "libcurl")
-                .emit_includes(true).probe("curl") {
-            Ok(details) => Some(details),
-            Err(e) => {
-                println!("first run of vcpkg did not find libcurl: {}", e);
-                None
-            }
-        };
+    let mut successful_probe_details = match vcpkg::Config::new()
+        .lib_names("libcurl_imp", "libcurl")
+        .emit_includes(true)
+        .probe("curl")
+    {
+        Ok(details) => Some(details),
+        Err(e) => {
+            println!("first run of vcpkg did not find libcurl: {}", e);
+            None
+        }
+    };
 
     if successful_probe_details.is_none() {
-        match vcpkg::Config::new().lib_name("libcurl")
-                .emit_includes(true).probe("curl") {
+        match vcpkg::Config::new()
+            .lib_name("libcurl")
+            .emit_includes(true)
+            .probe("curl")
+        {
             Ok(details) => successful_probe_details = Some(details),
             Err(e) => println!("second run of vcpkg did not find libcurl: {}", e),
         }
@@ -347,13 +366,15 @@ fn try_vcpkg() -> bool {
         vcpkg::Config::new()
             .lib_name("libeay32")
             .lib_name("ssleay32")
-            .probe("openssl").ok();
+            .probe("openssl")
+            .ok();
 
         vcpkg::probe_package("libssh2").ok();
 
         vcpkg::Config::new()
             .lib_names("zlib", "zlib1")
-            .probe("zlib").ok();
+            .probe("zlib")
+            .ok();
 
         println!("cargo:rustc-link-lib=crypt32");
         println!("cargo:rustc-link-lib=gdi32");
@@ -370,41 +391,39 @@ fn try_pkg_config() -> bool {
     let lib = match cfg.probe("libcurl") {
         Ok(lib) => lib,
         Err(e) => {
-            println!("Couldn't find libcurl from pkgconfig ({:?}), \
-                      compiling it from source...", e);
-            return false
+            println!(
+                "Couldn't find libcurl from pkgconfig ({:?}), \
+                 compiling it from source...",
+                e
+            );
+            return false;
         }
     };
 
     // Not all system builds of libcurl have http2 features enabled, so if we've
     // got a http2-requested build then we may fall back to a build from source.
     if cfg!(feature = "http2") && !curl_config_reports_http2() {
-        return false
+        return false;
     }
 
     // Re-find the library to print cargo's metadata, then print some extra
     // metadata as well.
-    cfg.cargo_metadata(true)
-        .probe("libcurl")
-        .unwrap();
+    cfg.cargo_metadata(true).probe("libcurl").unwrap();
     for path in lib.include_paths.iter() {
         println!("cargo:include={}", path.display());
     }
-    return true
+    return true;
 }
 
 fn xcode_major_version() -> Option<u8> {
-    let output = Command::new("xcodebuild")
-        .arg("-version")
-        .output()
-        .ok()?;
+    let output = Command::new("xcodebuild").arg("-version").output().ok()?;
     if output.status.success() {
         let stdout = String::from_utf8_lossy(&output.stdout);
         println!("xcode version: {}", stdout);
         let mut words = stdout.split_whitespace();
         if words.next()? == "Xcode" {
             let version = words.next()?;
-            return version[..version.find('.')?].parse().ok()
+            return version[..version.find('.')?].parse().ok();
         }
     }
     println!("unable to determine Xcode version, assuming >= 9");
@@ -412,26 +431,26 @@ fn xcode_major_version() -> Option<u8> {
 }
 
 fn curl_config_reports_http2() -> bool {
-    let output = Command::new("curl-config")
-        .arg("--features")
-        .output();
+    let output = Command::new("curl-config").arg("--features").output();
     let output = match output {
         Ok(out) => out,
         Err(e) => {
             println!("failed to run curl-config ({}), building from source", e);
-            return false
+            return false;
         }
     };
     if !output.status.success() {
         println!("curl-config failed: {}", output.status);
-        return false
+        return false;
     }
     let stdout = String::from_utf8_lossy(&output.stdout);
     if !stdout.contains("HTTP2") {
-        println!("failed to find http-2 feature enabled in pkg-config-found \
-                  libcurl, building from source");
-        return false
+        println!(
+            "failed to find http-2 feature enabled in pkg-config-found \
+             libcurl, building from source"
+        );
+        return false;
     }
 
-    return true
+    return true;
 }

@@ -7,16 +7,16 @@
 //! Most simple usage of libcurl will likely use the `Easy` structure here, and
 //! you can find more docs about its usage on that struct.
 
-mod list;
 mod form;
 mod handle;
 mod handler;
+mod list;
 mod windows;
 
-pub use self::list::{List, Iter};
 pub use self::form::{Form, Part};
 pub use self::handle::{Easy, Transfer};
+pub use self::handler::{Auth, NetRc, ProxyType, SslOpt};
 pub use self::handler::{Easy2, Handler};
-pub use self::handler::{InfoType, SeekResult, ReadError, WriteError};
-pub use self::handler::{TimeCondition, IpResolve, HttpVersion, SslVersion};
-pub use self::handler::{SslOpt, NetRc, Auth, ProxyType};
+pub use self::handler::{HttpVersion, IpResolve, SslVersion, TimeCondition};
+pub use self::handler::{InfoType, ReadError, SeekResult, WriteError};
+pub use self::list::{Iter, List};

@@ -45,15 +45,18 @@ impl List {
 
     /// Returns an iterator over the nodes in this list.
     pub fn iter(&self) -> Iter {
-        Iter { _me: self, cur: self.raw }
+        Iter {
+            _me: self,
+            cur: self.raw,
+        }
     }
 }
 
 impl fmt::Debug for List {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_list()
-         .entries(self.iter().map(String::from_utf8_lossy))
-         .finish()
+            .entries(self.iter().map(String::from_utf8_lossy))
+            .finish()
     }
 }
 
@@ -68,9 +71,7 @@ impl<'a> IntoIterator for &'a List {
 
 impl Drop for List {
     fn drop(&mut self) {
-        unsafe {
-            curl_sys::curl_slist_free_all(self.raw)
-        }
+        unsafe { curl_sys::curl_slist_free_all(self.raw) }
     }
 }
 
@@ -79,13 +80,13 @@ impl<'a> Iterator for Iter<'a> {
 
     fn next(&mut self) -> Option<&'a [u8]> {
         if self.cur.is_null() {
-            return None
+            return None;
         }
 
         unsafe {
             let ret = Some(CStr::from_ptr((*self.cur).data).to_bytes());
             self.cur = (*self.cur).next;
-            return ret
+            return ret;
         }
     }
 }
@@ -93,7 +94,7 @@ impl<'a> Iterator for Iter<'a> {
 impl<'a> fmt::Debug for Iter<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_list()
-         .entries(self.clone().map(String::from_utf8_lossy))
-         .finish()
+            .entries(self.clone().map(String::from_utf8_lossy))
+            .finish()
     }
 }

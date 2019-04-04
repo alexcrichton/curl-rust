@@ -9,12 +9,12 @@ use std::time::Duration;
 use curl_sys;
 use libc::c_void;
 
-use Error;
-use easy::{Form, List};
-use easy::handler::{self, InfoType, SeekResult, ReadError, WriteError};
-use easy::handler::{TimeCondition, IpResolve, HttpVersion, SslVersion};
-use easy::handler::{SslOpt, NetRc, Auth, ProxyType};
+use easy::handler::{self, InfoType, ReadError, SeekResult, WriteError};
+use easy::handler::{Auth, NetRc, ProxyType, SslOpt};
+use easy::handler::{HttpVersion, IpResolve, SslVersion, TimeCondition};
 use easy::{Easy2, Handler};
+use easy::{Form, List};
+use Error;
 
 /// Raw bindings to a libcurl "easy session".
 ///
@@ -232,7 +232,8 @@ impl Easy {
     /// transfer.perform().unwrap();
     /// ```
     pub fn write_function<F>(&mut self, f: F) -> Result<(), Error>
-        where F: FnMut(&[u8]) -> Result<usize, WriteError> + Send + 'static
+    where
+        F: FnMut(&[u8]) -> Result<usize, WriteError> + Send + 'static,
     {
         self.inner.get_mut().owned.write = Some(Box::new(f));
         Ok(())
@@ -303,7 +304,8 @@ impl Easy {
     /// transfer.perform().unwrap();
     /// ```
     pub fn read_function<F>(&mut self, f: F) -> Result<(), Error>
-        where F: FnMut(&mut [u8]) -> Result<usize, ReadError> + Send + 'static
+    where
+        F: FnMut(&mut [u8]) -> Result<usize, ReadError> + Send + 'static,
     {
         self.inner.get_mut().owned.read = Some(Box::new(f));
         Ok(())
@@ -334,7 +336,8 @@ impl Easy {
     /// `transfer` method and then using `seek_function` to configure a
     /// callback that can reference stack-local data.
     pub fn seek_function<F>(&mut self, f: F) -> Result<(), Error>
-        where F: FnMut(SeekFrom) -> SeekResult + Send + 'static
+    where
+        F: FnMut(SeekFrom) -> SeekResult + Send + 'static,
     {
         self.inner.get_mut().owned.seek = Some(Box::new(f));
         Ok(())
@@ -377,7 +380,8 @@ impl Easy {
     /// `transfer` method and then using `progress_function` to configure a
     /// callback that can reference stack-local data.
     pub fn progress_function<F>(&mut self, f: F) -> Result<(), Error>
-        where F: FnMut(f64, f64, f64, f64) -> bool + Send + 'static
+    where
+        F: FnMut(f64, f64, f64, f64) -> bool + Send + 'static,
     {
         self.inner.get_mut().owned.progress = Some(Box::new(f));
         Ok(())
@@ -413,7 +417,8 @@ impl Easy {
     /// `transfer` method and then using `progress_function` to configure a
     /// callback that can reference stack-local data.
     pub fn ssl_ctx_function<F>(&mut self, f: F) -> Result<(), Error>
-        where F: FnMut(*mut c_void) -> Result<(), Error> + Send + 'static
+    where
+        F: FnMut(*mut c_void) -> Result<(), Error> + Send + 'static,
     {
         self.inner.get_mut().owned.ssl_ctx = Some(Box::new(f));
         Ok(())
@@ -433,7 +438,8 @@ impl Easy {
     /// `transfer` method and then using `debug_function` to configure a
     /// callback that can reference stack-local data.
     pub fn debug_function<F>(&mut self, f: F) -> Result<(), Error>
-        where F: FnMut(InfoType, &[u8]) + Send + 'static
+    where
+        F: FnMut(InfoType, &[u8]) + Send + 'static,
     {
         self.inner.get_mut().owned.debug = Some(Box::new(f));
         Ok(())
@@ -517,7 +523,8 @@ impl Easy {
     /// println!("{:?}", headers);
     /// ```
     pub fn header_function<F>(&mut self, f: F) -> Result<(), Error>
-        where F: FnMut(&[u8]) -> bool + Send + 'static
+    where
+        F: FnMut(&[u8]) -> bool + Send + 'static,
     {
         self.inner.get_mut().owned.header = Some(Box::new(f));
         Ok(())
@@ -1149,7 +1156,7 @@ impl Easy {
     }
 
     /// Same as [`Easy2::pipewait`](struct.Easy2.html#method.pipewait)
-    pub fn pipewait(&mut self, wait: bool) -> Result<(), Error>  {
+    pub fn pipewait(&mut self, wait: bool) -> Result<(), Error> {
         self.inner.pipewait(wait)
     }
 
@@ -1167,7 +1174,7 @@ impl Easy {
         // invoking `FnMut`closures behind a `&self` pointer. This flag acts as
         // our own `RefCell` borrow flag sorta.
         if self.inner.get_ref().running.get() {
-            return Err(Error::new(curl_sys::CURLE_FAILED_INIT))
+            return Err(Error::new(curl_sys::CURLE_FAILED_INIT));
         }
 
         self.inner.get_ref().running.set(true);
@@ -1271,13 +1278,14 @@ impl EasyData {
     /// Basically this is just intended to acquire a callback, invoke it, and
     /// then stop. Nothing else. Super unsafe.
     unsafe fn callback<'a, T, F>(&'a mut self, f: F) -> Option<&'a mut T>
-        where F: for<'b> Fn(&'b mut Callbacks<'static>) -> &'b mut Option<T>,
+    where
+        F: for<'b> Fn(&'b mut Callbacks<'static>) -> &'b mut Option<T>,
     {
         let ptr = self.borrowed.get();
         if !ptr.is_null() {
             let val = f(&mut *ptr);
             if val.is_some() {
-                return val.as_mut()
+                return val.as_mut();
             }
         }
         f(&mut self.owned).as_mut()
@@ -1330,11 +1338,7 @@ impl Handler for EasyData {
         }
     }
 
-    fn progress(&mut self,
-                dltotal: f64,
-                dlnow: f64,
-                ultotal: f64,
-                ulnow: f64) -> bool {
+    fn progress(&mut self, dltotal: f64, dlnow: f64, ultotal: f64, ulnow: f64) -> bool {
         unsafe {
             match self.callback(|s| &mut s.progress) {
                 Some(progress) => progress(dltotal, dlnow, ultotal, ulnow),
@@ -1363,7 +1367,8 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
     /// Same as `Easy::write_function`, just takes a non `'static` lifetime
     /// corresponding to the lifetime of this transfer.
     pub fn write_function<F>(&mut self, f: F) -> Result<(), Error>
-        where F: FnMut(&[u8]) -> Result<usize, WriteError> + 'data
+    where
+        F: FnMut(&[u8]) -> Result<usize, WriteError> + 'data,
     {
         self.data.write = Some(Box::new(f));
         Ok(())
@@ -1372,7 +1377,8 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
     /// Same as `Easy::read_function`, just takes a non `'static` lifetime
     /// corresponding to the lifetime of this transfer.
     pub fn read_function<F>(&mut self, f: F) -> Result<(), Error>
-        where F: FnMut(&mut [u8]) -> Result<usize, ReadError> + 'data
+    where
+        F: FnMut(&mut [u8]) -> Result<usize, ReadError> + 'data,
     {
         self.data.read = Some(Box::new(f));
         Ok(())
@@ -1381,7 +1387,8 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
     /// Same as `Easy::seek_function`, just takes a non `'static` lifetime
     /// corresponding to the lifetime of this transfer.
     pub fn seek_function<F>(&mut self, f: F) -> Result<(), Error>
-        where F: FnMut(SeekFrom) -> SeekResult + 'data
+    where
+        F: FnMut(SeekFrom) -> SeekResult + 'data,
     {
         self.data.seek = Some(Box::new(f));
         Ok(())
@@ -1390,7 +1397,8 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
     /// Same as `Easy::progress_function`, just takes a non `'static` lifetime
     /// corresponding to the lifetime of this transfer.
     pub fn progress_function<F>(&mut self, f: F) -> Result<(), Error>
-        where F: FnMut(f64, f64, f64, f64) -> bool + 'data
+    where
+        F: FnMut(f64, f64, f64, f64) -> bool + 'data,
     {
         self.data.progress = Some(Box::new(f));
         Ok(())
@@ -1399,7 +1407,8 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
     /// Same as `Easy::ssl_ctx_function`, just takes a non `'static`
     /// lifetime corresponding to the lifetime of this transfer.
     pub fn ssl_ctx_function<F>(&mut self, f: F) -> Result<(), Error>
-        where F: FnMut(*mut c_void) -> Result<(), Error> + Send + 'data
+    where
+        F: FnMut(*mut c_void) -> Result<(), Error> + Send + 'data,
     {
         self.data.ssl_ctx = Some(Box::new(f));
         Ok(())
@@ -1408,7 +1417,8 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
     /// Same as `Easy::debug_function`, just takes a non `'static` lifetime
     /// corresponding to the lifetime of this transfer.
     pub fn debug_function<F>(&mut self, f: F) -> Result<(), Error>
-        where F: FnMut(InfoType, &[u8]) + 'data
+    where
+        F: FnMut(InfoType, &[u8]) + 'data,
     {
         self.data.debug = Some(Box::new(f));
         Ok(())
@@ -1417,7 +1427,8 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
     /// Same as `Easy::header_function`, just takes a non `'static` lifetime
     /// corresponding to the lifetime of this transfer.
     pub fn header_function<F>(&mut self, f: F) -> Result<(), Error>
-        where F: FnMut(&[u8]) -> bool + 'data
+    where
+        F: FnMut(&[u8]) -> bool + 'data,
     {
         self.data.header = Some(Box::new(f));
         Ok(())
@@ -1463,8 +1474,8 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
 impl<'easy, 'data> fmt::Debug for Transfer<'easy, 'data> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("Transfer")
-         .field("easy", &self.easy)
-         .finish()
+            .field("easy", &self.easy)
+            .finish()
     }
 }
 

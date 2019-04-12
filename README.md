@@ -143,6 +143,28 @@ The bindings have been developed using curl version 7.24.0. They should
 work with any newer version of curl and possibly with older versions,
 but this has not been tested.
 
+## Troubleshooting
+
+### Curl built against the NSS SSL library
+
+If you encounter the following error message:
+
+```
+  [77] Problem with the SSL CA cert (path? access rights?)
+```
+
+That means most likely, that curl was linked against `libcurl-nss.so` due to
+installed libcurl NSS development files, and that the required library
+`libnsspem.so` is missing. See also the curl man page: "If curl is built
+against the NSS SSL library, the NSS PEM PKCS#11 module (libnsspem.so) needs to
+be available for this option to work properly."
+
+In order to avoid this failure you can either
+
+ * install the missing library (e.g. Debian: `nss-plugin-pem`), or
+ * remove the libcurl NSS development files (e.g. Debian: `libcurl4-nss-dev`) and
+   rebuild curl-rust.
+
 ## License
 
 The `curl-rust` crate is licensed under the MIT license, see `LICENSE` for more

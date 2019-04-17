@@ -60,6 +60,18 @@ fn main() {
     });
 
     cfg.skip_const(move |s| {
+        if version < 64 {
+            match s {
+                "CURLE_HTTP2" => return true,
+                "CURLE_PEER_FAILED_VERIFICATION" => return true,
+                "CURLE_NO_CONNECTION_AVAILABLE" => return true,
+                "CURLE_SSL_PINNEDPUBKEYNOTMATCH" => return true,
+                "CURLE_SSL_INVALIDCERTSTATUS" => return true,
+                "CURLE_HTTP2_STREAM" => return true,
+                "CURLE_RECURSIVE_API_CALL" => return true,
+                _ => {}
+            }
+        }
         if version < 61 {
             match s {
                 "CURLOPT_PIPEWAIT" => return true,

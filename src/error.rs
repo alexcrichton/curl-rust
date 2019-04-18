@@ -283,6 +283,16 @@ impl Error {
         self.code == curl_sys::CURLE_CHUNK_FAILED
     }
 
+    /// Returns whether this error corresponds to CURLE_HTTP2.
+    pub fn is_http2_error(&self) -> bool {
+        self.code == curl_sys::CURLE_HTTP2
+    }
+
+    /// Returns whether this error corresponds to CURLE_HTTP2_STREAM.
+    pub fn is_http2_stream_error(&self) -> bool {
+        self.code == curl_sys::CURLE_HTTP2_STREAM
+    }
+
     // /// Returns whether this error corresponds to CURLE_NO_CONNECTION_AVAILABLE.
     // pub fn is_no_connection_available(&self) -> bool {
     //     self.code == curl_sys::CURLE_NO_CONNECTION_AVAILABLE

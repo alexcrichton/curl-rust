@@ -250,8 +250,16 @@ impl<'form, 'data> Part<'form, 'data> {
         self._buffer(name.as_ref(), data)
     }
 
-    fn _buffer(&mut self, name: &'data Path, data: Vec<u8>) -> &mut Self {
+    fn _buffer(&mut self, name: &'data Path, mut data: Vec<u8>) -> &mut Self {
         if let Some(bytes) = self.path2cstr(name) {
+            // If `CURLFORM_BUFFERLENGTH` is set to `0`, libcurl will instead do a strlen() on the
+            // contents to figure out the size so we need to make sure the buffer is actually
+            // zero terminated.
+            let length = data.len();
+            if length == 0 {
+                data.push(0);
+            }
+
             let pos = self.array.len() - 1;
             self.array.insert(
                 pos,
@@ -272,7 +280,7 @@ impl<'form, 'data> Part<'form, 'data> {
                 pos + 2,
                 curl_sys::curl_forms {
                     option: curl_sys::CURLFORM_BUFFERLENGTH,
-                    value: data.len() as *mut _,
+                    value: length as *mut _,
                 },
             );
             self.form.buffers.push(data);

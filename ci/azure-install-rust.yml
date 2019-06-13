@@ -15,7 +15,16 @@ steps:
     displayName: Install rust (unix)
     condition: ne( variables['Agent.OS'], 'Windows_NT' )
 
-  - bash: rustup update --no-self-update stable-$TARGET && rustup default stable-$TARGET
+  - bash: |
+      set -e
+      if command -v rustup; then
+        rustup update --no-self-update stable-$TARGET
+        rustup default stable-$TARGET
+      else
+        curl.exe -sSf -o rustup-init.exe https://win.rustup.rs
+        ./rustup-init.exe -y --default-toolchain stable-$TARGET
+        echo "##vso[task.prependpath]$USERPROFILE/.cargo/bin"
+      fi
     displayName: Install rust (windows)
     condition: eq( variables['Agent.OS'], 'Windows_NT' )
 

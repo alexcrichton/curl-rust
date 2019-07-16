@@ -392,7 +392,7 @@ unsafe impl<H: Send> Send for Inner<H> {}
 
 /// Possible proxy types that libcurl currently understands.
 #[allow(missing_docs)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum ProxyType {
     Http = curl_sys::CURLPROXY_HTTP as isize,
     Http1 = curl_sys::CURLPROXY_HTTP_1_0 as isize,

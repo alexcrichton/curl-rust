@@ -218,13 +218,24 @@ fn main() {
             .file("curl/lib/system_win32.c");
 
         if cfg!(feature = "ssl") {
-            cfg.define("USE_WINDOWS_SSPI", None)
-                .define("USE_SCHANNEL", None)
-                .file("curl/lib/x509asn1.c")
-                .file("curl/lib/curl_sspi.c")
-                .file("curl/lib/socks_sspi.c")
-                .file("curl/lib/vtls/schannel.c")
-                .file("curl/lib/vtls/schannel_verify.c");
+            if !cfg!(feature = "static-ssl") {
+                cfg.define("USE_WINDOWS_SSPI", None)
+                    .define("USE_SCHANNEL", None)
+                    .file("curl/lib/x509asn1.c")
+                    .file("curl/lib/curl_sspi.c")
+                    .file("curl/lib/socks_sspi.c")
+                    .file("curl/lib/vtls/schannel.c")
+                    .file("curl/lib/vtls/schannel_verify.c");
+            } else {
+                cfg.define("USE_OPENSSL", None)
+                    .file("curl/lib/vtls/openssl.c");
+
+                if let Some(path) = env::var_os("DEP_OPENSSL_INCLUDE") {
+                    cfg.include(path);
+                }
+                println!("cargo:rustc-link-lib=ssl");
+                println!("cargo:rustc-link-lib=crypto");
+            }
         }
 
         if cfg!(feature = "spnego") {
@@ -266,7 +277,7 @@ fn main() {
             .define("SIZEOF_SHORT", "2");
 
         if cfg!(feature = "ssl") {
-            if target.contains("-apple-") {
+            if target.contains("-apple-") && !cfg!(feature = "static-ssl") {
                 cfg.define("USE_SECTRANSP", None)
                     .file("curl/lib/vtls/sectransp.c");
                 if xcode_major_version().map_or(true, |v| v >= 9) {
@@ -324,6 +335,10 @@ fn main() {
     if target.contains("-apple-") {
         println!("cargo:rustc-link-lib=framework=Security");
         println!("cargo:rustc-link-lib=framework=CoreFoundation");
+        if cfg!(feature = "static-ssl") {
+            println!("cargo:rustc-link-lib=ssl");
+            println!("cargo:rustc-link-lib=crypto");
+        }
     }
 }
 

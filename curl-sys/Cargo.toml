@@ -23,6 +23,10 @@ libz-sys = "1.0.18"
 libc = "0.2.2"
 libnghttp2-sys = { optional = true, version = "0.1" }
 
+[dependencies.mesalink]
+path = "mesalink"
+optional = true
+
 [target.'cfg(all(unix, not(target_os = "macos")))'.dependencies]
 openssl-sys = { version = "0.9", optional = true }
 
@@ -38,7 +42,8 @@ cc = "1.0"
 
 [features]
 default = ["ssl"]
-ssl = ["openssl-sys"]
+ssl = ["openssl"] # OpenSSL by default
+openssl = ["openssl-sys"] # OpenSSL TLS backend
 http2 = ["libnghttp2-sys"]
 static-curl = []
 static-ssl = ["openssl-sys/vendored"]

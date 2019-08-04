@@ -211,13 +211,15 @@ fn main() {
             .file("curl/lib/vauth/vauth.c");
     }
 
-    if windows {
-        cfg.define("USE_THREADS_WIN32", None)
-            .define("HAVE_IOCTLSOCKET_FIONBIO", None)
-            .define("USE_WINSOCK", None)
-            .file("curl/lib/system_win32.c");
+    if cfg!(feature = "ssl") {
+        if cfg!(feature = "mesalink") {
+            cfg.define("USE_MESALINK", None)
+                .include("mesalink")
+                .file("curl/lib/vtls/mesalink.c");
 
-        if cfg!(feature = "ssl") {
+            println!("cargo:rustc-link-lib=static=mesalink");
+            println!("cargo:rustc-link-search=native=mesalink/target/debug");
+        } else if windows {
             cfg.define("USE_WINDOWS_SSPI", None)
                 .define("USE_SCHANNEL", None)
                 .file("curl/lib/x509asn1.c")
@@ -225,7 +227,32 @@ fn main() {
                 .file("curl/lib/socks_sspi.c")
                 .file("curl/lib/vtls/schannel.c")
                 .file("curl/lib/vtls/schannel_verify.c");
+        } else if target.contains("-apple-") {
+            cfg.define("USE_SECTRANSP", None)
+                .file("curl/lib/vtls/sectransp.c");
+            if xcode_major_version().map_or(true, |v| v >= 9) {
+                // On earlier Xcode versions (<9), defining HAVE_BUILTIN_AVAILABLE
+                // would cause __bultin_available() to fail to compile due to
+                // unrecognized platform names, so we try to check for Xcode
+                // version first (if unknown, assume it's recent, as in >= 9).
+                cfg.define("HAVE_BUILTIN_AVAILABLE", "1");
+            }
+        } else {
+            cfg.define("USE_OPENSSL", None)
+                .file("curl/lib/vtls/openssl.c");
+
+            println!("cargo:rustc-cfg=link_openssl");
+            if let Some(path) = env::var_os("DEP_OPENSSL_INCLUDE") {
+                cfg.include(path);
+            }
         }
+    }
+
+    if windows {
+        cfg.define("USE_THREADS_WIN32", None)
+            .define("HAVE_IOCTLSOCKET_FIONBIO", None)
+            .define("USE_WINSOCK", None)
+            .file("curl/lib/system_win32.c");
 
         if cfg!(feature = "spnego") {
             cfg.file("curl/lib/vauth/spnego_sspi.c");
@@ -264,28 +291,6 @@ fn main() {
             .define("SIZEOF_CURL_OFF_T", "8")
             .define("SIZEOF_INT", "4")
             .define("SIZEOF_SHORT", "2");
-
-        if cfg!(feature = "ssl") {
-            if target.contains("-apple-") {
-                cfg.define("USE_SECTRANSP", None)
-                    .file("curl/lib/vtls/sectransp.c");
-                if xcode_major_version().map_or(true, |v| v >= 9) {
-                    // On earlier Xcode versions (<9), defining HAVE_BUILTIN_AVAILABLE
-                    // would cause __bultin_available() to fail to compile due to
-                    // unrecognized platform names, so we try to check for Xcode
-                    // version first (if unknown, assume it's recent, as in >= 9).
-                    cfg.define("HAVE_BUILTIN_AVAILABLE", "1");
-                }
-            } else {
-                cfg.define("USE_OPENSSL", None)
-                    .file("curl/lib/vtls/openssl.c");
-
-                println!("cargo:rustc-cfg=link_openssl");
-                if let Some(path) = env::var_os("DEP_OPENSSL_INCLUDE") {
-                    cfg.include(path);
-                }
-            }
-        }
 
         if cfg!(feature = "spnego") {
             cfg.define("HAVE_GSSAPI", None)

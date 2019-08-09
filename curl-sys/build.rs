@@ -211,15 +211,12 @@ fn main() {
             .file("curl/lib/vauth/vauth.c");
     }
 
-    if cfg!(feature = "ssl") {
-        if cfg!(feature = "mesalink") {
-            cfg.define("USE_MESALINK", None)
-                .include("mesalink")
-                .file("curl/lib/vtls/mesalink.c");
-
-            println!("cargo:rustc-link-lib=static=mesalink");
-            println!("cargo:rustc-link-search=native=mesalink/target/debug");
-        } else if windows {
+    if cfg!(feature = "mesalink") {
+        cfg.define("USE_MESALINK", None)
+            .include("include/mesalink")
+            .file("curl/lib/vtls/mesalink.c");
+    } else if cfg!(feature = "ssl") {
+        if windows {
             cfg.define("USE_WINDOWS_SSPI", None)
                 .define("USE_SCHANNEL", None)
                 .file("curl/lib/x509asn1.c")

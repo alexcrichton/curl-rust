@@ -1,6 +1,3 @@
 [submodule "curl-sys/curl"]
 	path = curl-sys/curl
 	url = https://github.com/curl/curl
-[submodule "curl-sys/mesalink"]
-	path = curl-sys/mesalink
-	url = https://github.com/mesalock-linux/mesalink.git

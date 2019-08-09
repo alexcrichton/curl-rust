@@ -24,7 +24,8 @@ libc = "0.2.2"
 libnghttp2-sys = { optional = true, version = "0.1" }
 
 [dependencies.mesalink]
-path = "mesalink"
+git = "https://github.com/mesalock-linux/mesalink"
+tag = "v1.0.0"
 optional = true
 
 [target.'cfg(all(unix, not(target_os = "macos")))'.dependencies]
@@ -42,8 +43,7 @@ cc = "1.0"
 
 [features]
 default = ["ssl"]
-ssl = ["openssl"] # OpenSSL by default
-openssl = ["openssl-sys"] # OpenSSL TLS backend
+ssl = ["openssl-sys"]
 http2 = ["libnghttp2-sys"]
 static-curl = []
 static-ssl = ["openssl-sys/vendored"]

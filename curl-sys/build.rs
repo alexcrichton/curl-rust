@@ -211,6 +211,8 @@ fn main() {
             .file("curl/lib/vauth/vauth.c");
     }
 
+    // Configure TLS backend. Since Cargo does not support mutually exclusive
+    // features, make sure we only compile one vtls.
     if cfg!(feature = "mesalink") {
         cfg.define("USE_MESALINK", None)
             .include("include/mesalink")

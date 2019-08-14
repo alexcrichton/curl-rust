@@ -37,7 +37,6 @@ mio-extras = "2.0.3"
 
 [workspace]
 members = ["systest"]
-exclude = ["curl-sys/mesalink"]
 
 [features]
 default = ["ssl"]

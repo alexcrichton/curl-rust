@@ -1,7 +1,7 @@
 /* MesaLink options.h
  * generated from configure options
  *
- * This file is part of MesaLink. 
+ * This file is part of MesaLink.
  *
  */
 
@@ -17,7 +17,7 @@ extern "C" {
 #define HAVE_CLIENT
 
 #undef  HAVE_SERVER
-#define HAVE_SERVER
+// #define HAVE_SERVER
 
 #undef  HAVE_ERROR_STRINGS
 #define HAVE_ERROR_STRINGS

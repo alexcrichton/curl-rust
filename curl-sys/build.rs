@@ -217,6 +217,10 @@ fn main() {
         cfg.define("USE_MESALINK", None)
             .include("include/mesalink")
             .file("curl/lib/vtls/mesalink.c");
+
+        if windows {
+            cfg.define("HAVE_WINDOWS", None);
+        }
     } else if cfg!(feature = "ssl") {
         if windows {
             cfg.define("USE_WINDOWS_SSPI", None)

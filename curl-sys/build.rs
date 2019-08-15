@@ -215,11 +215,16 @@ fn main() {
     // features, make sure we only compile one vtls.
     if cfg!(feature = "mesalink") {
         cfg.define("USE_MESALINK", None)
-            .include("include/mesalink")
             .file("curl/lib/vtls/mesalink.c");
+
+        if let Some(path) = env::var_os("DEP_MESALINK_INCLUDE") {
+            cfg.include(path);
+        }
 
         if windows {
             cfg.define("HAVE_WINDOWS", None);
+        } else {
+            cfg.define("HAVE_UNIX", None);
         }
     } else if cfg!(feature = "ssl") {
         if windows {

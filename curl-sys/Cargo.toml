@@ -25,8 +25,6 @@ libnghttp2-sys = { optional = true, version = "0.1" }
 
 [dependencies.mesalink]
 version = "1.1.0-cratesio"
-git = "https://github.com/mesalock-linux/mesalink"
-branch = "crates_io"
 optional = true
 default-features = false
 features = ["client_apis", "error_strings", "tls13", "aesgcm", "chachapoly", "x25519", "ecdh", "ecdsa", "verifier"]

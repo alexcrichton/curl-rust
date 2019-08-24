@@ -1949,7 +1949,15 @@ impl<H> Easy2<H> {
     ///
     /// By default this option is not set and corresponds to
     /// `CURLOPT_SSLVERSION`.
-    pub fn ssl_version(&mut self, min_version: SslVersion, max_version: SslVersion) -> Result<(), Error> {
+    pub fn ssl_version(&mut self, version: SslVersion) -> Result<(), Error> {
+        self.setopt_long(curl_sys::CURLOPT_SSLVERSION, version as c_long)
+    }
+
+    /// Set preferred TLS/SSL version with minimum version and maximum version.
+    ///
+    /// By default this option is not set and corresponds to
+    /// `CURLOPT_SSLVERSION`.
+    pub fn ssl_min_max_version(&mut self, min_version: SslVersion, max_version: SslVersion) -> Result<(), Error> {
         let version = (min_version as c_long) | ((max_version as c_long) << 16);
         self.setopt_long(curl_sys::CURLOPT_SSLVERSION, version)
     }

@@ -949,8 +949,8 @@ impl Easy {
     }
 
     /// Same as [`Easy2::ssl_version`](struct.Easy2.html#method.ssl_version)
-    pub fn ssl_version(&mut self, version: SslVersion) -> Result<(), Error> {
-        self.inner.ssl_version(version)
+    pub fn ssl_version(&mut self, min_version: SslVersion, max_version: SslVersion) -> Result<(), Error> {
+        self.inner.ssl_version(min_version, max_version)
     }
 
     /// Same as [`Easy2::ssl_verify_host`](struct.Easy2.html#method.ssl_verify_host)

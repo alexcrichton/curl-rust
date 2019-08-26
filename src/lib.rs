@@ -69,7 +69,7 @@ extern crate schannel;
 
 use std::ffi::CStr;
 use std::str;
-use std::sync::{Once};
+use std::sync::Once;
 
 pub use error::{Error, FormError, MultiError, ShareError};
 mod error;

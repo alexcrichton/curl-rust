@@ -140,7 +140,7 @@ impl Multi {
         let cb: curl_sys::curl_socket_callback = cb;
         self.setopt_ptr(
             curl_sys::CURLMOPT_SOCKETFUNCTION,
-            cb as usize as *const c_char
+            cb as usize as *const c_char,
         )?;
         let ptr = &*self.data as *const _;
         self.setopt_ptr(curl_sys::CURLMOPT_SOCKETDATA, ptr as *const c_char)?;
@@ -199,7 +199,7 @@ impl Multi {
             cvt(curl_sys::curl_multi_assign(
                 self.raw,
                 socket,
-                token as *mut _
+                token as *mut _,
             ))?;
             Ok(())
         }
@@ -239,7 +239,7 @@ impl Multi {
         let cb: curl_sys::curl_multi_timer_callback = cb;
         self.setopt_ptr(
             curl_sys::CURLMOPT_TIMERFUNCTION,
-            cb as usize as *const c_char
+            cb as usize as *const c_char,
         )?;
         let ptr = &*self.data as *const _;
         self.setopt_ptr(curl_sys::CURLMOPT_TIMERDATA, ptr as *const c_char)?;
@@ -381,7 +381,7 @@ impl Multi {
         unsafe {
             cvt(curl_sys::curl_multi_remove_handle(
                 self.raw,
-                easy.easy.raw()
+                easy.easy.raw(),
             ))?;
         }
         Ok(easy.easy)
@@ -392,7 +392,7 @@ impl Multi {
         unsafe {
             cvt(curl_sys::curl_multi_remove_handle(
                 self.raw,
-                easy.easy.raw()
+                easy.easy.raw(),
             ))?;
         }
         Ok(easy.easy)
@@ -455,7 +455,7 @@ impl Multi {
                 self.raw,
                 socket,
                 events.bits,
-                &mut remaining
+                &mut remaining,
             ))?;
             Ok(remaining as u32)
         }
@@ -483,7 +483,7 @@ impl Multi {
                 self.raw,
                 curl_sys::CURL_SOCKET_BAD,
                 0,
-                &mut remaining
+                &mut remaining,
             ))?;
             Ok(remaining as u32)
         }
@@ -560,7 +560,7 @@ impl Multi {
                 waitfds.as_mut_ptr() as *mut _,
                 waitfds.len() as u32,
                 timeout_ms,
-                &mut ret
+                &mut ret,
             ))?;
             Ok(ret as u32)
         }
@@ -657,7 +657,7 @@ impl Multi {
             let write = write.map(|r| r as *mut _).unwrap_or(0 as *mut _);
             let except = except.map(|r| r as *mut _).unwrap_or(0 as *mut _);
             cvt(curl_sys::curl_multi_fdset(
-                self.raw, read, write, except, &mut ret
+                self.raw, read, write, except, &mut ret,
             ))?;
             if ret == -1 {
                 Ok(None)
@@ -685,7 +685,7 @@ impl Multi {
                 read as *mut _,
                 write as *mut _,
                 except as *mut _,
-                &mut ret
+                &mut ret,
             ))?;
             if ret == -1 {
                 Ok(None)
@@ -911,7 +911,7 @@ impl<'multi> Message<'multi> {
             ::cvt(curl_sys::curl_easy_getinfo(
                 (*self.ptr).easy_handle,
                 curl_sys::CURLINFO_PRIVATE,
-                &mut p
+                &mut p,
             ))?;
             Ok(p)
         }

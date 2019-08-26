@@ -953,6 +953,11 @@ impl Easy {
         self.inner.ssl_version(version)
     }
 
+    /// Same as [`Easy2::ssl_min_max_version`](struct.Easy2.html#method.ssl_min_max_version)
+    pub fn ssl_min_max_version(&mut self, min_version: SslVersion, max_version: SslVersion) -> Result<(), Error> {
+        self.inner.ssl_min_max_version(min_version, max_version)
+    }
+
     /// Same as [`Easy2::ssl_verify_host`](struct.Easy2.html#method.ssl_verify_host)
     pub fn ssl_verify_host(&mut self, verify: bool) -> Result<(), Error> {
         self.inner.ssl_verify_host(verify)

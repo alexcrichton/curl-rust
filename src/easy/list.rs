@@ -34,7 +34,7 @@ impl List {
 
     /// Appends some data into this list.
     pub fn append(&mut self, data: &str) -> Result<(), Error> {
-        let data = try!(CString::new(data));
+        let data = CString::new(data)?;
         unsafe {
             let raw = curl_sys::curl_slist_append(self.raw, data.as_ptr());
             assert!(!raw.is_null());

@@ -2,7 +2,7 @@ use std::any::Any;
 use std::cell::RefCell;
 use std::panic::{self, AssertUnwindSafe};
 
-thread_local!(static LAST_ERROR: RefCell<Option<Box<Any + Send>>> = {
+thread_local!(static LAST_ERROR: RefCell<Option<Box<dyn Any + Send>>> = {
     RefCell::new(None)
 });
 

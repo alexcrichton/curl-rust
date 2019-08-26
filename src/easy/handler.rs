@@ -788,7 +788,7 @@ impl<H> Easy2<H> {
     /// /path/file.sock
     /// ```
     pub fn unix_socket(&mut self, unix_domain_socket: &str) -> Result<(), Error> {
-        let socket = try!(CString::new(unix_domain_socket));
+        let socket = CString::new(unix_domain_socket)?;
         self.setopt_str(curl_sys::CURLOPT_UNIX_SOCKET_PATH, &socket)
     }
 
@@ -837,7 +837,7 @@ impl<H> Easy2<H> {
     /// By default this option is not set and `perform` will not work until it
     /// is set. This option corresponds to `CURLOPT_URL`.
     pub fn url(&mut self, url: &str) -> Result<(), Error> {
-        let url = try!(CString::new(url));
+        let url = CString::new(url)?;
         self.setopt_str(curl_sys::CURLOPT_URL, &url)
     }
 
@@ -858,7 +858,7 @@ impl<H> Easy2<H> {
     ///
     /// By default this option is not set and corresponds to `CURLOPT_PROXY`.
     pub fn proxy(&mut self, url: &str) -> Result<(), Error> {
-        let url = try!(CString::new(url));
+        let url = CString::new(url)?;
         self.setopt_str(curl_sys::CURLOPT_PROXY, &url)
     }
 
@@ -887,7 +887,7 @@ impl<H> Easy2<H> {
     /// By default this option is not set and corresponds to
     /// `CURLOPT_NOPROXY`.
     pub fn noproxy(&mut self, skip: &str) -> Result<(), Error> {
-        let skip = try!(CString::new(skip));
+        let skip = CString::new(skip)?;
         self.setopt_str(curl_sys::CURLOPT_NOPROXY, &skip)
     }
 
@@ -909,7 +909,7 @@ impl<H> Easy2<H> {
     /// By default this option is not set and corresponds to
     /// `CURLOPT_INTERFACE`.
     pub fn interface(&mut self, interface: &str) -> Result<(), Error> {
-        let s = try!(CString::new(interface));
+        let s = CString::new(interface)?;
         self.setopt_str(curl_sys::CURLOPT_INTERFACE, &s)
     }
 
@@ -939,7 +939,7 @@ impl<H> Easy2<H> {
     /// [c-ares](https://c-ares.haxx.se), otherwise setting it will return
     /// an error.
     pub fn dns_servers(&mut self, servers: &str) -> Result<(), Error> {
-        let s = try!(CString::new(servers));
+        let s = CString::new(servers)?;
         self.setopt_str(curl_sys::CURLOPT_DNS_SERVERS, &s)
     }
 
@@ -1030,7 +1030,7 @@ impl<H> Easy2<H> {
     ///
     /// By default this value is not set and corresponds to `CURLOPT_USERNAME`.
     pub fn username(&mut self, user: &str) -> Result<(), Error> {
-        let user = try!(CString::new(user));
+        let user = CString::new(user)?;
         self.setopt_str(curl_sys::CURLOPT_USERNAME, &user)
     }
 
@@ -1038,7 +1038,7 @@ impl<H> Easy2<H> {
     ///
     /// By default this value is not set and corresponds to `CURLOPT_PASSWORD`.
     pub fn password(&mut self, pass: &str) -> Result<(), Error> {
-        let pass = try!(CString::new(pass));
+        let pass = CString::new(pass)?;
         self.setopt_str(curl_sys::CURLOPT_PASSWORD, &pass)
     }
 
@@ -1063,7 +1063,7 @@ impl<H> Easy2<H> {
     /// By default this value is not set and corresponds to
     /// `CURLOPT_PROXYUSERNAME`.
     pub fn proxy_username(&mut self, user: &str) -> Result<(), Error> {
-        let user = try!(CString::new(user));
+        let user = CString::new(user)?;
         self.setopt_str(curl_sys::CURLOPT_PROXYUSERNAME, &user)
     }
 
@@ -1073,7 +1073,7 @@ impl<H> Easy2<H> {
     /// By default this value is not set and corresponds to
     /// `CURLOPT_PROXYPASSWORD`.
     pub fn proxy_password(&mut self, pass: &str) -> Result<(), Error> {
-        let pass = try!(CString::new(pass));
+        let pass = CString::new(pass)?;
         self.setopt_str(curl_sys::CURLOPT_PROXYPASSWORD, &pass)
     }
 
@@ -1119,7 +1119,7 @@ impl<H> Easy2<H> {
     /// By default this option is not set and corresponds to
     /// `CURLOPT_ACCEPT_ENCODING`.
     pub fn accept_encoding(&mut self, encoding: &str) -> Result<(), Error> {
-        let encoding = try!(CString::new(encoding));
+        let encoding = CString::new(encoding)?;
         self.setopt_str(curl_sys::CURLOPT_ACCEPT_ENCODING, &encoding)
     }
 
@@ -1194,7 +1194,7 @@ impl<H> Easy2<H> {
     /// `CURLOPT_COPYPOSTFIELDS`.
     pub fn post_fields_copy(&mut self, data: &[u8]) -> Result<(), Error> {
         // Set the length before the pointer so libcurl knows how much to read
-        try!(self.post_field_size(data.len() as u64));
+        self.post_field_size(data.len() as u64)?;
         self.setopt_ptr(curl_sys::CURLOPT_COPYPOSTFIELDS, data.as_ptr() as *const _)
     }
 
@@ -1209,7 +1209,7 @@ impl<H> Easy2<H> {
     /// `CURLOPT_POSTFIELDSIZE_LARGE`.
     pub fn post_field_size(&mut self, size: u64) -> Result<(), Error> {
         // Clear anything previous to ensure we don't read past a buffer
-        try!(self.setopt_ptr(curl_sys::CURLOPT_POSTFIELDS, 0 as *const _));
+        self.setopt_ptr(curl_sys::CURLOPT_POSTFIELDS, 0 as *const _)?;
         self.setopt_off_t(
             curl_sys::CURLOPT_POSTFIELDSIZE_LARGE,
             size as curl_sys::curl_off_t,
@@ -1222,7 +1222,7 @@ impl<H> Easy2<H> {
     /// By default this option is set to null and corresponds to
     /// `CURLOPT_HTTPPOST`.
     pub fn httppost(&mut self, form: Form) -> Result<(), Error> {
-        try!(self.setopt_ptr(curl_sys::CURLOPT_HTTPPOST, form::raw(&form) as *const _));
+        self.setopt_ptr(curl_sys::CURLOPT_HTTPPOST, form::raw(&form) as *const _)?;
         self.inner.form = Some(form);
         Ok(())
     }
@@ -1231,7 +1231,7 @@ impl<H> Easy2<H> {
     ///
     /// By default this option is not set and corresponds to `CURLOPT_REFERER`.
     pub fn referer(&mut self, referer: &str) -> Result<(), Error> {
-        let referer = try!(CString::new(referer));
+        let referer = CString::new(referer)?;
         self.setopt_str(curl_sys::CURLOPT_REFERER, &referer)
     }
 
@@ -1240,7 +1240,7 @@ impl<H> Easy2<H> {
     /// By default this option is not set and corresponds to
     /// `CURLOPT_USERAGENT`.
     pub fn useragent(&mut self, useragent: &str) -> Result<(), Error> {
-        let useragent = try!(CString::new(useragent));
+        let useragent = CString::new(useragent)?;
         self.setopt_str(curl_sys::CURLOPT_USERAGENT, &useragent)
     }
 
@@ -1298,7 +1298,7 @@ impl<H> Easy2<H> {
     ///
     /// By default this option is not set and corresponds to `CURLOPT_COOKIE`.
     pub fn cookie(&mut self, cookie: &str) -> Result<(), Error> {
-        let cookie = try!(CString::new(cookie));
+        let cookie = CString::new(cookie)?;
         self.setopt_str(curl_sys::CURLOPT_COOKIE, &cookie)
     }
 
@@ -1382,7 +1382,7 @@ impl<H> Easy2<H> {
     ///
     /// By default this options corresponds to `CURLOPT_COOKIELIST`
     pub fn cookie_list(&mut self, cookie: &str) -> Result<(), Error> {
-        let cookie = try!(CString::new(cookie));
+        let cookie = CString::new(cookie)?;
         self.setopt_str(curl_sys::CURLOPT_COOKIELIST, &cookie)
     }
 
@@ -1471,7 +1471,7 @@ impl<H> Easy2<H> {
     ///
     /// By default this option is not set and corresponds to `CURLOPT_RANGE`.
     pub fn range(&mut self, range: &str) -> Result<(), Error> {
-        let range = try!(CString::new(range));
+        let range = CString::new(range)?;
         self.setopt_str(curl_sys::CURLOPT_RANGE, &range)
     }
 
@@ -1497,7 +1497,7 @@ impl<H> Easy2<H> {
     /// By default this option is not set and corresponds to
     /// `CURLOPT_CUSTOMREQUEST`.
     pub fn custom_request(&mut self, request: &str) -> Result<(), Error> {
-        let request = try!(CString::new(request));
+        let request = CString::new(request)?;
         self.setopt_str(curl_sys::CURLOPT_CUSTOMREQUEST, &request)
     }
 
@@ -1776,7 +1776,7 @@ impl<H> Easy2<H> {
     // /// By default this option is not set and corresponds to
     // /// `CURLOPT_DNS_INTERFACE`.
     // pub fn dns_interface(&mut self, interface: &str) -> Result<(), Error> {
-    //     let interface = try!(CString::new(interface));
+    //     let interface = CString::new(interface)?;
     //     self.setopt_str(curl_sys::CURLOPT_DNS_INTERFACE, &interface)
     // }
     //
@@ -1789,7 +1789,7 @@ impl<H> Easy2<H> {
     // /// By default this option is not set and corresponds to
     // /// `CURLOPT_DNS_LOCAL_IP4`.
     // pub fn dns_local_ip4(&mut self, ip: &str) -> Result<(), Error> {
-    //     let ip = try!(CString::new(ip));
+    //     let ip = CString::new(ip)?;
     //     self.setopt_str(curl_sys::CURLOPT_DNS_LOCAL_IP4, &ip)
     // }
     //
@@ -1802,7 +1802,7 @@ impl<H> Easy2<H> {
     // /// By default this option is not set and corresponds to
     // /// `CURLOPT_DNS_LOCAL_IP6`.
     // pub fn dns_local_ip6(&mut self, ip: &str) -> Result<(), Error> {
-    //     let ip = try!(CString::new(ip));
+    //     let ip = CString::new(ip)?;
     //     self.setopt_str(curl_sys::CURLOPT_DNS_LOCAL_IP6, &ip)
     // }
     //
@@ -1818,7 +1818,7 @@ impl<H> Easy2<H> {
     // /// By default this option is not set and corresponds to
     // /// `CURLOPT_DNS_SERVERS`.
     // pub fn dns_servers(&mut self, servers: &str) -> Result<(), Error> {
-    //     let servers = try!(CString::new(servers));
+    //     let servers = CString::new(servers)?;
     //     self.setopt_str(curl_sys::CURLOPT_DNS_SERVERS, &servers)
     // }
 
@@ -1855,7 +1855,7 @@ impl<H> Easy2<H> {
     /// By default this option is "PEM" and corresponds to
     /// `CURLOPT_SSLCERTTYPE`.
     pub fn ssl_cert_type(&mut self, kind: &str) -> Result<(), Error> {
-        let kind = try!(CString::new(kind));
+        let kind = CString::new(kind)?;
         self.setopt_str(curl_sys::CURLOPT_SSLCERTTYPE, &kind)
     }
 
@@ -1887,7 +1887,7 @@ impl<H> Easy2<H> {
     /// By default this option is "PEM" and corresponds to
     /// `CURLOPT_SSLKEYTYPE`.
     pub fn ssl_key_type(&mut self, kind: &str) -> Result<(), Error> {
-        let kind = try!(CString::new(kind));
+        let kind = CString::new(kind)?;
         self.setopt_str(curl_sys::CURLOPT_SSLKEYTYPE, &kind)
     }
 
@@ -1900,7 +1900,7 @@ impl<H> Easy2<H> {
     /// By default this option is not set and corresponds to
     /// `CURLOPT_KEYPASSWD`.
     pub fn key_password(&mut self, password: &str) -> Result<(), Error> {
-        let password = try!(CString::new(password));
+        let password = CString::new(password)?;
         self.setopt_str(curl_sys::CURLOPT_KEYPASSWD, &password)
     }
 
@@ -1912,7 +1912,7 @@ impl<H> Easy2<H> {
     /// By default this option is not set and corresponds to
     /// `CURLOPT_SSLENGINE`.
     pub fn ssl_engine(&mut self, engine: &str) -> Result<(), Error> {
-        let engine = try!(CString::new(engine));
+        let engine = CString::new(engine)?;
         self.setopt_str(curl_sys::CURLOPT_SSLENGINE, &engine)
     }
 
@@ -2140,7 +2140,7 @@ impl<H> Easy2<H> {
     /// By default this option is not set and corresponds to
     /// `CURLOPT_SSL_CIPHER_LIST`.
     pub fn ssl_cipher_list(&mut self, ciphers: &str) -> Result<(), Error> {
-        let ciphers = try!(CString::new(ciphers));
+        let ciphers = CString::new(ciphers)?;
         self.setopt_str(curl_sys::CURLOPT_SSL_CIPHER_LIST, &ciphers)
     }
 
@@ -2553,7 +2553,7 @@ impl<H> Easy2<H> {
                 curl_sys::CURLINFO_COOKIELIST,
                 &mut list,
             );
-            try!(self.cvt(rc));
+            self.cvt(rc)?;
             Ok(list::from_raw(list))
         }
     }
@@ -2770,7 +2770,7 @@ impl<H> Easy2<H> {
                 data.len(),
                 &mut n,
             );
-            try!(self.cvt(rc));
+            self.cvt(rc)?;
             Ok(n)
         }
     }
@@ -2783,14 +2783,14 @@ impl<H> Easy2<H> {
     #[cfg(unix)]
     fn setopt_path(&mut self, opt: curl_sys::CURLoption, val: &Path) -> Result<(), Error> {
         use std::os::unix::prelude::*;
-        let s = try!(CString::new(val.as_os_str().as_bytes()));
+        let s = CString::new(val.as_os_str().as_bytes())?;
         self.setopt_str(opt, &s)
     }
 
     #[cfg(windows)]
     fn setopt_path(&mut self, opt: curl_sys::CURLoption, val: &Path) -> Result<(), Error> {
         match val.to_str() {
-            Some(s) => self.setopt_str(opt, &try!(CString::new(s))),
+            Some(s) => self.setopt_str(opt, &CString::new(s)?),
             None => Err(Error::new(curl_sys::CURLE_CONV_FAILED)),
         }
     }
@@ -2820,7 +2820,7 @@ impl<H> Easy2<H> {
 
     fn getopt_bytes(&mut self, opt: curl_sys::CURLINFO) -> Result<Option<&[u8]>, Error> {
         unsafe {
-            let p = try!(self.getopt_ptr(opt));
+            let p = self.getopt_ptr(opt)?;
             if p.is_null() {
                 Ok(None)
             } else {
@@ -2833,7 +2833,7 @@ impl<H> Easy2<H> {
         unsafe {
             let mut p = 0 as *const c_char;
             let rc = curl_sys::curl_easy_getinfo(self.inner.handle, opt, &mut p);
-            try!(self.cvt(rc));
+            self.cvt(rc)?;
             Ok(p)
         }
     }
@@ -2853,7 +2853,7 @@ impl<H> Easy2<H> {
         unsafe {
             let mut p = 0;
             let rc = curl_sys::curl_easy_getinfo(self.inner.handle, opt, &mut p);
-            try!(self.cvt(rc));
+            self.cvt(rc)?;
             Ok(p)
         }
     }
@@ -2862,7 +2862,7 @@ impl<H> Easy2<H> {
         unsafe {
             let mut p = 0 as c_double;
             let rc = curl_sys::curl_easy_getinfo(self.inner.handle, opt, &mut p);
-            try!(self.cvt(rc));
+            self.cvt(rc)?;
             Ok(p)
         }
     }

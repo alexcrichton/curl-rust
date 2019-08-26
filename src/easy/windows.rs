@@ -88,7 +88,7 @@ mod win {
         };
 
         let openssl_store = (openssl.SSL_CTX_get_cert_store)(ssl_ctx as *const SSL_CTX);
-        let mut store = match CertStore::open_current_user("ROOT") {
+        let store = match CertStore::open_current_user("ROOT") {
             Ok(s) => s,
             Err(_) => return,
         };

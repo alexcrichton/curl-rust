@@ -43,10 +43,10 @@ default = ["ssl"]
 ssl = ["openssl-sys", "openssl-probe", "curl-sys/ssl"] # OpenSSL/system TLS backend
 mesalink = ["curl-sys/mesalink"] # MesaLink TLS backend
 http2 = ["curl-sys/http2"]
-static-curl = ["curl-sys/static-curl"]
-static-ssl = ["curl-sys/static-ssl"]
+static-curl = ["curl-sys/static-curl"] # Bundle and statically link to curl
+static-ssl = ["curl-sys/static-ssl"] # Bundle and statically link to OpenSSL if used
 force-system-lib-on-osx = ['curl-sys/force-system-lib-on-osx']
-static-openssl = ["curl-sys/static-openssl"]
+static-openssl = ["curl-sys/static-openssl"] # Bundle and statically link to OpenSSL on all platforms
 
 [[test]]
 name = "atexit"

@@ -805,5 +805,5 @@ b",
 #[test]
 fn check_unix_socket() {
     let mut h = handle();
-    h.unix_socket("/var/something.socks").is_ok();
+    drop(h.unix_socket("/var/something.socks"));
 }

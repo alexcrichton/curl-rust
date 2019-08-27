@@ -409,7 +409,7 @@ pub enum ProxyType {
 
 /// Possible conditions for the `time_condition` method.
 #[allow(missing_docs)]
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum TimeCondition {
     None = curl_sys::CURL_TIMECOND_NONE as isize,
     IfModifiedSince = curl_sys::CURL_TIMECOND_IFMODSINCE as isize,
@@ -424,7 +424,7 @@ pub enum TimeCondition {
 
 /// Possible values to pass to the `ip_resolve` method.
 #[allow(missing_docs)]
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum IpResolve {
     V4 = curl_sys::CURL_IPRESOLVE_V4 as isize,
     V6 = curl_sys::CURL_IPRESOLVE_V6 as isize,
@@ -437,7 +437,7 @@ pub enum IpResolve {
 }
 
 /// Possible values to pass to the `http_version` method.
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum HttpVersion {
     /// We don't care what http version to use, and we'd like the library to
     /// choose the best possible for us.
@@ -487,7 +487,7 @@ pub enum SslVersion {
 }
 
 /// Possible return values from the `seek_function` callback.
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum SeekResult {
     /// Indicates that the seek operation was a success
     Ok = curl_sys::CURL_SEEKFUNC_OK as isize,
@@ -508,7 +508,7 @@ pub enum SeekResult {
 
 /// Possible data chunks that can be witnessed as part of the `debug_function`
 /// callback.
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum InfoType {
     /// The data is informational text.
     Text,
@@ -565,7 +565,7 @@ pub enum WriteError {
 }
 
 /// Options for `.netrc` parsing.
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum NetRc {
     /// Ignoring `.netrc` file and use information from url
     ///

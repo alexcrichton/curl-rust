@@ -467,9 +467,9 @@ pub enum HttpVersion {
     __Nonexhaustive = 500,
 }
 
-/// Possible values to pass to the `ssl_version` method.
+/// Possible values to pass to the `ssl_version` and `ssl_min_max_version` method.
 #[allow(missing_docs)]
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum SslVersion {
     Default = curl_sys::CURL_SSLVERSION_DEFAULT as isize,
     Tlsv1 = curl_sys::CURL_SSLVERSION_TLSv1 as isize,

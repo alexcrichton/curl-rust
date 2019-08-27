@@ -54,7 +54,7 @@ pub struct Message<'multi> {
 /// from the multi handle when desired.
 pub struct EasyHandle {
     easy: Easy,
-    // This is now effecitvely bound to a `Multi`, so it is no longer sendable.
+    // This is now effectively bound to a `Multi`, so it is no longer sendable.
     _marker: marker::PhantomData<&'static Multi>,
 }
 
@@ -65,7 +65,7 @@ pub struct EasyHandle {
 /// from the multi handle when desired.
 pub struct Easy2Handle<H> {
     easy: Easy2<H>,
-    // This is now effecitvely bound to a `Multi`, so it is no longer sendable.
+    // This is now effectively bound to a `Multi`, so it is no longer sendable.
     _marker: marker::PhantomData<&'static Multi>,
 }
 
@@ -304,7 +304,7 @@ impl Multi {
     /// Sets the pipeline length.
     ///
     /// This sets the max number that will be used as the maximum amount of
-    /// outstanding reuqests in an HTTP/1.1 pipelined connection. This option
+    /// outstanding requests in an HTTP/1.1 pipelined connection. This option
     /// is only used for HTTP/1.1 pipelining, and not HTTP/2 multiplexing.
     pub fn set_pipeline_length(&mut self, val: usize) -> Result<(), MultiError> {
         self.setopt_long(curl_sys::CURLMOPT_MAX_PIPELINE_LENGTH, val as c_long)

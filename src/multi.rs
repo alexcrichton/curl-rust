@@ -8,9 +8,7 @@ use curl_sys;
 use libc::{c_char, c_int, c_long, c_short, c_void};
 
 #[cfg(unix)]
-use libc::{fd_set, pollfd, POLLIN, POLLOUT, POLLPRI};
-#[cfg(windows)]
-use winapi::winsock2::fd_set;
+use libc::{pollfd, POLLIN, POLLOUT, POLLPRI};
 
 use easy::{Easy, Easy2};
 use panic;
@@ -658,34 +656,6 @@ impl Multi {
             let except = except.map(|r| r as *mut _).unwrap_or(0 as *mut _);
             cvt(curl_sys::curl_multi_fdset(
                 self.raw, read, write, except, &mut ret,
-            ))?;
-            if ret == -1 {
-                Ok(None)
-            } else {
-                Ok(Some(ret))
-            }
-        }
-    }
-
-    #[doc(hidden)]
-    #[deprecated(note = "renamed to fdset2")]
-    pub fn fdset(
-        &self,
-        read: Option<&mut fd_set>,
-        write: Option<&mut fd_set>,
-        except: Option<&mut fd_set>,
-    ) -> Result<Option<i32>, MultiError> {
-        unsafe {
-            let mut ret = 0;
-            let read = read.map(|r| r as *mut _).unwrap_or(0 as *mut _);
-            let write = write.map(|r| r as *mut _).unwrap_or(0 as *mut _);
-            let except = except.map(|r| r as *mut _).unwrap_or(0 as *mut _);
-            cvt(curl_sys::curl_multi_fdset(
-                self.raw,
-                read as *mut _,
-                write as *mut _,
-                except as *mut _,
-                &mut ret,
             ))?;
             if ret == -1 {
                 Ok(None)

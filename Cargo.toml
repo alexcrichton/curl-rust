@@ -24,12 +24,9 @@ socket2 = "0.3.7"
 openssl-sys = { version = "0.9.43", optional = true }
 openssl-probe = { version = "0.1.2", optional = true }
 
-[target.'cfg(windows)'.dependencies]
-winapi = "0.2.7"
-
 [target.'cfg(target_env = "msvc")'.dependencies]
 schannel = "0.1.13"
-kernel32-sys = "0.2.2"
+winapi = { version = '0.3', features = ['libloaderapi', 'wincrypt'] }
 
 [dev-dependencies]
 mio = "0.6"

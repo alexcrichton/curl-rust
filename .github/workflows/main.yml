@@ -1,0 +1,135 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        build: [x86_64, i686, x86_64-musl, mingw, system-curl, openssl-110, x86_64-beta, x86_64-nightly, macos, win64, win32, win2016]
+        include:
+          - build: x86_64
+            os: ubuntu-latest
+            rust: stable
+            docker: linux64
+            target: x86_64-unknown-linux-gnu
+          - build: x86_64-beta
+            os: ubuntu-latest
+            rust: beta
+            docker: linux64
+            target: x86_64-unknown-linux-gnu
+          - build: x86_64-nightly
+            os: ubuntu-latest
+            rust: nightly
+            docker: linux64
+            target: x86_64-unknown-linux-gnu
+          - build: i686
+            os: ubuntu-latest
+            rust: stable
+            docker: linux32
+            target: i686-unknown-linux-gnu
+          - build: x86_64-musl
+            os: ubuntu-latest
+            rust: stable
+            docker: musl
+            target: x86_64-unknown-linux-musl
+          - build: mingw
+            os: ubuntu-latest
+            rust: stable
+            docker: mingw
+            target: x86_64-pc-windows-gnu
+            no_run: true
+          - build: system-curl
+            os: ubuntu-latest
+            rust: stable
+            docker: linux64-curl
+            target: x86_64-unknown-linux-gnu
+          - build: openssl-110
+            os: ubuntu-latest
+            rust: stable
+            docker: centos7
+            target: x86_64-unknown-linux-gnu
+          - build: macos
+            os: macos-latest
+            rust: stable
+            target: x86_64-apple-darwin
+          - build: win32
+            os: windows-latest
+            rust: stable
+            target: i686-pc-windows-msvc
+          - build: win64
+            os: windows-latest
+            rust: stable
+            target: x86_64-pc-windows-msvc
+          - build: win2016
+            os: windows-2016
+            rust: stable
+            target: x86_64-pc-windows-msvc
+    steps:
+    - uses: actions/checkout@master
+      with:
+        submodules: true
+    - name: Install Rust (rustup)
+      run: rustup update ${{ matrix.rust }} && rustup default ${{ matrix.rust }}
+      if: matrix.os != 'macos-latest'
+    - name: Install Rust (macos)
+      run: |
+        curl https://sh.rustup.rs | sh -s -- -y --default-toolchain ${{ matrix.rust }}
+        echo "##[add-path]$HOME/.cargo/bin"
+      if: matrix.os == 'macos-latest'
+    - run: rustup target add ${{ matrix.target }}
+    - run: TARGET=${{ matrix.target }} ./ci/run.sh
+      if: matrix.os != 'ubuntu-latest'
+      name: Run non-docker tests
+      shell: bash
+    - run: |
+        set -e
+        cargo generate-lockfile
+        mkdir .cargo target
+        docker build -t rust -f ci/Dockerfile-${{ matrix.docker }} ci
+        docker run \
+          -w /src \
+          -v `pwd`:/src:ro \
+          -v `pwd`/target:/src/target \
+          -v `pwd`/ci/.cargo:/src/.cargo:ro \
+          -v `rustc --print sysroot`:/usr/local:ro \
+          -e TARGET=${{ matrix.target }} \
+          -e NO_RUN=${{ matrix.no_run }} \
+          -e CARGO_TARGET_DIR=/src/target \
+          rust \
+          sh ci/run.sh
+      if: matrix.os == 'ubuntu-latest'
+      name: Run docker tests
+
+  rustfmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+      with:
+        submodules: true
+    - name: Install Rust
+      run: rustup update stable && rustup default stable && rustup component add rustfmt
+    - run: cargo fmt -- --check
+
+  publish_docs:
+    name: Publish Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+        with:
+          submodules: true
+      - name: Install Rust
+        run: rustup update stable && rustup default stable
+      - name: Build documentation
+        run: cargo doc --no-deps --all-features
+      - name: Publish documentation
+        run: |
+          cd target/doc
+          git init
+          git add .
+          git -c user.name='ci' -c user.email='ci' commit -m init
+          git push -f -q https://git:${{ secrets.github_token }}@github.com/${{ github.repository }} HEAD:gh-pages
+        if: github.event_name == 'push' && github.event.ref == 'refs/heads/master'

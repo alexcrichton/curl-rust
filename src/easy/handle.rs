@@ -954,7 +954,11 @@ impl Easy {
     }
 
     /// Same as [`Easy2::ssl_min_max_version`](struct.Easy2.html#method.ssl_min_max_version)
-    pub fn ssl_min_max_version(&mut self, min_version: SslVersion, max_version: SslVersion) -> Result<(), Error> {
+    pub fn ssl_min_max_version(
+        &mut self,
+        min_version: SslVersion,
+        max_version: SslVersion,
+    ) -> Result<(), Error> {
         self.inner.ssl_min_max_version(min_version, max_version)
     }
 

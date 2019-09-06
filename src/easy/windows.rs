@@ -5,14 +5,14 @@ use libc::c_void;
 #[cfg(target_env = "msvc")]
 mod win {
     extern crate winapi;
+    use self::winapi::ctypes::*;
+    use self::winapi::um::libloaderapi::*;
+    use self::winapi::um::wincrypt::*;
     use schannel::cert_context::ValidUses;
     use schannel::cert_store::CertStore;
     use std::ffi::CString;
     use std::mem;
     use std::ptr;
-    use self::winapi::ctypes::*;
-    use self::winapi::um::libloaderapi::*;
-    use self::winapi::um::wincrypt::*;
 
     fn lookup(module: &str, symbol: &str) -> Option<*const c_void> {
         unsafe {

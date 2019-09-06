@@ -7,8 +7,6 @@ libcurl bindings for Rust
 ## Quick Start
 
 ```rust
-extern crate curl;
-
 use std::io::{stdout, Write};
 
 use curl::easy::Easy;
@@ -28,8 +26,6 @@ fn main() {
 ```
 
 ```rust
-extern crate curl;
-
 use curl::easy::Easy;
 
 // Capture output into a local `Vec`.
@@ -54,8 +50,6 @@ request, and then `read_function` can be used to specify how data is filled in.
 This interface works particularly well with types that implement `Read`.
 
 ```rust,no_run
-extern crate curl;
-
 use std::io::Read;
 use curl::easy::Easy;
 
@@ -80,8 +74,6 @@ fn main() {
 Custom headers can be specified as part of the request:
 
 ```rust,no_run
-extern crate curl;
-
 use curl::easy::{Easy, List};
 
 fn main() {
@@ -101,8 +93,6 @@ The handle can be re-used across multiple requests. Curl will attempt to
 keep the connections alive.
 
 ```rust,no_run
-extern crate curl;
-
 use curl::easy::Easy;
 
 fn main() {

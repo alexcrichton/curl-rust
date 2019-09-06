@@ -2,8 +2,6 @@
 
 libcurl bindings for Rust
 
-[![Build Status](https://dev.azure.com/alexcrichton/curl-rust/_apis/build/status/alexcrichton.curl-rust?branchName=master)](https://dev.azure.com/alexcrichton/curl-rust/_build/latest?definitionId=6&branchName=master)
-
 [Documentation](https://docs.rs/curl)
 
 ## Quick Start

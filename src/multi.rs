@@ -10,7 +10,7 @@ use libc::{c_char, c_int, c_long, c_short, c_void};
 #[cfg(unix)]
 use libc::{pollfd, POLLIN, POLLOUT, POLLPRI};
 
-use easy::{Easy, Easy2};
+use easy::{Easy, Easy2, List};
 use panic;
 use {Error, MultiError};
 
@@ -695,6 +695,60 @@ impl Drop for Multi {
     }
 }
 
+macro_rules! impl_easy_getters {
+    () => {
+        impl_easy_getters! {
+            time_condition_unmet -> bool,
+            effective_url -> Option<&str>,
+            effective_url_bytes -> Option<&[u8]>,
+            response_code -> u32,
+            http_connectcode -> u32,
+            filetime -> Option<i64>,
+            download_size -> f64,
+            content_length_download -> f64,
+            total_time -> Duration,
+            namelookup_time -> Duration,
+            connect_time -> Duration,
+            appconnect_time -> Duration,
+            pretransfer_time -> Duration,
+            starttransfer_time -> Duration,
+            redirect_time -> Duration,
+            redirect_count -> u32,
+            redirect_url -> Option<&str>,
+            redirect_url_bytes -> Option<&[u8]>,
+            header_size -> u64,
+            request_size -> u64,
+            content_type -> Option<&str>,
+            content_type_bytes -> Option<&[u8]>,
+            os_errno -> i32,
+            primary_ip -> Option<&str>,
+            primary_port -> u16,
+            local_ip -> Option<&str>,
+            local_port -> u16,
+            cookies -> List,
+        }
+    };
+
+    ($($name:ident -> $ret:ty,)*) => {
+        $(
+            impl_easy_getters!($name, $ret, concat!(
+                "Same as [`Easy2::",
+                stringify!($name),
+                "`](../easy/struct.Easy2.html#method.",
+                stringify!($name),
+                ")."
+            ));
+        )*
+    };
+
+    ($name:ident, $ret:ty, $doc:expr) => {
+        #[doc = $doc]
+        pub fn $name(&mut self) -> Result<$ret, Error> {
+            self.easy.$name()
+        }
+    };
+}
+
 impl EasyHandle {
     /// Sets an internal private token for this `EasyHandle`.
     ///
@@ -709,6 +763,8 @@ impl EasyHandle {
             ))
         }
     }
+
+    impl_easy_getters!();
 
     /// Unpause reading on a connection.
     ///
@@ -736,6 +792,11 @@ impl EasyHandle {
     /// when the writing is later unpaused.
     pub fn unpause_write(&self) -> Result<(), Error> {
         self.easy.unpause_write()
+    }
+
+    /// Get a pointer to the raw underlying CURL handle.
+    pub fn raw(&self) -> *mut curl_sys::CURL {
+        self.easy.raw()
     }
 }
 
@@ -767,6 +828,8 @@ impl<H> Easy2Handle<H> {
         }
     }
 
+    impl_easy_getters!();
+
     /// Unpause reading on a connection.
     ///
     /// Using this function, you can explicitly unpause a connection that was
@@ -793,6 +856,11 @@ impl<H> Easy2Handle<H> {
     /// when the writing is later unpaused.
     pub fn unpause_write(&self) -> Result<(), Error> {
         self.easy.unpause_write()
+    }
+
+    /// Get a pointer to the raw underlying CURL handle.
+    pub fn raw(&self) -> *mut curl_sys::CURL {
+        self.easy.raw()
     }
 }
 

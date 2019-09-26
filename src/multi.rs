@@ -299,6 +299,37 @@ impl Multi {
         self.setopt_long(curl_sys::CURLMOPT_MAX_HOST_CONNECTIONS, val as c_long)
     }
 
+    /// Sets the max simultaneously open connections.
+    ///
+    /// The set number will be used as the maximum number of simultaneously open
+    /// connections in total using this multi handle. For each new session,
+    /// libcurl will open a new connection up to the limit set by the provided
+    /// value. When the limit is reached, the sessions will be pending until
+    /// there are available connections. If pipelining is enabled, libcurl will
+    /// try to pipeline or use multiplexing if the host is capable of it.
+    pub fn set_max_total_connections(&mut self, val: usize) -> Result<(), MultiError> {
+        self.setopt_long(curl_sys::CURLMOPT_MAX_TOTAL_CONNECTIONS, val as c_long)
+    }
+
+    /// Set size of connection cache.
+    ///
+    /// The set number will be used as the maximum amount of simultaneously open
+    /// connections that libcurl may keep in its connection cache after
+    /// completed use. By default libcurl will enlarge the size for each added
+    /// easy handle to make it fit 4 times the number of added easy handles.
+    ///
+    /// By setting this option, you can prevent the cache size from growing
+    /// beyond the limit set by you.
+    ///
+    /// When the cache is full, curl closes the oldest one in the cache to
+    /// prevent the number of open connections from increasing.
+    ///
+    /// See [`set_max_total_connections`](#method.set_max_total_connections) for
+    /// limiting the number of active connections.
+    pub fn set_max_connects(&mut self, val: usize) -> Result<(), MultiError> {
+        self.setopt_long(curl_sys::CURLMOPT_MAXCONNECTS, val as c_long)
+    }
+
     /// Sets the pipeline length.
     ///
     /// This sets the max number that will be used as the maximum amount of
@@ -672,6 +703,11 @@ impl Multi {
     /// individually.
     pub fn close(&self) -> Result<(), MultiError> {
         unsafe { cvt(curl_sys::curl_multi_cleanup(self.raw)) }
+    }
+
+    /// Get a pointer to the raw underlying CURLM handle.
+    pub fn raw(&self) -> *mut curl_sys::CURLM {
+        self.raw
     }
 }
 

@@ -122,6 +122,8 @@ jobs:
           submodules: true
       - name: Install Rust
         run: rustup update stable && rustup default stable
+      - name: Install dependencies
+        run: apt-get install libgssapi-krb5-2
       - name: Build documentation
         run: cargo doc --no-deps --all-features
       - name: Publish documentation

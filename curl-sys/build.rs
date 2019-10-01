@@ -187,6 +187,7 @@ fn main() {
         .file("curl/lib/warnless.c")
         .file("curl/lib/wildcard.c")
         .define("HAVE_GETADDRINFO", None)
+        .define("HAVE_GETPEERNAME", None)
         .warnings(false);
 
     if cfg!(feature = "http2") {

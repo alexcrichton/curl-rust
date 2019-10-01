@@ -798,7 +798,8 @@ pub const CURLVERSION_SECOND: CURLversion = 1;
 pub const CURLVERSION_THIRD: CURLversion = 2;
 pub const CURLVERSION_FOURTH: CURLversion = 3;
 pub const CURLVERSION_FIFTH: CURLversion = 4;
-pub const CURLVERSION_NOW: CURLversion = CURLVERSION_FIFTH;
+pub const CURLVERSION_SIXTH: CURLversion = 5;
+pub const CURLVERSION_NOW: CURLversion = CURLVERSION_SIXTH;
 
 #[repr(C)]
 pub struct curl_version_info_data {
@@ -818,6 +819,9 @@ pub struct curl_version_info_data {
     pub libssh_version: *const c_char,
     pub brotli_ver_num: c_uint,
     pub brotli_version: *const c_char,
+    pub nghttp2_ver_num: c_uint,
+    pub nghttp2_version: *const c_char,
+    pub quic_version: *const c_char,
 }
 
 pub const CURL_VERSION_IPV6: c_int = 1 << 0;

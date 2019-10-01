@@ -49,7 +49,7 @@ fn main() {
     cfg.skip_signededness(|s| s.ends_with("callback") || s.ends_with("function"));
 
     cfg.skip_struct(move |s| {
-        if version < 60 {
+        if version < 65 {
             match s {
                 "curl_version_info_data" => return true,
                 _ => {}
@@ -81,7 +81,7 @@ fn main() {
         }
         if version < 60 {
             match s {
-                "CURLVERSION_FIFTH" | "CURLVERSION_NOW" => return true,
+                "CURLVERSION_FIFTH" | "CURLVERSION_SIXTH" | "CURLVERSION_NOW" => return true,
                 _ => {}
             }
         }

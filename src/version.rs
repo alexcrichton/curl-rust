@@ -32,7 +32,7 @@ impl Version {
     /// Returns the libcurl version that this library is currently linked against.
     pub fn get() -> Version {
         unsafe {
-            let ptr = curl_sys::curl_version_info(curl_sys::CURLVERSION_FOURTH);
+            let ptr = curl_sys::curl_version_info(curl_sys::CURLVERSION_NOW);
             assert!(!ptr.is_null());
             Version { inner: ptr }
         }
@@ -245,6 +245,39 @@ impl Version {
             }
         }
     }
+
+    /// If available, the version of nghttp2 libcurl is linked against.
+    pub fn nghttp2_version_num(&self) -> Option<u32> {
+        unsafe {
+            if (*self.inner).age >= curl_sys::CURLVERSION_SIXTH {
+                Some((*self.inner).nghttp2_ver_num)
+            } else {
+                None
+            }
+        }
+    }
+
+    /// If available, the version of nghttp2 libcurl is linked against.
+    pub fn nghttp2_version(&self) -> Option<&str> {
+        unsafe {
+            if (*self.inner).age >= curl_sys::CURLVERSION_SIXTH {
+                ::opt_str((*self.inner).nghttp2_version)
+            } else {
+                None
+            }
+        }
+    }
+
+    /// If available, the version of quic libcurl is linked against.
+    pub fn quic_version(&self) -> Option<&str> {
+        unsafe {
+            if (*self.inner).age >= curl_sys::CURLVERSION_SIXTH {
+                ::opt_str((*self.inner).quic_version)
+            } else {
+                None
+            }
+        }
+    }
 }
 
 impl fmt::Debug for Version {
@@ -285,6 +318,21 @@ impl fmt::Debug for Version {
         }
         if let Some(s) = self.libssh_version() {
             f.field("libssh_version", &s);
+        }
+        if let Some(s) = self.brotli_version_num() {
+            f.field("brotli_version_num", &format!("{:x}", s));
+        }
+        if let Some(s) = self.brotli_version() {
+            f.field("brotli_version", &s);
+        }
+        if let Some(s) = self.nghttp2_version_num() {
+            f.field("nghttp2_version_num", &format!("{:x}", s));
+        }
+        if let Some(s) = self.nghttp2_version() {
+            f.field("nghttp2_version", &s);
+        }
+        if let Some(s) = self.quic_version() {
+            f.field("quic_version", &s);
         }
 
         f.field("protocols", &self.protocols().collect::<Vec<_>>());

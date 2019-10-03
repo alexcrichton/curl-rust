@@ -269,8 +269,7 @@ fn main() {
         }
     } else {
         if target.contains("-apple-") {
-            cfg.define("__APPLE__", None)
-                .define("macintosh", None);
+            cfg.define("__APPLE__", None).define("macintosh", None);
         }
 
         cfg.define("RECV_TYPE_ARG1", "int")

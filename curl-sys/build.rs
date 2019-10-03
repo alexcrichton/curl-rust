@@ -258,7 +258,8 @@ fn main() {
     }
 
     if windows {
-        cfg.define("USE_THREADS_WIN32", None)
+        cfg.define("WIN32", None)
+            .define("USE_THREADS_WIN32", None)
             .define("HAVE_IOCTLSOCKET_FIONBIO", None)
             .define("USE_WINSOCK", None)
             .file("curl/lib/system_win32.c");
@@ -267,7 +268,14 @@ fn main() {
             cfg.file("curl/lib/vauth/spnego_sspi.c");
         }
     } else {
+        if target.contains("-apple-") {
+            cfg.define("__APPLE__", None)
+                .define("macintosh", None);
+        }
+
         cfg.define("RECV_TYPE_ARG1", "int")
+            .define("HAVE_CLOCK_GETTIME_MONOTONIC", None)
+            .define("HAVE_GETTIMEOFDAY", None)
             .define("HAVE_PTHREAD_H", None)
             .define("HAVE_ARPA_INET_H", None)
             .define("HAVE_ERRNO_H", None)

@@ -299,7 +299,10 @@ impl fmt::Debug for Version {
             .field("feature_conv", &self.feature_conv())
             .field("feature_tlsauth_srp", &self.feature_tlsauth_srp())
             .field("feature_ntlm_wb", &self.feature_ntlm_wb())
-            .field("feature_unix_domain_socket", &self.feature_unix_domain_socket());
+            .field(
+                "feature_unix_domain_socket",
+                &self.feature_unix_domain_socket(),
+            );
 
         if let Some(s) = self.ssl_version() {
             f.field("ssl_version", &s);

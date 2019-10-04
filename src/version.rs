@@ -291,15 +291,15 @@ impl fmt::Debug for Version {
             .field("feature_ntlm", &self.feature_ntlm())
             .field("feature_gss_negotiate", &self.feature_gss_negotiate())
             .field("feature_debug", &self.feature_debug())
-            .field("feature_spnego", &self.feature_debug())
-            .field("feature_largefile", &self.feature_debug())
-            .field("feature_idn", &self.feature_debug())
-            .field("feature_sspi", &self.feature_debug())
-            .field("feature_async_dns", &self.feature_debug())
-            .field("feature_conv", &self.feature_debug())
-            .field("feature_tlsauth_srp", &self.feature_debug())
-            .field("feature_ntlm_wb", &self.feature_debug())
-            .field("feature_unix_domain_socket", &self.feature_debug());
+            .field("feature_spnego", &self.feature_spnego())
+            .field("feature_largefile", &self.feature_largefile())
+            .field("feature_idn", &self.feature_idn())
+            .field("feature_sspi", &self.feature_sspi())
+            .field("feature_async_dns", &self.feature_async_dns())
+            .field("feature_conv", &self.feature_conv())
+            .field("feature_tlsauth_srp", &self.feature_tlsauth_srp())
+            .field("feature_ntlm_wb", &self.feature_ntlm_wb())
+            .field("feature_unix_domain_socket", &self.feature_unix_domain_socket());
 
         if let Some(s) = self.ssl_version() {
             f.field("ssl_version", &s);

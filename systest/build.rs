@@ -21,6 +21,7 @@ fn main() {
         .next()
         .and_then(|s| s.parse::<u32>().ok())
         .unwrap_or(10000);
+    println!("got version: {}", version);
 
     if env::var("TARGET").unwrap().contains("msvc") {
         cfg.flag("/wd4574"); // did you mean to use '#if INCL_WINSOCK_API_TYPEDEFS'
@@ -60,6 +61,12 @@ fn main() {
     });
 
     cfg.skip_const(move |s| {
+        if version < 65 {
+            match s {
+                "CURLVERSION_SIXTH" | "CURLVERSION_NOW" => return true,
+                _ => {}
+            }
+        }
         if version < 64 {
             match s {
                 "CURLE_HTTP2" => return true,
@@ -81,7 +88,7 @@ fn main() {
         }
         if version < 60 {
             match s {
-                "CURLVERSION_FIFTH" | "CURLVERSION_SIXTH" | "CURLVERSION_NOW" => return true,
+                "CURLVERSION_FIFTH" => return true,
                 _ => {}
             }
         }

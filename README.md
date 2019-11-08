@@ -125,6 +125,7 @@ with various Cargo features:
 - `static-curl`: Use a bundled libcurl version and statically link to it. Disabled by default.
 - `static-ssl`: Use a bundled OpenSSL version and statically link to it. Only applies on platforms that use OpenSSL. Disabled by default.
 - `spnego`: Enable SPNEGO support. Disabled by default.
+- `static-openssl`: Use a bundled OpenSSL version and statically link to it. Applies to all platforms. Disabled by default.
 
 ## Version Support
 

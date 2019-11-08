@@ -23,14 +23,14 @@ libz-sys = "1.0.18"
 libc = "0.2.2"
 libnghttp2-sys = { optional = true, version = "0.1" }
 
+[target.'cfg(any(all(unix, not(target_os = "macos")), feature = "static-openssl"))'.dependencies]
+openssl-sys = { version = "0.9", optional = true }
+
 [dependencies.mesalink]
 version = "1.1.0-cratesio"
 optional = true
 default-features = false
 features = ["client_apis", "error_strings", "tls13", "aesgcm", "chachapoly", "x25519", "ecdh", "ecdsa", "verifier"]
-
-[target.'cfg(all(unix, not(target_os = "macos")))'.dependencies]
-openssl-sys = { version = "0.9", optional = true }
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["winsock2", "ws2def"] }
@@ -50,3 +50,4 @@ static-curl = []
 static-ssl = ["openssl-sys/vendored"]
 spnego = []
 force-system-lib-on-osx = []
+static-openssl = ["openssl-sys/vendored"]

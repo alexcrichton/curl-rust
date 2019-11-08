@@ -230,14 +230,25 @@ fn main() {
         }
     } else if cfg!(feature = "ssl") {
         if windows {
-            cfg.define("USE_WINDOWS_SSPI", None)
-                .define("USE_SCHANNEL", None)
-                .file("curl/lib/x509asn1.c")
-                .file("curl/lib/curl_sspi.c")
-                .file("curl/lib/socks_sspi.c")
-                .file("curl/lib/vtls/schannel.c")
-                .file("curl/lib/vtls/schannel_verify.c");
-        } else if target.contains("-apple-") {
+            if !cfg!(feature = "static-openssl") {
+                cfg.define("USE_WINDOWS_SSPI", None)
+                    .define("USE_SCHANNEL", None)
+                    .file("curl/lib/x509asn1.c")
+                    .file("curl/lib/curl_sspi.c")
+                    .file("curl/lib/socks_sspi.c")
+                    .file("curl/lib/vtls/schannel.c")
+                    .file("curl/lib/vtls/schannel_verify.c");
+            } else {
+                cfg.define("USE_OPENSSL", None)
+                    .file("curl/lib/vtls/openssl.c");
+
+                if let Some(path) = env::var_os("DEP_OPENSSL_INCLUDE") {
+                    cfg.include(path);
+                }
+                println!("cargo:rustc-link-lib=ssl");
+                println!("cargo:rustc-link-lib=crypto");
+            }
+        } else if target.contains("-apple-") && !cfg!(feature = "static-openssl") {
             cfg.define("USE_SECTRANSP", None)
                 .file("curl/lib/vtls/sectransp.c");
             if xcode_major_version().map_or(true, |v| v >= 9) {
@@ -347,6 +358,10 @@ fn main() {
     if target.contains("-apple-") {
         println!("cargo:rustc-link-lib=framework=Security");
         println!("cargo:rustc-link-lib=framework=CoreFoundation");
+        if cfg!(feature = "static-openssl") {
+            println!("cargo:rustc-link-lib=ssl");
+            println!("cargo:rustc-link-lib=crypto");
+        }
     }
 }
 

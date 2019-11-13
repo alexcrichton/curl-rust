@@ -127,6 +127,8 @@ jobs:
           submodules: true
       - name: Install Rust
         run: rustup update stable && rustup default stable
+      - name: Install dependencies
+        run: sudo apt install libkrb5-dev
       - name: Build documentation
         run: cargo doc --no-deps --all-features
       - name: Publish documentation

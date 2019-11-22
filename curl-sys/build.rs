@@ -270,12 +270,15 @@ fn main() {
         }
     } else {
         if target.contains("-apple-") {
-            cfg.define("__APPLE__", None).define("macintosh", None);
+            cfg.define("__APPLE__", None)
+                .define("macintosh", None)
+                .define("HAVE_MACH_ABSOLUTE_TIME", None);
+        } else {
+            cfg.define("HAVE_CLOCK_GETTIME_MONOTONIC", None)
+                .define("HAVE_GETTIMEOFDAY", None);
         }
 
         cfg.define("RECV_TYPE_ARG1", "int")
-            .define("HAVE_CLOCK_GETTIME_MONOTONIC", None)
-            .define("HAVE_GETTIMEOFDAY", None)
             .define("HAVE_PTHREAD_H", None)
             .define("HAVE_ARPA_INET_H", None)
             .define("HAVE_ERRNO_H", None)

@@ -493,9 +493,14 @@ fn curl_config_reports_http2() -> bool {
 }
 
 fn macos_link_search_path() -> Option<String> {
-    let output = Command::new("clang").arg("--print-search-dirs").output().ok()?;
+    let output = Command::new("clang")
+        .arg("--print-search-dirs")
+        .output()
+        .ok()?;
     if !output.status.success() {
-        println!("failed to run 'clang --print-search-dirs', continuing without a link search path");
+        println!(
+            "failed to run 'clang --print-search-dirs', continuing without a link search path"
+        );
         return None;
     }
 

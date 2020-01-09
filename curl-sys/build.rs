@@ -9,6 +9,8 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 fn main() {
+    println!("cargo:rerun-if-env-changed=CURL_SYS_STATIC");
+
     let target = env::var("TARGET").unwrap();
     let windows = target.contains("windows");
 
@@ -19,8 +21,10 @@ fn main() {
         return println!("cargo:rustc-flags=-l curl");
     }
 
-    // If the static-curl feature is disabled, probe for a system-wide libcurl.
-    if !cfg!(feature = "static-curl") {
+    let want_static =
+        cfg!(feature = "static-curl") || env::var("CURL_SYS_STATIC").as_ref() == Ok("1");
+    // If static linking is disabled, probe for a system-wide libcurl.
+    if !want_static {
         // OSX and Haiku ships libcurl by default, so we just use that version
         // so long as it has the right features enabled.
         if target.contains("apple") || target.contains("haiku") {

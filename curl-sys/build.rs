@@ -22,7 +22,7 @@ fn main() {
     }
 
     let want_static =
-        cfg!(feature = "static-curl") || env::var("CURL_SYS_STATIC").as_ref() == Ok("1");
+        cfg!(feature = "static-curl") || env::var("CURL_SYS_STATIC") == Ok("1".to_owned());
     // If static linking is disabled, probe for a system-wide libcurl.
     if !want_static {
         // OSX and Haiku ships libcurl by default, so we just use that version

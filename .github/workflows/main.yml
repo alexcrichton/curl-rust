@@ -122,7 +122,9 @@ jobs:
       - name: Install Rust
         run: rustup update stable && rustup default stable
       - name: Install dependencies
-        run: sudo apt install libkrb5-dev
+        run: |
+          sudo apt update
+          sudo apt install libkrb5-dev
       - name: Build documentation
         run: cargo doc --no-deps --all-features
       - name: Publish documentation

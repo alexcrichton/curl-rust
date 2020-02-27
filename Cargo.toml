@@ -44,6 +44,7 @@ spnego = ["curl-sys/spnego"]
 static-curl = ["curl-sys/static-curl"]
 static-ssl = ["curl-sys/static-ssl"]
 force-system-lib-on-osx = ['curl-sys/force-system-lib-on-osx']
+protocol-ftp = ["curl-sys/protocol-ftp"]
 
 [[test]]
 name = "atexit"

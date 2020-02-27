@@ -116,7 +116,6 @@ fn main() {
         .define("BUILDING_LIBCURL", None)
         .define("CURL_DISABLE_CRYPTO_AUTH", None)
         .define("CURL_DISABLE_DICT", None)
-        .define("CURL_DISABLE_FTP", None)
         .define("CURL_DISABLE_GOPHER", None)
         .define("CURL_DISABLE_IMAP", None)
         .define("CURL_DISABLE_LDAP", None)
@@ -201,6 +200,15 @@ fn main() {
         .define("HAVE_GETADDRINFO", None)
         .define("HAVE_GETPEERNAME", None)
         .warnings(false);
+
+    if cfg!(feature = "protocol-ftp") {
+        cfg.file("curl/lib/curl_fnmatch.c")
+            .file("curl/lib/ftp.c")
+            .file("curl/lib/ftplistparser.c")
+            .file("curl/lib/pingpong.c");
+    } else {
+        cfg.define("CURL_DISABLE_FTP", None);
+    }
 
     if cfg!(feature = "http2") {
         cfg.define("USE_NGHTTP2", None)

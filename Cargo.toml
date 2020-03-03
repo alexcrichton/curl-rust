@@ -29,7 +29,7 @@ schannel = "0.1.13"
 winapi = { version = '0.3', features = ['libloaderapi', 'wincrypt'] }
 
 [dev-dependencies]
-mio = "0.6"
+mio = "0.7"
 mio-extras = "2.0.3"
 
 [workspace]

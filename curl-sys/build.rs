@@ -175,7 +175,6 @@ fn main() {
         .file("curl/lib/parsedate.c")
         .file("curl/lib/progress.c")
         .file("curl/lib/rand.c")
-        .file("curl/lib/rename.c")
         .file("curl/lib/select.c")
         .file("curl/lib/sendf.c")
         .file("curl/lib/setopt.c")

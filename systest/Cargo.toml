@@ -3,11 +3,12 @@ name = "systest"
 version = "0.1.0"
 authors = ["Alex Crichton <alex@alexcrichton.com>"]
 build = "build.rs"
+publish = false
 
 [dependencies]
 curl-sys = { path = "../curl-sys" }
 libc = "0.2"
 
 [build-dependencies]
-ctest = "0.2"
+ctest = { git = 'https://github.com/alexcrichton/ctest', branch = 'use-maybe-unini' }
 cc = "1.0"

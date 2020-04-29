@@ -141,6 +141,16 @@ impl Version {
         self.flag(curl_sys::CURL_VERSION_HTTP2)
     }
 
+    /// Returns whether libcurl was built with support for HTTP3.
+    pub fn feature_http3(&self) -> bool {
+        self.flag(curl_sys::CURL_VERSION_HTTP3)
+    }
+
+    /// Returns whether libcurl was built with support for Brotli.
+    pub fn feature_brotli(&self) -> bool {
+        self.flag(curl_sys::CURL_VERSION_BROTLI)
+    }
+
     fn flag(&self, flag: c_int) -> bool {
         unsafe { (*self.inner).features & flag != 0 }
     }
@@ -273,6 +283,28 @@ impl Version {
         unsafe {
             if (*self.inner).age >= curl_sys::CURLVERSION_SIXTH {
                 ::opt_str((*self.inner).quic_version)
+            } else {
+                None
+            }
+        }
+    }
+
+    /// If available, the built-in default of CURLOPT_CAINFO.
+    pub fn cainfo(&self) -> Option<&str> {
+        unsafe {
+            if (*self.inner).age >= curl_sys::CURLVERSION_SEVENTH {
+                ::opt_str((*self.inner).cainfo)
+            } else {
+                None
+            }
+        }
+    }
+
+    /// If available, the built-in default of CURLOPT_CAPATH.
+    pub fn capath(&self) -> Option<&str> {
+        unsafe {
+            if (*self.inner).age >= curl_sys::CURLVERSION_SEVENTH {
+                ::opt_str((*self.inner).capath)
             } else {
                 None
             }

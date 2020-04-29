@@ -303,6 +303,16 @@ impl Error {
         self.code
     }
 
+    /// Returns the general description of this error code, using curl's
+    /// builtin `strerror`-like functionality.
+    pub fn description(&self) -> &str {
+        unsafe {
+            let s = curl_sys::curl_easy_strerror(self.code);
+            assert!(!s.is_null());
+            str::from_utf8(CStr::from_ptr(s).to_bytes()).unwrap()
+        }
+    }
+
     /// Returns the extra description of this error, if any is available.
     pub fn extra_description(&self) -> Option<&str> {
         self.extra.as_ref().map(|s| &**s)
@@ -311,7 +321,7 @@ impl Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let desc = error::Error::description(self);
+        let desc = self.description();
         match self.extra {
             Some(ref s) => write!(f, "[{}] {} ({})", self.code(), desc, s),
             None => write!(f, "[{}] {}", self.code(), desc),
@@ -322,22 +332,14 @@ impl fmt::Display for Error {
 impl fmt::Debug for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("Error")
-            .field("description", &error::Error::description(self))
+            .field("description", &self.description())
             .field("code", &self.code)
             .field("extra", &self.extra)
             .finish()
     }
 }
 
-impl error::Error for Error {
-    fn description(&self) -> &str {
-        unsafe {
-            let s = curl_sys::curl_easy_strerror(self.code);
-            assert!(!s.is_null());
-            str::from_utf8(CStr::from_ptr(s).to_bytes()).unwrap()
-        }
-    }
-}
+impl error::Error for Error {}
 
 /// An error returned from "share" operations.
 ///
@@ -382,11 +384,20 @@ impl ShareError {
     pub fn code(&self) -> curl_sys::CURLSHcode {
         self.code
     }
+
+    /// Returns curl's human-readable version of this error.
+    pub fn description(&self) -> &str {
+        unsafe {
+            let s = curl_sys::curl_share_strerror(self.code);
+            assert!(!s.is_null());
+            str::from_utf8(CStr::from_ptr(s).to_bytes()).unwrap()
+        }
+    }
 }
 
 impl fmt::Display for ShareError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        error::Error::description(self).fmt(f)
+        self.description().fmt(f)
     }
 }
 
@@ -395,21 +406,13 @@ impl fmt::Debug for ShareError {
         write!(
             f,
             "ShareError {{ description: {:?}, code: {} }}",
-            error::Error::description(self),
+            self.description(),
             self.code
         )
     }
 }
 
-impl error::Error for ShareError {
-    fn description(&self) -> &str {
-        unsafe {
-            let s = curl_sys::curl_share_strerror(self.code);
-            assert!(!s.is_null());
-            str::from_utf8(CStr::from_ptr(s).to_bytes()).unwrap()
-        }
-    }
-}
+impl error::Error for ShareError {}
 
 /// An error from "multi" operations.
 ///
@@ -469,27 +472,9 @@ impl MultiError {
     pub fn code(&self) -> curl_sys::CURLMcode {
         self.code
     }
-}
 
-impl fmt::Display for MultiError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        error::Error::description(self).fmt(f)
-    }
-}
-
-impl fmt::Debug for MultiError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "MultiError {{ description: {:?}, code: {} }}",
-            error::Error::description(self),
-            self.code
-        )
-    }
-}
-
-impl error::Error for MultiError {
-    fn description(&self) -> &str {
+    /// Returns curl's human-readable description of this error.
+    pub fn description(&self) -> &str {
         unsafe {
             let s = curl_sys::curl_multi_strerror(self.code);
             assert!(!s.is_null());
@@ -497,6 +482,23 @@ impl error::Error for MultiError {
         }
     }
 }
+
+impl fmt::Display for MultiError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.description().fmt(f)
+    }
+}
+
+impl fmt::Debug for MultiError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("MultiError")
+            .field("description", &self.description())
+            .field("code", &self.code)
+            .finish()
+    }
+}
+
+impl error::Error for MultiError {}
 
 /// An error from "form add" operations.
 ///
@@ -551,27 +553,9 @@ impl FormError {
     pub fn code(&self) -> curl_sys::CURLFORMcode {
         self.code
     }
-}
 
-impl fmt::Display for FormError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        error::Error::description(self).fmt(f)
-    }
-}
-
-impl fmt::Debug for FormError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "FormError {{ description: {:?}, code: {} }}",
-            error::Error::description(self),
-            self.code
-        )
-    }
-}
-
-impl error::Error for FormError {
-    fn description(&self) -> &str {
+    /// Returns a human-readable description of this error code.
+    pub fn description(&self) -> &str {
         match self.code {
             curl_sys::CURL_FORMADD_MEMORY => "allocation failure",
             curl_sys::CURL_FORMADD_OPTION_TWICE => "one option passed twice",
@@ -586,6 +570,23 @@ impl error::Error for FormError {
         }
     }
 }
+
+impl fmt::Display for FormError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.description().fmt(f)
+    }
+}
+
+impl fmt::Debug for FormError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("FormError")
+            .field("description", &self.description())
+            .field("code", &self.code)
+            .finish()
+    }
+}
+
+impl error::Error for FormError {}
 
 impl From<ffi::NulError> for Error {
     fn from(_: ffi::NulError) -> Error {

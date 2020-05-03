@@ -70,6 +70,12 @@ fn main() {
                 _ => {}
             }
         }
+        if version < 66 {
+            match s {
+                "CURL_HTTP_VERSION_3" => return true,
+                _ => {}
+            }
+        }
         if version < 65 {
             match s {
                 "CURLVERSION_SIXTH" => return true,

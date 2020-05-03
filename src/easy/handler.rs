@@ -461,6 +461,17 @@ pub enum HttpVersion {
     /// (Added in CURL 7.49.0)
     V2PriorKnowledge = curl_sys::CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE as isize,
 
+    /// Setting this value will make libcurl attempt to use HTTP/3 directly to
+    /// server given in the URL. Note that this cannot gracefully downgrade to
+    /// earlier HTTP version if the server doesn't support HTTP/3.
+    ///
+    /// For more reliably upgrading to HTTP/3, set the preferred version to
+    /// something lower and let the server announce its HTTP/3 support via
+    /// Alt-Svc:.
+    ///
+    /// (Added in CURL 7.66.0)
+    V3 = curl_sys::CURL_HTTP_VERSION_3 as isize,
+
     /// Hidden variant to indicate that this enum should not be matched on, it
     /// may grow over time.
     #[doc(hidden)]

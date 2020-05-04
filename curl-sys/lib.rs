@@ -602,6 +602,9 @@ pub const CURL_HTTP_VERSION_2TLS: c_int = 4;
 /// Please use HTTP 2 without HTTP/1.1 Upgrade
 /// (Added in CURL 7.49.0)
 pub const CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE: c_int = 5;
+/// Makes use of explicit HTTP/3 without fallback.
+/// (Added in CURL 7.66.0)
+pub const CURL_HTTP_VERSION_3: c_int = 30;
 
 // Note that the type here is wrong, it's just intended to just be an enum.
 pub const CURL_SSLVERSION_DEFAULT: CURLoption = 0;

@@ -90,9 +90,14 @@ pub struct Easy {
 /// The callbacks attached to a `Transfer` are only active for that one transfer
 /// object, and they allow to elide both the `Send` and `'static` bounds to
 /// close over stack-local information.
+///
+/// Likewise, the post_data attached to a `Transfer` are only active for that one
+/// transfer object, and they allow to elide both the `Send` and `'static` bounds
+/// to close over stack-local information.
 pub struct Transfer<'easy, 'data> {
     easy: &'easy mut Easy,
-    data: Box<Callbacks<'data>>,
+    callbacks: Box<Callbacks<'data>>,
+    is_postfields: Cell<bool>,
 }
 
 pub struct EasyData {
@@ -719,6 +724,11 @@ impl Easy {
         self.inner.post_fields_copy(data)
     }
 
+    /// Same as [`Easy2::post_field`](struct.Easy2.html#method.post_field)
+    pub fn post_fields(&mut self, data: &'static [u8]) -> Result<(), Error> {
+        self.inner.post_fields(data)
+    }
+
     /// Same as [`Easy2::post_field_size`](struct.Easy2.html#method.post_field_size)
     pub fn post_field_size(&mut self, size: u64) -> Result<(), Error> {
         self.inner.post_field_size(size)
@@ -1216,8 +1226,9 @@ impl Easy {
     pub fn transfer<'data, 'easy>(&'easy mut self) -> Transfer<'easy, 'data> {
         assert!(!self.inner.get_ref().running.get());
         Transfer {
-            data: Box::new(Callbacks::default()),
+            callbacks: Box::new(Callbacks::default()),
             easy: self,
+            is_postfields: Cell::new(false),
         }
     }
 
@@ -1379,7 +1390,7 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
     where
         F: FnMut(&[u8]) -> Result<usize, WriteError> + 'data,
     {
-        self.data.write = Some(Box::new(f));
+        self.callbacks.write = Some(Box::new(f));
         Ok(())
     }
 
@@ -1389,7 +1400,7 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
     where
         F: FnMut(&mut [u8]) -> Result<usize, ReadError> + 'data,
     {
-        self.data.read = Some(Box::new(f));
+        self.callbacks.read = Some(Box::new(f));
         Ok(())
     }
 
@@ -1399,7 +1410,7 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
     where
         F: FnMut(SeekFrom) -> SeekResult + 'data,
     {
-        self.data.seek = Some(Box::new(f));
+        self.callbacks.seek = Some(Box::new(f));
         Ok(())
     }
 
@@ -1409,7 +1420,7 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
     where
         F: FnMut(f64, f64, f64, f64) -> bool + 'data,
     {
-        self.data.progress = Some(Box::new(f));
+        self.callbacks.progress = Some(Box::new(f));
         Ok(())
     }
 
@@ -1419,7 +1430,7 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
     where
         F: FnMut(*mut c_void) -> Result<(), Error> + Send + 'data,
     {
-        self.data.ssl_ctx = Some(Box::new(f));
+        self.callbacks.ssl_ctx = Some(Box::new(f));
         Ok(())
     }
 
@@ -1429,7 +1440,7 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
     where
         F: FnMut(InfoType, &[u8]) + 'data,
     {
-        self.data.debug = Some(Box::new(f));
+        self.callbacks.debug = Some(Box::new(f));
         Ok(())
     }
 
@@ -1439,7 +1450,7 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
     where
         F: FnMut(&[u8]) -> bool + 'data,
     {
-        self.data.header = Some(Box::new(f));
+        self.callbacks.header = Some(Box::new(f));
         Ok(())
     }
 
@@ -1454,7 +1465,7 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
         // This should be ok, however, because `do_perform` checks for recursive
         // invocations of `perform` and disallows them. Our type also isn't
         // `Sync`.
-        inner.borrowed.set(&*self.data as *const _ as *mut _);
+        inner.borrowed.set(&*self.callbacks as *const _ as *mut _);
 
         // Make sure to reset everything back to the way it was before when
         // we're done.
@@ -1466,7 +1477,21 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
         }
         let _reset = Reset(&inner.borrowed);
 
-        self.easy.do_perform()
+        let res = self.easy.do_perform();
+
+        // restore configuration
+        if self.is_postfields.get() {
+            self.easy
+                .inner
+                .setopt_ptr(curl_sys::CURLOPT_POSTFIELDS, 0 as *const _)
+                .expect("Failed to reset post_field_size");
+            self.easy
+                .inner
+                .setopt_ptr(curl_sys::CURLOPT_POSTFIELDS, ptr::null() as *const _)
+                .expect("Failed to set postfields to null");
+            self.is_postfields.set(false);
+        }
+        res
     }
 
     /// Same as `Easy::unpause_read`.
@@ -1477,6 +1502,17 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
     /// Same as `Easy::unpause_write`
     pub fn unpause_write(&self) -> Result<(), Error> {
         self.easy.unpause_write()
+    }
+
+    /// Similar to [`Easy2::post_field`](struct.Easy2.html#method.post_field) just
+    /// takes a non `'static` lifetime corresponding to the lifetime of this transfer.
+    pub fn post_fields(&mut self, data: &'data [u8]) -> Result<(), Error> {
+        // Set the length before the pointer so libcurl knows how much to read
+        self.is_postfields.set(true);
+        self.easy.inner.post_field_size(data.len() as u64)?;
+        self.easy
+            .inner
+            .setopt_ptr(curl_sys::CURLOPT_POSTFIELDS, data.as_ptr() as *const _)
     }
 }
 

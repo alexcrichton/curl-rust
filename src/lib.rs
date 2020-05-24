@@ -64,7 +64,7 @@ extern crate schannel;
 
 use std::ffi::CStr;
 use std::str;
-use std::sync::Once;
+use std::sync::{atomic::{AtomicBool, Ordering}, Once};
 
 pub use error::{Error, FormError, MultiError, ShareError};
 mod error;
@@ -81,31 +81,53 @@ mod panic;
 /// It's not required to call this before the library is used, but it's
 /// recommended to do so as soon as the program starts.
 pub fn init() {
+    /// An exported constructor function. On supported platforms, this will be
+    /// invoked automatically before the program's `main` is called.
+    #[cfg_attr(any(target_os = "linux", target_os = "android"), link_section = ".init_array")]
+    #[cfg_attr(target_os = "freebsd", link_section = ".init_array")]
+    #[cfg_attr(target_os = "macos", link_section = "__DATA,__mod_init_func")]
+    #[cfg_attr(target_os = "windows", link_section = ".CRT$XCU")]
+    static INIT_CTOR: extern "C" fn() = init_inner;
+
+    /// Used to prevent concurrent calls when initializing after `main` starts.
     static INIT: Once = Once::new();
-    INIT.call_once(|| {
-        platform_init();
-        unsafe {
-            assert_eq!(curl_sys::curl_global_init(curl_sys::CURL_GLOBAL_ALL), 0);
+
+    // We invoke our init function through our static to ensure the symbol isn't
+    // optimized away due to a rustc bug:
+    // https://github.com/rust-lang/rust/issues/47384
+    INIT.call_once(|| INIT_CTOR());
+
+    #[cfg_attr(any(target_os = "linux", target_os = "android"), link_section = ".text.startup")]
+    extern "C" fn init_inner() {
+        // We can't rely on just a `Once` for initialization, because
+        // constructor functions are called before the Rust runtime starts, and
+        // `Once` relies on facilities provided by the Rust runtime. So we
+        // additionally protect against multiple initialize calls with this
+        // atomic.
+        //
+        // If the current platform does not support constructor functions, then
+        // we will rely on the `Once` to call initialization.
+        static IS_INIT: AtomicBool = AtomicBool::new(false);
+
+        if !IS_INIT.compare_and_swap(false, true, Ordering::Acquire) {
+            #[cfg(need_openssl_init)]
+            openssl_sys::init();
+
+            unsafe {
+                assert_eq!(curl_sys::curl_global_init(curl_sys::CURL_GLOBAL_ALL), 0);
+            }
+
+            // Note that we explicitly don't schedule a call to
+            // `curl_global_cleanup`. The documentation for that function says
+            //
+            // > You must not call it when any other thread in the program (i.e.
+            // > a thread sharing the same memory) is running. This doesn't just
+            // > mean no other thread that is using libcurl.
+            //
+            // We can't ever be sure of that, so unfortunately we can't call the
+            // function.
         }
-
-        // Note that we explicitly don't schedule a call to
-        // `curl_global_cleanup`. The documentation for that function says
-        //
-        // > You must not call it when any other thread in the program (i.e. a
-        // > thread sharing the same memory) is running. This doesn't just mean
-        // > no other thread that is using libcurl.
-        //
-        // We can't ever be sure of that, so unfortunately we can't call the
-        // function.
-    });
-
-    #[cfg(need_openssl_init)]
-    fn platform_init() {
-        openssl_sys::init();
     }
-
-    #[cfg(not(need_openssl_init))]
-    fn platform_init() {}
 }
 
 unsafe fn opt_str<'a>(ptr: *const libc::c_char) -> Option<&'a str> {

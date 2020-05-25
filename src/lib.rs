@@ -80,6 +80,7 @@ mod panic;
 ///
 /// It's not required to call this before the library is used, but it's
 /// recommended to do so as soon as the program starts.
+#[inline]
 pub fn init() {
     /// An exported constructor function. On supported platforms, this will be
     /// invoked automatically before the program's `main` is called.
@@ -93,8 +94,7 @@ pub fn init() {
     static INIT: Once = Once::new();
 
     // We invoke our init function through our static to ensure the symbol isn't
-    // optimized away due to a rustc bug:
-    // https://github.com/rust-lang/rust/issues/47384
+    // optimized away by a bug: https://github.com/rust-lang/rust/issues/47384
     INIT.call_once(|| INIT_CTOR());
 
     #[cfg_attr(any(target_os = "linux", target_os = "android"), link_section = ".text.startup")]

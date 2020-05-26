@@ -17,7 +17,6 @@
 //!
 //! ```rust,no_run
 //! use std::io::{stdout, Write};
-//!
 //! use curl::easy::Easy;
 //!
 //! // Write the contents of rust-lang.org to stdout
@@ -28,6 +27,21 @@
 //!     Ok(data.len())
 //! }).unwrap();
 //! easy.perform().unwrap();
+//! ```
+//!
+//! Or using the question mark operator:
+//!
+//! ```rust,no_run
+//! use std::io::{stdout, Write};
+//! use curl::easy::{Easy, WriteError};
+//! use std::error::Error;
+//!
+//! let mut easy = Easy::new();
+//! easy.url("https://www.rust-lang.org/")?;
+//! easy.write_function(|data| {
+//!     stdout().write_all(data).or(Err(WriteError::Pause))
+//! })?;
+//! easy.perform()?;
 //! ```
 //!
 //! # What about multiple concurrent HTTP requests?

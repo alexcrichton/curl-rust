@@ -6,12 +6,12 @@ libcurl bindings for Rust
 
 ## Quick Start
 
+Print a web page onto stdout:
+
 ```rust
 use std::io::{stdout, Write};
-
 use curl::easy::Easy;
 
-// Print a web page onto stdout
 fn main() {
     let mut easy = Easy::new();
     easy.url("https://www.rust-lang.org/").unwrap();
@@ -25,10 +25,31 @@ fn main() {
 }
 ```
 
+Or using question mark operator:
+
+```rust
+use std::io::{stdout, Write};
+use curl::easy::{Easy, WriteError};
+use std::error::Error;
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let mut easy = Easy::new();
+    easy.url("https://www.rust-lang.org/")?;
+    easy.write_function(|data| {
+        stdout().write_all(data).or(Err(WriteError::Pause))
+    })?;
+    easy.perform()?;
+
+    println!("{}", easy.response_code()?);
+    Ok(())
+}
+```
+
+Capture output into a local `Vec`:
+
 ```rust
 use curl::easy::Easy;
 
-// Capture output into a local `Vec`.
 fn main() {
     let mut dst = Vec::new();
     let mut easy = Easy::new();

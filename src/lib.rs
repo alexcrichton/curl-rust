@@ -84,8 +84,7 @@ mod panic;
 pub fn init() {
     /// An exported constructor function. On supported platforms, this will be
     /// invoked automatically before the program's `main` is called.
-    #[cfg_attr(any(target_os = "linux", target_os = "android"), link_section = ".init_array")]
-    #[cfg_attr(target_os = "freebsd", link_section = ".init_array")]
+    #[cfg_attr(any(target_os = "linux", target_os = "freebsd", target_os = "android"), link_section = ".init_array")]
     #[cfg_attr(target_os = "macos", link_section = "__DATA,__mod_init_func")]
     #[cfg_attr(target_os = "windows", link_section = ".CRT$XCU")]
     static INIT_CTOR: extern "C" fn() = init_inner;

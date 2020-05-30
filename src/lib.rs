@@ -46,6 +46,12 @@
 //! There is a large number of releases for libcurl, all with different sets of
 //! capabilities. Robust programs may wish to inspect `Version::get()` to test
 //! what features are implemented in the linked build of libcurl at runtime.
+//!
+//! # Initialization
+//!
+//! The underlying libcurl library must be initialized before use and has
+//! certain requirements on how this is done. Check the documentation for
+//! [`init`] for more details.
 
 #![deny(missing_docs, missing_debug_implementations)]
 #![doc(html_root_url = "https://docs.rs/curl/0.4")]
@@ -64,7 +70,7 @@ extern crate schannel;
 
 use std::ffi::CStr;
 use std::str;
-use std::sync::{atomic::{AtomicBool, Ordering}, Once};
+use std::sync::Once;
 
 pub use error::{Error, FormError, MultiError, ShareError};
 mod error;
@@ -78,37 +84,41 @@ mod panic;
 
 /// Initializes the underlying libcurl library.
 ///
-/// It's not required to call this before the library is used, but it's
-/// recommended to do so as soon as the program starts.
+/// The underlying libcurl library must be initialized before use, and must be
+/// done so on the main thread before any other threads are created by the
+/// program. This crate will do this for you automatically in the following
+/// scenarios:
+///
+/// - Creating a new [`Easy`][easy::Easy] or [`Multi`][multi::Multi] handle
+/// - At program startup on Windows, macOS, Linux, Android, or FreeBSD systems
+///
+/// This should be sufficient for most applications and scenarios, but in any
+/// other case, it is strongly recommended that you call this function manually
+/// as soon as your program starts.
+///
+/// Calling this function more than once is harmless and has no effect.
 #[inline]
 pub fn init() {
+    /// Used to prevent concurrent or duplicate initialization.
+    static INIT: Once = Once::new();
+
     /// An exported constructor function. On supported platforms, this will be
     /// invoked automatically before the program's `main` is called.
-    #[cfg_attr(any(target_os = "linux", target_os = "freebsd", target_os = "android"), link_section = ".init_array")]
+    #[cfg_attr(
+        any(target_os = "linux", target_os = "freebsd", target_os = "android"),
+        link_section = ".init_array"
+    )]
     #[cfg_attr(target_os = "macos", link_section = "__DATA,__mod_init_func")]
     #[cfg_attr(target_os = "windows", link_section = ".CRT$XCU")]
     static INIT_CTOR: extern "C" fn() = init_inner;
 
-    /// Used to prevent concurrent calls when initializing after `main` starts.
-    static INIT: Once = Once::new();
-
-    // We invoke our init function through our static to ensure the symbol isn't
-    // optimized away by a bug: https://github.com/rust-lang/rust/issues/47384
-    INIT.call_once(|| INIT_CTOR());
-
-    #[cfg_attr(any(target_os = "linux", target_os = "android"), link_section = ".text.startup")]
+    /// This is the body of our constructor function.
+    #[cfg_attr(
+        any(target_os = "linux", target_os = "android"),
+        link_section = ".text.startup"
+    )]
     extern "C" fn init_inner() {
-        // We can't rely on just a `Once` for initialization, because
-        // constructor functions are called before the Rust runtime starts, and
-        // `Once` relies on facilities provided by the Rust runtime. So we
-        // additionally protect against multiple initialize calls with this
-        // atomic.
-        //
-        // If the current platform does not support constructor functions, then
-        // we will rely on the `Once` to call initialization.
-        static IS_INIT: AtomicBool = AtomicBool::new(false);
-
-        if !IS_INIT.compare_and_swap(false, true, Ordering::Acquire) {
+        INIT.call_once(|| {
             #[cfg(need_openssl_init)]
             openssl_sys::init();
 
@@ -125,8 +135,12 @@ pub fn init() {
             //
             // We can't ever be sure of that, so unfortunately we can't call the
             // function.
-        }
+        });
     }
+
+    // We invoke our init function through our static to ensure the symbol isn't
+    // optimized away by a bug: https://github.com/rust-lang/rust/issues/47384
+    INIT_CTOR();
 }
 
 unsafe fn opt_str<'a>(ptr: *const libc::c_char) -> Option<&'a str> {

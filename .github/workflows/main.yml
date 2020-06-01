@@ -25,8 +25,7 @@ jobs:
             target: x86_64-unknown-linux-gnu
           - build: x86_64-nightly
             os: ubuntu-latest
-            # FIXME(kennytm/extprim#19) waiting for a publish to unpin
-            rust: nightly-2020-05-01
+            rust: nightly
             docker: linux64
             target: x86_64-unknown-linux-gnu
           - build: i686

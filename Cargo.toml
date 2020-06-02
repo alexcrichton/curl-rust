@@ -31,6 +31,7 @@ winapi = { version = '0.3', features = ['libloaderapi', 'wincrypt'] }
 [dev-dependencies]
 mio = "0.6"
 mio-extras = "2.0.3"
+anyhow = "1.0.31"
 
 [workspace]
 members = ["systest"]
@@ -49,3 +50,8 @@ protocol-ftp = ["curl-sys/protocol-ftp"]
 [[test]]
 name = "atexit"
 harness = false
+
+[[example]]
+name = "ssl_proxy"
+path = "examples/ssl_proxy.rs"
+required-features = ["ssl"]

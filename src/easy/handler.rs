@@ -881,6 +881,30 @@ impl<H> Easy2<H> {
         self.setopt_long(curl_sys::CURLOPT_PROXYPORT, port as c_long)
     }
 
+    /// Set CA certificate to verify peer against for proxy
+    ///
+    /// By default this value is not set and corresponds to `CURLOPT_PROXY_CAINFO`.
+    pub fn proxy_cainfo(&mut self, cainfo: &str) -> Result<(), Error> {
+        let cainfo = CString::new(cainfo)?;
+        self.setopt_str(curl_sys::CURLOPT_PROXY_CAINFO, &cainfo)
+    }
+
+    /// Set client certificate for proxy
+    ///
+    /// By default this value is not set and corresponds to `CURLOPT_PROXY_SSLCERT`.
+    pub fn proxy_sslcert(&mut self, sslcert: &str) -> Result<(), Error> {
+        let sslcert = CString::new(sslcert)?;
+        self.setopt_str(curl_sys::CURLOPT_PROXY_SSLCERT, &sslcert)
+    }
+
+    /// Set private key for HTTPS proxy
+    ///
+    /// By default this value is not set and corresponds to `CURLOPT_PROXY_SSLKEY`.
+    pub fn proxy_sslkey(&mut self, sslkey: &str) -> Result<(), Error> {
+        let sslkey = CString::new(sslkey)?;
+        self.setopt_str(curl_sys::CURLOPT_PROXY_SSLKEY, &sslkey)
+    }
+
     /// Indicates the type of proxy being used.
     ///
     /// By default this option is `ProxyType::Http` and corresponds to

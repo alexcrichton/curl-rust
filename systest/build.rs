@@ -109,7 +109,10 @@ fn main() {
         }
         if version < 54 {
             match s {
-                "CURL_SSLVERSION_TLSv1_3" => return true,
+                "CURL_SSLVERSION_TLSv1_3"
+                | "CURLOPT_PROXY_CAINFO"
+                | "CURLOPT_PROXY_SSLCERT"
+                | "CURLOPT_PROXY_SSLKEY" => return true,
                 _ => {}
             }
         }

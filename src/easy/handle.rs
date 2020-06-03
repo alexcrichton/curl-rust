@@ -563,6 +563,21 @@ impl Easy {
         self.inner.proxy_port(port)
     }
 
+    /// Same as [`Easy2::proxy_cainfo`](struct.Easy2.html#method.proxy_cainfo)
+    pub fn proxy_cainfo(&mut self, cainfo: &str) -> Result<(), Error> {
+        self.inner.proxy_cainfo(cainfo)
+    }
+
+    /// Same as [`Easy2::proxy_sslcert`](struct.Easy2.html#method.proxy_sslcert)
+    pub fn proxy_sslcert(&mut self, sslcert: &str) -> Result<(), Error> {
+        self.inner.proxy_sslcert(sslcert)
+    }
+
+    /// Same as [`Easy2::proxy_sslkey`](struct.Easy2.html#method.proxy_sslkey)
+    pub fn proxy_sslkey(&mut self, sslkey: &str) -> Result<(), Error> {
+        self.inner.proxy_sslkey(sslkey)
+    }
+
     /// Same as [`Easy2::proxy_type`](struct.Easy2.html#method.proxy_type)
     pub fn proxy_type(&mut self, kind: ProxyType) -> Result<(), Error> {
         self.inner.proxy_type(kind)

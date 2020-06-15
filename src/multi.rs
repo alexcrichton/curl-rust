@@ -696,18 +696,22 @@ impl Multi {
         }
     }
 
-    /// Attempt to close the multi handle and clean up all associated resources.
+    /// Does nothing and returns `Ok(())`. This method remains for backwards
+    /// compatibility.
     ///
-    /// Cleans up and removes a whole multi stack. It does not free or touch any
-    /// individual easy handles in any way - they still need to be closed
-    /// individually.
+    /// This method will be changed to take `self` in a future release.
+    #[doc(hidden)]
     pub fn close(&self) -> Result<(), MultiError> {
-        unsafe { cvt(curl_sys::curl_multi_cleanup(self.raw)) }
+        Ok(())
     }
 
     /// Get a pointer to the raw underlying CURLM handle.
     pub fn raw(&self) -> *mut curl_sys::CURLM {
         self.raw
+    }
+
+    unsafe fn close_impl(&self) -> Result<(), MultiError> {
+        cvt(curl_sys::curl_multi_cleanup(self.raw))
     }
 }
 
@@ -727,7 +731,7 @@ impl fmt::Debug for Multi {
 
 impl Drop for Multi {
     fn drop(&mut self) {
-        let _ = self.close();
+        let _ = unsafe { self.close_impl() };
     }
 }
 

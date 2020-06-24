@@ -701,6 +701,11 @@ impl Multi {
     ///
     /// This method will be changed to take `self` in a future release.
     #[doc(hidden)]
+    #[deprecated(
+        since = "0.4.30",
+        note = "cannot close safely without consuming self; \
+                will be changed or removed in a future release"
+    )]
     pub fn close(&self) -> Result<(), MultiError> {
         Ok(())
     }

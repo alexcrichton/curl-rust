@@ -1,8 +1,11 @@
 # curl-rust
 
-libcurl bindings for Rust
+[libcurl] bindings for Rust
 
-[Documentation](https://docs.rs/curl)
+[![Latest Version](https://img.shields.io/crates/v/curl.svg)](https://crates.io/crates/curl)
+[![Documentation](https://docs.rs/curl/badge.svg)](https://docs.rs/curl)
+[![License](https://img.shields.io/github/license/alexcrichton/curl-rust.svg)](LICENSE)
+[![Build](https://github.com/alexcrichton/curl-rust/workflows/CI/badge.svg)](https://github.com/alexcrichton/curl-rust/actions)
 
 ## Quick Start
 
@@ -145,8 +148,7 @@ If you encounter the following error message:
 That means most likely, that curl was linked against `libcurl-nss.so` due to
 installed libcurl NSS development files, and that the required library
 `libnsspem.so` is missing. See also the curl man page: "If curl is built
-against the NSS SSL library, the NSS PEM PKCS#11 module (libnsspem.so) needs to
-be available for this option to work properly."
+against the NSS SSL library, the NSS PEM PKCS#11 module (`libnsspem.so`) needs to be available for this option to work properly."
 
 In order to avoid this failure you can either
 
@@ -156,10 +158,12 @@ In order to avoid this failure you can either
 
 ## License
 
-The `curl-rust` crate is licensed under the MIT license, see `LICENSE` for more
+The `curl-rust` crate is licensed under the MIT license, see [`LICENSE`](LICENSE) for more
 details.
 
 
+[libcurl]: https://curl.haxx.se/libcurl/
+[MesaLink]: https://mesalink.io/
 [OpenSSL]: https://www.openssl.org/
 [Rustls]: https://github.com/ctz/rustls
 [Schannel]: https://docs.microsoft.com/en-us/windows/win32/com/schannel

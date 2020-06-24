@@ -147,6 +147,7 @@ fn main() {
         .file("curl/lib/curl_threads.c")
         .file("curl/lib/dotdot.c")
         .file("curl/lib/doh.c")
+        .file("curl/lib/dynbuf.c")
         .file("curl/lib/easy.c")
         .file("curl/lib/escape.c")
         .file("curl/lib/file.c")
@@ -195,6 +196,7 @@ fn main() {
         .file("curl/lib/url.c")
         .file("curl/lib/urlapi.c")
         .file("curl/lib/version.c")
+        .file("curl/lib/vtls/keylog.c")
         .file("curl/lib/vtls/vtls.c")
         .file("curl/lib/warnless.c")
         .file("curl/lib/wildcard.c")
@@ -283,7 +285,8 @@ fn main() {
             .define("USE_THREADS_WIN32", None)
             .define("HAVE_IOCTLSOCKET_FIONBIO", None)
             .define("USE_WINSOCK", None)
-            .file("curl/lib/system_win32.c");
+            .file("curl/lib/system_win32.c")
+            .file("curl/lib/curl_multibyte.c");
 
         if cfg!(feature = "spnego") {
             cfg.file("curl/lib/vauth/spnego_sspi.c");

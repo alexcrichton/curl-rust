@@ -568,6 +568,11 @@ impl Easy {
         self.inner.proxy_cainfo(cainfo)
     }
 
+    /// Same as [`Easy2::proxy_capath`](struct.Easy2.html#method.proxy_capath)
+    pub fn proxy_capath<P: AsRef<Path>>(&mut self, path: P) -> Result<(), Error> {
+        self.inner.proxy_capath(path)
+    }
+
     /// Same as [`Easy2::proxy_sslcert`](struct.Easy2.html#method.proxy_sslcert)
     pub fn proxy_sslcert(&mut self, sslcert: &str) -> Result<(), Error> {
         self.inner.proxy_sslcert(sslcert)

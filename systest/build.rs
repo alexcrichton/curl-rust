@@ -116,6 +116,12 @@ fn main() {
                 _ => {}
             }
         }
+        if version < 52 {
+            match s {
+                "CURLOPT_PROXY_CAPATH" => return true,
+                _ => {}
+            }
+        }
 
         if version < 49 {
             if s.starts_with("CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE") {

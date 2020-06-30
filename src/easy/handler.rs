@@ -889,6 +889,19 @@ impl<H> Easy2<H> {
         self.setopt_str(curl_sys::CURLOPT_PROXY_CAINFO, &cainfo)
     }
 
+    /// Specify a directory holding proxy CA certificates for proxy.
+    ///
+    /// The specified directory should hold multiple CA certificates to verify
+    /// the HTTPS proxy with. If libcurl is built against OpenSSL, the
+    /// certificate directory must be prepared using the OpenSSL `c_rehash`
+    /// utility.
+    ///
+    /// By default this value is not set and corresponds to
+    /// `CURLOPT_PROXY_CAPATH`.
+    pub fn proxy_capath<P: AsRef<Path>>(&mut self, path: P) -> Result<(), Error> {
+        self.setopt_path(curl_sys::CURLOPT_PROXY_CAPATH, path.as_ref())
+    }
+
     /// Set client certificate for proxy
     ///
     /// By default this value is not set and corresponds to `CURLOPT_PROXY_SSLCERT`.

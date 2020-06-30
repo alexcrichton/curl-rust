@@ -881,15 +881,16 @@ impl<H> Easy2<H> {
         self.setopt_long(curl_sys::CURLOPT_PROXYPORT, port as c_long)
     }
 
-    /// Set CA certificate to verify peer against for proxy
+    /// Set CA certificate to verify peer against for proxy.
     ///
-    /// By default this value is not set and corresponds to `CURLOPT_PROXY_CAINFO`.
+    /// By default this value is not set and corresponds to
+    /// `CURLOPT_PROXY_CAINFO`.
     pub fn proxy_cainfo(&mut self, cainfo: &str) -> Result<(), Error> {
         let cainfo = CString::new(cainfo)?;
         self.setopt_str(curl_sys::CURLOPT_PROXY_CAINFO, &cainfo)
     }
 
-    /// Specify a directory holding proxy CA certificates for proxy.
+    /// Specify a directory holding CA certificates for proxy.
     ///
     /// The specified directory should hold multiple CA certificates to verify
     /// the HTTPS proxy with. If libcurl is built against OpenSSL, the
@@ -902,17 +903,19 @@ impl<H> Easy2<H> {
         self.setopt_path(curl_sys::CURLOPT_PROXY_CAPATH, path.as_ref())
     }
 
-    /// Set client certificate for proxy
+    /// Set client certificate for proxy.
     ///
-    /// By default this value is not set and corresponds to `CURLOPT_PROXY_SSLCERT`.
+    /// By default this value is not set and corresponds to
+    /// `CURLOPT_PROXY_SSLCERT`.
     pub fn proxy_sslcert(&mut self, sslcert: &str) -> Result<(), Error> {
         let sslcert = CString::new(sslcert)?;
         self.setopt_str(curl_sys::CURLOPT_PROXY_SSLCERT, &sslcert)
     }
 
-    /// Set private key for HTTPS proxy
+    /// Set private key for HTTPS proxy.
     ///
-    /// By default this value is not set and corresponds to `CURLOPT_PROXY_SSLKEY`.
+    /// By default this value is not set and corresponds to
+    /// `CURLOPT_PROXY_SSLKEY`.
     pub fn proxy_sslkey(&mut self, sslkey: &str) -> Result<(), Error> {
         let sslkey = CString::new(sslkey)?;
         self.setopt_str(curl_sys::CURLOPT_PROXY_SSLKEY, &sslkey)

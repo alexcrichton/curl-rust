@@ -801,9 +801,30 @@ b",
     t!(h.borrow().perform());
 }
 
-// Stupid test to check if unix_socket is callable
+#[cfg(not(windows))]
 #[test]
 fn check_unix_socket() {
+    let s = Server::new_unix();
+    s.receive(
+        "\
+         POST / HTTP/1.1\r\n\
+         Host: localhost\r\n\
+         Accept: */*\r\n\
+         Content-Length: 5\r\n\
+         Content-Type: application/x-www-form-urlencoded\r\n\
+         \r\n\
+         data\n",
+    );
+    s.send(
+        "\
+         HTTP/1.1 200 OK\r\n\
+         \r\n",
+    );
+
     let mut h = handle();
-    drop(h.unix_socket("/var/something.socks"));
+    t!(h.unix_socket(s.path()));
+    t!(h.url(&s.url("/")));
+    t!(h.post(true));
+    t!(h.post_fields_copy(b"data\n"));
+    t!(h.perform());
 }

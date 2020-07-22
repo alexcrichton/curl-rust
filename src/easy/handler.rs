@@ -791,16 +791,43 @@ impl<H> Easy2<H> {
         self.setopt_long(curl_sys::CURLOPT_WILDCARDMATCH, m as c_long)
     }
 
-    /// Provides the unix domain socket which this handle will work with.
+    /// Provides the Unix domain socket which this handle will work with.
     ///
-    /// The string provided must be unix domain socket -encoded with the format:
+    /// The string provided must be a path to a Unix domain socket encoded with
+    /// the format:
     ///
     /// ```text
     /// /path/file.sock
     /// ```
+    ///
+    /// By default this option is not set and corresponds to
+    /// [`CURLOPT_UNIX_SOCKET_PATH`](https://curl.haxx.se/libcurl/c/CURLOPT_UNIX_SOCKET_PATH.html).
     pub fn unix_socket(&mut self, unix_domain_socket: &str) -> Result<(), Error> {
         let socket = CString::new(unix_domain_socket)?;
         self.setopt_str(curl_sys::CURLOPT_UNIX_SOCKET_PATH, &socket)
+    }
+
+    /// Provides the Unix domain socket which this handle will work with.
+    ///
+    /// The string provided must be a path to a Unix domain socket encoded with
+    /// the format:
+    ///
+    /// ```text
+    /// /path/file.sock
+    /// ```
+    ///
+    /// This function is an alternative to [`Easy2::unix_socket`] that supports
+    /// non-UTF-8 paths and also supports disabling Unix sockets by setting the
+    /// option to `None`.
+    ///
+    /// By default this option is not set and corresponds to
+    /// [`CURLOPT_UNIX_SOCKET_PATH`](https://curl.haxx.se/libcurl/c/CURLOPT_UNIX_SOCKET_PATH.html).
+    pub fn unix_socket_path<P: AsRef<Path>>(&mut self, path: Option<P>) -> Result<(), Error> {
+        if let Some(path) = path {
+            self.setopt_path(curl_sys::CURLOPT_UNIX_SOCKET_PATH, path.as_ref())
+        } else {
+            self.setopt_ptr(curl_sys::CURLOPT_UNIX_SOCKET_PATH, 0 as _)
+        }
     }
 
     // =========================================================================

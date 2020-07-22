@@ -165,6 +165,11 @@ impl Easy {
         self.inner.unix_socket(unix_domain_socket)
     }
 
+    /// Same as [`Easy2::unix_socket_path`](struct.Easy2.html#method.unix_socket_path)
+    pub fn unix_socket_path<P: AsRef<Path>>(&mut self, path: Option<P>) -> Result<(), Error> {
+        self.inner.unix_socket_path(path)
+    }
+
     // =========================================================================
     // Callback options
 

@@ -383,6 +383,7 @@ struct Inner<H> {
     handle: *mut curl_sys::CURL,
     header_list: Option<List>,
     resolve_list: Option<List>,
+    connect_to_list: Option<List>,
     form: Option<Form>,
     error_buf: RefCell<Vec<u8>>,
     handler: H,
@@ -625,6 +626,7 @@ impl<H: Handler> Easy2<H> {
                     handle: handle,
                     header_list: None,
                     resolve_list: None,
+                    connect_to_list: None,
                     form: None,
                     error_buf: RefCell::new(vec![0; curl_sys::CURL_ERROR_SIZE]),
                     handler: handler,
@@ -856,6 +858,24 @@ impl<H> Easy2<H> {
     /// in the URL or the default of the protocol.
     pub fn port(&mut self, port: u16) -> Result<(), Error> {
         self.setopt_long(curl_sys::CURLOPT_PORT, port as c_long)
+    }
+
+    /// Connect to a specific host and port.
+    ///
+    /// Each single string should be written using the format
+    /// `HOST:PORT:CONNECT-TO-HOST:CONNECT-TO-PORT` where `HOST` is the host of
+    /// the request, `PORT` is the port of the request, `CONNECT-TO-HOST` is the
+    /// host name to connect to, and `CONNECT-TO-PORT` is the port to connect
+    /// to.
+    ///
+    /// The first string that matches the request's host and port is used.
+    ///
+    /// By default, this option is empty and corresponds to
+    /// [`CURLOPT_CONNECT_TO`](https://curl.haxx.se/libcurl/c/CURLOPT_CONNECT_TO.html).
+    pub fn connect_to(&mut self, list: List) -> Result<(), Error> {
+        let ptr = list::raw(&list);
+        self.inner.connect_to_list = Some(list);
+        self.setopt_ptr(curl_sys::CURLOPT_CONNECT_TO, ptr as *const _)
     }
 
     // /// Indicates whether sequences of `/../` and `/./` will be squashed or not.

@@ -558,6 +558,11 @@ impl Easy {
         self.inner.port(port)
     }
 
+    /// Same as [`Easy2::connect_to`](struct.Easy2.html#method.connect_to)
+    pub fn connect_to(&mut self, list: List) -> Result<(), Error> {
+        self.inner.connect_to(list)
+    }
+
     /// Same as [`Easy2::proxy`](struct.Easy2.html#method.proxy)
     pub fn proxy(&mut self, url: &str) -> Result<(), Error> {
         self.inner.proxy(url)

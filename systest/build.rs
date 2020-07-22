@@ -125,8 +125,7 @@ fn main() {
 
         if version < 49 {
             match s {
-                "CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE"
-                | "CURLOPT_CONNECT_TO" => return true,
+                "CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE" | "CURLOPT_CONNECT_TO" => return true,
                 _ => {}
             }
         }

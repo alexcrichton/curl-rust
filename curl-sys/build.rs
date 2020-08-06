@@ -202,6 +202,7 @@ fn main() {
         .file("curl/lib/wildcard.c")
         .define("HAVE_GETADDRINFO", None)
         .define("HAVE_GETPEERNAME", None)
+        .define("HAVE_GETSOCKNAME", None)
         .warnings(false);
 
     if cfg!(feature = "protocol-ftp") {

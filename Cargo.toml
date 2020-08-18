@@ -1,6 +1,6 @@
 [package]
 name = "curl"
-version = "0.4.31"
+version = "0.4.32"
 authors = ["Alex Crichton <alex@alexcrichton.com>"]
 license = "MIT"
 repository = "https://github.com/alexcrichton/curl-rust"
@@ -17,7 +17,7 @@ appveyor = { repository = "alexcrichton/curl-rust" }
 
 [dependencies]
 libc = "0.2.42"
-curl-sys = { path = "curl-sys", version = "0.4.33", default-features = false }
+curl-sys = { path = "curl-sys", version = "0.4.35", default-features = false }
 socket2 = "0.3.7"
 
 # Unix platforms use OpenSSL for now to provide SSL functionality
@@ -47,6 +47,7 @@ static-curl = ["curl-sys/static-curl"]
 static-ssl = ["curl-sys/static-ssl"]
 force-system-lib-on-osx = ['curl-sys/force-system-lib-on-osx']
 protocol-ftp = ["curl-sys/protocol-ftp"]
+zlib-ng-compat = ["curl-sys/zlib-ng-compat", "static-curl"]
 
 [[test]]
 name = "atexit"

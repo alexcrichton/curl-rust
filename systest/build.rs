@@ -61,6 +61,12 @@ fn main() {
     });
 
     cfg.skip_const(move |s| {
+        if version < 72 {
+            match s {
+                "CURLVERSION_EIGHTH" => return true,
+                _ => {}
+            }
+        }
         if version < 70 {
             match s {
                 "CURL_VERSION_HTTP3"

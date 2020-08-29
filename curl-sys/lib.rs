@@ -808,7 +808,8 @@ pub const CURLVERSION_FOURTH: CURLversion = 3;
 pub const CURLVERSION_FIFTH: CURLversion = 4;
 pub const CURLVERSION_SIXTH: CURLversion = 5;
 pub const CURLVERSION_SEVENTH: CURLversion = 6;
-pub const CURLVERSION_NOW: CURLversion = CURLVERSION_SEVENTH;
+pub const CURLVERSION_EIGHTH: CURLversion = 7;
+pub const CURLVERSION_NOW: CURLversion = CURLVERSION_EIGHTH;
 
 #[repr(C)]
 pub struct curl_version_info_data {
@@ -833,6 +834,8 @@ pub struct curl_version_info_data {
     pub quic_version: *const c_char,
     pub cainfo: *const c_char,
     pub capath: *const c_char,
+    pub zstd_ver_num: c_uint,
+    pub zstd_version: *const c_char,
 }
 
 pub const CURL_VERSION_IPV6: c_int = 1 << 0;

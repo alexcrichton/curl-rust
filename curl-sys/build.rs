@@ -292,6 +292,7 @@ fn main() {
             .define("HAVE_IOCTLSOCKET_FIONBIO", None)
             .define("USE_WINSOCK", None)
             .file("curl/lib/system_win32.c")
+            .file("curl/lib/version_win32.c")
             .file("curl/lib/curl_multibyte.c");
 
         if cfg!(feature = "spnego") {

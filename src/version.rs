@@ -310,6 +310,30 @@ impl Version {
             }
         }
     }
+
+    /// If avaiable, the numeric zstd version
+    ///
+    /// Represented as `(MAJOR << 24) | (MINOR << 12) | PATCH`
+    pub fn zstd_ver_num(&self) -> Option<u32> {
+        unsafe {
+            if (*self.inner).age >= curl_sys::CURLVERSION_EIGHTH {
+                Some((*self.inner).zstd_ver_num)
+            } else {
+                None
+            }
+        }
+    }
+
+    /// If available, the human readable version of zstd
+    pub fn zstd_version(&self) -> Option<&str> {
+        unsafe {
+            if (*self.inner).age >= curl_sys::CURLVERSION_EIGHTH {
+                ::opt_str((*self.inner).zstd_version)
+            } else {
+                None
+            }
+        }
+    }
 }
 
 impl fmt::Debug for Version {

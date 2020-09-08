@@ -3011,7 +3011,7 @@ impl<H> Easy2<H> {
         if let Some(msg) = self.take_error_buf() {
             err.set_extra(msg);
         }
-        Err(Error::new(rc))
+        Err(err)
     }
 }
 

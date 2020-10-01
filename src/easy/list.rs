@@ -21,7 +21,7 @@ pub fn raw(list: &List) -> *mut curl_sys::curl_slist {
 }
 
 pub unsafe fn from_raw(raw: *mut curl_sys::curl_slist) -> List {
-    List { raw: raw }
+    List { raw }
 }
 
 unsafe impl Send for List {}

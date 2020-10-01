@@ -1,0 +1,637 @@
+
+warning: called `skip(x).next()` on an iterator
+--> curl-sys/build.rs:529:24
+|
+529 |             let path = line.split('=').skip(1).next()?;
+|                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+|
+= note: `#[warn(clippy::iter_skip_next)]` on by default
+= help: this is more succinctly expressed by calling `nth(x)`
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#iter_skip_next
+
+warning: 5 warnings emitted
+warning: this seems like amanual implementation of the non-exhaustive pattern
+--> src/easy/handler.rs:397:1
+|
+397 |   pub enum ProxyType {
+|   ^-----------------
+|   |
+|  _help: add the attribute: `#[non_exhaustive] pub enum ProxyType`
+| |
+398 | |     Http = curl_sys::CURLPROXY_HTTP as isize,
+399 | |     Http1 = curl_sys::CURLPROXY_HTTP_1_0 as isize,
+400 | |     Socks4 = curl_sys::CURLPROXY_SOCKS4 as isize,
+...   |
+408 | |     __Nonexhaustive,
+409 | | }
+| |_^
+|
+= note: `#[warn(clippy::manual_non_exhaustive)]` on by default
+help: remove this variant
+--> src/easy/handler.rs:408:5
+|
+408 |     __Nonexhaustive,
+|     ^^^^^^^^^^^^^^^
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_non_exhaustive
+
+warning: this seems like a manual implementation of the non-exhaustive pattern
+--> src/easy/handler.rs:414:1
+|
+414 |   pub enum TimeCondition {
+|   ^---------------------
+|   |
+|  _help: add the attribute: `#[non_exhaustive] pub enum TimeCondition`
+| |
+415 | |     None = curl_sys::CURL_TIMECOND_NONE as isize,
+416 | |     IfModifiedSince = curl_sys::CURL_TIMECOND_IFMODSINCE as isize,
+417 | |     IfUnmodifiedSince = curl_sys::CURL_TIMECOND_IFUNMODSINCE as isize,
+...   |
+423 | |     __Nonexhaustive,
+424 | | }
+| |_^
+|
+help: remove this variant
+--> src/easy/handler.rs:423:5
+|
+423 |     __Nonexhaustive,
+|     ^^^^^^^^^^^^^^^
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_non_exhaustive
+
+warning: this seems like a manual implementation of the non-exhaustive pattern
+--> src/easy/handler.rs:429:1
+|
+429 |   pub enum IpResolve {
+|   ^-----------------
+|   |
+|  _help: add the attribute: `#[non_exhaustive] pub enum IpResolve`
+| |
+430 | |     V4 = curl_sys::CURL_IPRESOLVE_V4 as isize,
+431 | |     V6 = curl_sys::CURL_IPRESOLVE_V6 as isize,
+432 | |     Any = curl_sys::CURL_IPRESOLVE_WHATEVER as isize,
+...   |
+437 | |     __Nonexhaustive = 500,
+438 | | }
+| |_^
+|
+help: remove this variant
+--> src/easy/handler.rs:437:5
+|
+437 |     __Nonexhaustive = 500,
+|     ^^^^^^^^^^^^^^^^^^^^^
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_non_exhaustive
+
+warning: this seems like a manual implementation of the non-exhaustive pattern
+--> src/easy/handler.rs:442:1
+|
+442 |   pub enum HttpVersion {
+|   ^-------------------
+|   |
+|  _help: add the attribute: `#[non_exhaustive] pub enum HttpVersion`
+| |
+443 | |     /// We don't care what http version to use, and we'd like the library to
+444 | |     /// choose the best possible for us.
+445 | |     Any = curl_sys::CURL_HTTP_VERSION_NONE as isize,
+...   |
+479 | |     __Nonexhaustive = 500,
+480 | | }
+| |_^
+|
+help: remove this variant
+--> src/easy/handler.rs:479:5
+|
+479 |     __Nonexhaustive = 500,
+|     ^^^^^^^^^^^^^^^^^^^^^
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_non_exhaustive
+
+warning: this seems like a manual implementation of the non-exhaustive pattern
+--> src/easy/handler.rs:485:1
+|
+485 |   pub enum SslVersion {
+|   ^------------------
+|   |
+|  _help: add the attribute: `#[non_exhaustive] pub enum SslVersion`
+| |
+486 | |     Default = curl_sys::CURL_SSLVERSION_DEFAULT as isize,
+487 | |     Tlsv1 = curl_sys::CURL_SSLVERSION_TLSv1 as isize,
+488 | |     Sslv2 = curl_sys::CURL_SSLVERSION_SSLv2 as isize,
+...   |
+498 | |     __Nonexhaustive = 500,
+499 | | }
+| |_^
+|
+help: remove this variant
+--> src/easy/handler.rs:498:5
+|
+498 |     __Nonexhaustive = 500,
+|     ^^^^^^^^^^^^^^^^^^^^^
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_non_exhaustive
+
+warning: this seems like a manual implementation of the non-exhaustive pattern
+--> src/easy/handler.rs:503:1
+|
+503 |   pub enum SeekResult {
+|   ^------------------
+|   |
+|  _help: add the attribute: `#[non_exhaustive] pub enum SeekResult`
+| |
+504 | |     /// Indicates that the seek operation was a success
+505 | |     Ok = curl_sys::CURL_SEEKFUNC_OK as isize,
+506 | |
+...   |
+518 | |     __Nonexhaustive = 500,
+519 | | }
+| |_^
+|
+help: remove this variant
+--> src/easy/handler.rs:518:5
+|
+518 |     __Nonexhaustive = 500,
+|     ^^^^^^^^^^^^^^^^^^^^^
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_non_exhaustive
+
+warning: this seems like a manual implementation of the non-exhaustive pattern
+--> src/easy/handler.rs:524:1
+|
+524 |   pub enum InfoType {
+|   ^----------------
+|   |
+|  _help: add the attribute: `#[non_exhaustive] pub enum InfoType`
+| |
+525 | |     /// The data is informational text.
+526 | |     Text,
+527 | |
+...   |
+549 | |     __Nonexhaustive,
+550 | | }
+| |_^
+|
+help: remove this variant
+--> src/easy/handler.rs:549:5
+|
+549 |     __Nonexhaustive,
+|     ^^^^^^^^^^^^^^^
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_non_exhaustive
+
+warning: this seems like a manual implementation of the non-exhaustive pattern
+--> src/easy/handler.rs:554:1
+|
+554 |   pub enum ReadError {
+|   ^-----------------
+|   |
+|  _help: add the attribute: `#[non_exhaustive] pub enum ReadError`
+| |
+555 | |     /// Indicates that the connection should be aborted immediately
+556 | |     Abort,
+557 | |
+...   |
+564 | |     __Nonexhaustive,
+565 | | }
+| |_^
+|
+help: remove this variant
+--> src/easy/handler.rs:564:5
+|
+564 |     __Nonexhaustive,
+|     ^^^^^^^^^^^^^^^
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_non_exhaustive
+
+warning: this seems like a manual implementation of the non-exhaustive pattern
+--> src/easy/handler.rs:569:1
+|
+569 |   pub enum WriteError {
+|   ^------------------
+|   |
+|  _help: add the attribute: `#[non_exhaustive] pub enum WriteError`
+| |
+570 | |     /// Indicates that reading should be paused until `unpause` is called.
+571 | |     Pause,
+572 | |
+...   |
+576 | |     __Nonexhaustive,
+577 | | }
+| |_^
+|
+help: remove this variant
+--> src/easy/handler.rs:576:5
+|
+576 |     __Nonexhaustive,
+|     ^^^^^^^^^^^^^^^
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_non_exhaustive
+
+
+
+warning: digits grouped inconsistently by underscores
+--> src/multi.rs:582:70
+|
+582 |                 secs as i32 * 1000 + timeout.subsec_nanos() as i32 / 1000_000
+|                                                                      ^^^^^^^^ help: consider: `1_000_000`
+|
+= note: `#[warn(clippy::inconsistent_digit_grouping)]` on by default
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#inconsistent_digit_grouping
+
+
+warning: called `.as_ref().map(|s| &**s)` on an Option value. This can be done more directly by calling `self.extra.as_deref()` instead
+--> src/error.rs:318:9
+|
+318 |         self.extra.as_ref().map(|s| &**s)
+|         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: try using as_deref instead: `self.extra.as_deref()`
+|
+= note: `#[warn(clippy::option_as_ref_deref)]` on by default
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#option_as_ref_deref
+
+warning: you should consider adding a `Default` implementation for `easy::form::Form`
+--> src/easy/form.rs:35:5
+|
+35 | /     pub fn new() -> Form {
+36 | |         Form {
+37 | |             head: 0 as *mut _,
+38 | |             tail: 0 as *mut _,
+...  |
+42 | |         }
+43 | |     }
+| |_____^
+|
+= note: `#[warn(clippy::new_without_default)]` on by default
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#new_without_default
+help: try this
+|
+33 | impl Default for easy::form::Form {
+34 |     fn default() -> Self {
+35 |         Self::new()
+36 |     }
+37 | }
+|
+
+warning: `0 as *mut _` detected
+--> src/easy/form.rs:37:19
+|
+37 |             head: 0 as *mut _,
+|                   ^^^^^^^^^^^ help: try: `std::ptr::null_mut()`
+|
+= note: `#[warn(clippy::zero_ptr)]` on by default
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#zero_ptr
+
+warning: `0 as *mut _` detected
+--> src/easy/form.rs:38:19
+|
+38 |             tail: 0 as *mut _,
+|                   ^^^^^^^^^^^ help: try: `std::ptr::null_mut()`
+|
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#zero_ptr
+
+warning: `0 as *mut _` detected
+--> src/easy/form.rs:56:24
+|
+56 |                 value: 0 as *mut _,
+|                        ^^^^^^^^^^^ help: try: `std::ptr::null_mut()`
+|
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#zero_ptr
+
+warning: very complex type used. Consider factoring parts into `type` definitions
+--> src/easy/handle.rs:108:12
+|
+108 |     write: Option<Box<dyn FnMut(&[u8]) -> Result<usize, WriteError> + 'a>>,
+|            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+|
+= note: `#[warn(clippy::type_complexity)]` on by default
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#type_complexity
+
+warning: very complex type used. Consider factoring parts into `type` definitions
+--> src/easy/handle.rs:109:11
+|
+109 |     read: Option<Box<dyn FnMut(&mut [u8]) -> Result<usize, ReadError> + 'a>>,
+|           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+|
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#type_complexity
+
+warning: very complex type used. Consider factoring parts into `type` definitions
+--> src/easy/handle.rs:111:12
+|
+111 |     debug: Option<Box<dyn FnMut(InfoType, &[u8]) + 'a>>,
+|            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+|
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#type_complexity
+
+warning: very complex type used. Consider factoring parts into `type` definitions
+--> src/easy/handle.rs:113:15
+|
+113 |     progress: Option<Box<dyn FnMut(f64, f64, f64, f64) -> bool + 'a>>,
+|               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+|
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#type_complexity
+
+warning: very complex type used. Consider factoring parts into `type` definitions
+--> src/easy/handle.rs:114:14
+|
+114 |     ssl_ctx: Option<Box<dyn FnMut(*mut c_void) -> Result<(), Error> + 'a>>,
+|              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+|
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#type_complexity
+
+warning: you should consider adding a `Default` implementation for `easy::handle::Easy`
+--> src/easy/handle.rs:125:5
+|
+125 | /     pub fn new() -> Easy {
+126 | |         Easy {
+127 | |             inner: Easy2::new(EasyData {
+128 | |                 running: Cell::new(false),
+...   |
+132 | |         }
+133 | |     }
+| |_____^
+|
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#new_without_default
+help: try this
+|
+117 | impl Default for easy::handle::Easy {
+118 |     fn default() -> Self {
+119 |         Self::new()
+120 |     }
+121 | }
+|
+
+error: calls to `std::mem::drop` with a reference instead of an owned value. Dropping a reference does nothing.
+--> src/easy/handler.rs:113:9
+|
+113 |         drop(data);
+|         ^^^^^^^^^^
+|
+= note: `#[deny(clippy::drop_ref)]` on by default
+note: argument has type `&mut [u8]`
+--> src/easy/handler.rs:113:14
+|
+113 |         drop(data);
+|              ^^^^
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#drop_ref
+
+error: calls to `std::mem::drop` with a value that implements `Copy`. Dropping a copy leaves the original intact.
+--> src/easy/handler.rs:137:9
+|
+137 |         drop(whence);
+|         ^^^^^^^^^^^^
+|
+= note: `#[deny(clippy::drop_copy)]` on by default
+note: argument has type std::io::SeekFrom
+--> src/easy/handler.rs:137:14
+|
+137 |         drop(whence);
+|              ^^^^^^
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#drop_copy
+
+error: calls to `std::mem::drop` with a reference instead of an owned value. Dropping a reference does nothing.
+--> src/easy/handler.rs:187:9
+|
+187 |         drop(data);
+|         ^^^^^^^^^^
+|
+note: argument has type `&[u8]`
+--> src/easy/handler.rs:187:14
+|
+187 |         drop(data);
+|              ^^^^
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#drop_ref
+
+error: calls to `std::mem::drop` with a value that implements `Copy`. Dropping a copy leaves the original intact.
+--> src/easy/handler.rs:223:9
+|
+223 |         drop((dltotal, dlnow, ultotal, ulnow));
+|         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+|
+note: argument has type (f64, f64, f64, f64)
+--> src/easy/handler.rs:223:14
+|
+223 |         drop((dltotal, dlnow, ultotal, ulnow));
+|              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#drop_copy
+
+warning: `0 as *const _` detected
+--> src/easy/handler.rs:1310:55
+ |
+1310 |         self.setopt_ptr(curl_sys::CURLOPT_POSTFIELDS, 0 as *const _)?;
+ |                                                       ^^^^^^^^^^^^^ help: try: `std::ptr::null()`
+ |
+ = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#zero_ptr
+
+warning: Calling `subsec_millis()` is more concise than this calculation
+--> src/easy/handler.rs:1705:45
+ |
+1705 |         let ms = timeout.as_secs() * 1000 + (timeout.subsec_nanos() / 1_000_000) as u64;
+ |                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: try: `timeout.subsec_millis()`
+ |
+ = note: `#[warn(clippy::duration_subsec)]` on by default
+ = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#duration_subsec
+
+warning: Calling `subsec_millis()` is more concise than this calculation
+--> src/easy/handler.rs:1816:45
+ |
+1816 |         let ms = timeout.as_secs() * 1000 + (timeout.subsec_nanos() / 1_000_000) as u64;
+ |                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: try: `timeout.subsec_millis()`
+ |
+ = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#duration_subsec
+
+warning: this if-then-else expression returns a bool literal
+--> src/easy/handler.rs:2316:17
+ |
+2316 | /                 if r == 0 {
+2317 | |                     false
+2318 | |                 } else {
+2319 | |                     true
+2320 | |                 }
+ | |_________________^ help: you can reduce it to: `!(r == 0)`
+ |
+ = note: `#[warn(clippy::needless_bool)]` on by default
+ = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_bool
+
+warning: `0 as *mut _` detected
+--> src/easy/handler.rs:2661:28
+ |
+2661 |             let mut list = 0 as *mut _;
+ |                            ^^^^^^^^^^^ help: try: `std::ptr::null_mut()`
+ |
+ = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#zero_ptr
+
+warning: length comparison to zero
+--> src/easy/handler.rs:2771:12
+ |
+2771 |         if s.len() == 0 {
+ |            ^^^^^^^^^^^^ help: using `is_empty` is clearer and more explicit: `s.is_empty()`
+ |
+ = note: `#[warn(clippy::len_zero)]` on by default
+ = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#len_zero
+
+warning: length comparison to zero
+--> src/easy/handler.rs:2790:12
+ |
+2790 |         if s.len() == 0 {
+ |            ^^^^^^^^^^^^ help: using `is_empty` is clearer and more explicit: `s.is_empty()`
+ |
+ = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#len_zero
+
+warning: `0 as *const _` detected
+--> src/easy/handler.rs:2945:25
+ |
+2945 |             let mut p = 0 as *const c_char;
+ |                         ^^^^^^^^^^^^^^^^^^ help: try: `std::ptr::null::<c_char>()`
+ |
+ = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#zero_ptr
+
+warning: use of `unwrap_or` followed by a function call
+--> src/easy/handler.rs:3000:52
+ |
+3000 |         let pos = buf.iter().position(|i| *i == 0).unwrap_or(buf.len());
+ |                                                    ^^^^^^^^^^^^^^^^^^^^ help: try this: `unwrap_or_else(|| buf.len())`
+ |
+ = note: `#[warn(clippy::or_fun_call)]` on by default
+ = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#or_fun_call
+
+warning: you should consider adding a `Default` implementation for `easy::handler::Auth`
+--> src/easy/handler.rs:3215:5
+ |
+3215 | /     pub fn new() -> Auth {
+3216 | |         Auth { bits: 0 }
+3217 | |     }
+ | |_____^
+ |
+ = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#new_without_default
+help: try this
+ |
+3210 | impl Default for easy::handler::Auth {
+3211 |     fn default() -> Self {
+3212 |         Self::new()
+3213 |     }
+3214 | }
+ |
+
+warning: you should consider adding a `Default` implementation for `easy::handler::SslOpt`
+--> src/easy/handler.rs:3323:5
+ |
+3323 | /     pub fn new() -> SslOpt {
+3324 | |         SslOpt { bits: 0 }
+3325 | |     }
+ | |_____^
+ |
+ = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#new_without_default
+help: try this
+ |
+3321 | impl Default for easy::handler::SslOpt {
+3322 |     fn default() -> Self {
+3323 |         Self::new()
+3324 |     }
+3325 | }
+ |
+
+warning: you should consider adding a `Default` implementation for `easy::list::List`
+--> src/easy/list.rs:31:5
+|
+31 | /     pub fn new() -> List {
+32 | |         List { raw: 0 as *mut _ }
+33 | |     }
+| |_____^
+|
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#new_without_default
+help: try this
+|
+29 | impl Default for easy::list::List {
+30 |     fn default() -> Self {
+31 |         Self::new()
+32 |     }
+33 | }
+|
+
+warning: `0 as *mut _` detected
+--> src/easy/list.rs:32:21
+|
+32 |         List { raw: 0 as *mut _ }
+|                     ^^^^^^^^^^^ help: try: `std::ptr::null_mut()`
+|
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#zero_ptr
+
+warning: you should consider adding a `Default` implementation for `multi::Multi`
+--> src/multi.rs:97:5
+|
+97  | /     pub fn new() -> Multi {
+98  | |         unsafe {
+99  | |             ::init();
+100 | |             let ptr = curl_sys::curl_multi_init();
+...   |
+109 | |         }
+110 | |     }
+| |_____^
+|
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#new_without_default
+help: try this
+|
+94  | impl Default for multi::Multi {
+95  |     fn default() -> Self {
+96  |         Self::new()
+97  |     }
+98  | }
+|
+
+warning: `0 as *mut _` detected
+--> src/multi.rs:685:60
+|
+685 |             let read = read.map(|r| r as *mut _).unwrap_or(0 as *mut _);
+|                                                            ^^^^^^^^^^^ help: try: `std::ptr::null_mut()`
+|
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#zero_ptr
+
+warning: `0 as *mut _` detected
+--> src/multi.rs:686:62
+|
+686 |             let write = write.map(|r| r as *mut _).unwrap_or(0 as *mut _);
+|                                                              ^^^^^^^^^^^ help: try: `std::ptr::null_mut()`
+|
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#zero_ptr
+
+warning: `0 as *mut _` detected
+--> src/multi.rs:687:64
+|
+687 |             let except = except.map(|r| r as *mut _).unwrap_or(0 as *mut _);
+|                                                                ^^^^^^^^^^^ help: try: `std::ptr::null_mut()`
+|
+= help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#zero_ptr
+
+warning: you should consider adding a `Default` implementation for `multi::Events`
+--> src/multi.rs:1012:5
+ |
+1012 | /     pub fn new() -> Events {
+1013 | |         Events { bits: 0 }
+1014 | |     }
+ | |_____^
+ |
+ = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#new_without_default
+help: try this
+ |
+1010 | impl Default for multi::Events {
+1011 |     fn default() -> Self {
+1012 |         Self::new()
+1013 |     }
+1014 | }
+ |
+
+warning: you should consider adding a `Default` implementation for `multi::WaitFd`
+--> src/multi.rs:1087:5
+ |
+1087 | /     pub fn new() -> WaitFd {
+1088 | |         WaitFd {
+1089 | |             inner: curl_sys::curl_waitfd {
+1090 | |                 fd: 0,
+...    |
+1094 | |         }
+1095 | |     }
+ | |_____^
+ |
+ = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#new_without_default
+help: try this
+ |
+1085 | impl Default for multi::WaitFd {
+1086 |     fn default() -> Self {
+1087 |         Self::new()
+1088 |     }
+1089 | }
+ |
+
+error: aborting due to 4 previous errors; 61 warnings emitted
+
+error: could not compile `curl`

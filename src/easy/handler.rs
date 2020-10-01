@@ -623,13 +623,13 @@ impl<H: Handler> Easy2<H> {
             assert!(!handle.is_null());
             let mut ret = Easy2 {
                 inner: Box::new(Inner {
-                    handle: handle,
+                    handle,
                     header_list: None,
                     resolve_list: None,
                     connect_to_list: None,
                     form: None,
                     error_buf: RefCell::new(vec![0; curl_sys::CURL_ERROR_SIZE]),
-                    handler: handler,
+                    handler,
                 }),
             };
             ret.default_configure();

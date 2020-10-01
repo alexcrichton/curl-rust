@@ -379,7 +379,7 @@ impl Multi {
             cvt(curl_sys::curl_multi_add_handle(self.raw, easy.raw()))?;
         }
         Ok(EasyHandle {
-            easy: easy,
+            easy,
             _marker: marker::PhantomData,
         })
     }
@@ -390,7 +390,7 @@ impl Multi {
             cvt(curl_sys::curl_multi_add_handle(self.raw, easy.raw()))?;
         }
         Ok(Easy2Handle {
-            easy: easy,
+            easy,
             _marker: marker::PhantomData,
         })
     }
@@ -448,10 +448,7 @@ impl Multi {
                 if ptr.is_null() {
                     break;
                 }
-                f(Message {
-                    ptr: ptr,
-                    _multi: self,
-                })
+                f(Message { ptr, _multi: self })
             }
         }
     }
@@ -1167,7 +1164,7 @@ impl From<pollfd> for WaitFd {
         WaitFd {
             inner: curl_sys::curl_waitfd {
                 fd: pfd.fd,
-                events: events,
+                events,
                 revents: 0,
             },
         }

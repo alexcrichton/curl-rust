@@ -50,7 +50,7 @@ impl Form {
         Part {
             error: None,
             form: self,
-            name: name,
+            name,
             array: vec![curl_sys::curl_forms {
                 option: curl_sys::CURLFORM_END,
                 value: 0 as *mut _,

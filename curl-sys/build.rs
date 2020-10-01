@@ -466,7 +466,7 @@ fn try_pkg_config() -> bool {
     for path in lib.include_paths.iter() {
         println!("cargo:include={}", path.display());
     }
-    return true;
+    true
 }
 
 fn xcode_major_version() -> Option<u8> {
@@ -506,7 +506,7 @@ fn curl_config_reports_http2() -> bool {
         return false;
     }
 
-    return true;
+    true
 }
 
 fn macos_link_search_path() -> Option<String> {

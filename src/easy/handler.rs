@@ -633,7 +633,7 @@ impl<H: Handler> Easy2<H> {
                 }),
             };
             ret.default_configure();
-            return ret;
+            ret
         }
     }
 
@@ -2721,7 +2721,7 @@ impl<H> Easy2<H> {
     pub fn perform(&self) -> Result<(), Error> {
         let ret = unsafe { self.cvt(curl_sys::curl_easy_perform(self.inner.handle)) };
         panic::propagate();
-        return ret;
+        ret
     }
 
     /// Unpause reading on a connection.
@@ -2781,7 +2781,7 @@ impl<H> Easy2<H> {
             let ret = str::from_utf8(CStr::from_ptr(p).to_bytes()).unwrap();
             let ret = String::from(ret);
             curl_sys::curl_free(p as *mut _);
-            return ret;
+            ret
         }
     }
 
@@ -2815,7 +2815,7 @@ impl<H> Easy2<H> {
             let slice = slice::from_raw_parts(p as *const u8, len as usize);
             let ret = slice.to_vec();
             curl_sys::curl_free(p as *mut _);
-            return ret;
+            ret
         }
     }
 
@@ -3145,7 +3145,7 @@ extern "C" fn debug_cb<H: Handler>(
         };
         (*(userptr as *mut Inner<H>)).handler.debug(kind, data)
     });
-    return 0;
+    0
 }
 
 extern "C" fn ssl_ctx_cb<H: Handler>(

@@ -950,7 +950,7 @@ impl<'multi> Message<'multi> {
                 e.set_extra(s);
             }
         }
-        return err;
+        err
     }
 
     /// Same as `result`, except only returns `Some` for the specified handle.
@@ -968,7 +968,7 @@ impl<'multi> Message<'multi> {
                 e.set_extra(s);
             }
         }
-        return err;
+        err
     }
 
     /// Returns whether this easy message was for the specified easy handle or

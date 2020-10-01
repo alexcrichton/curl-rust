@@ -86,7 +86,7 @@ impl<'a> Iterator for Iter<'a> {
         unsafe {
             let ret = Some(CStr::from_ptr((*self.cur).data).to_bytes());
             self.cur = (*self.cur).next;
-            return ret;
+            ret
         }
     }
 }

@@ -306,7 +306,6 @@ pub fn debug(kind: InfoType, data: &[u8]) {
         InfoType::HeaderOut => ">",
         InfoType::DataIn | InfoType::SslDataIn => "{",
         InfoType::DataOut | InfoType::SslDataOut => "}",
-        InfoType::__Nonexhaustive => " ",
     };
     let mut out = out.lock();
     drop(write!(out, "{} ", prefix));
@@ -392,6 +391,7 @@ struct Inner<H> {
 unsafe impl<H: Send> Send for Inner<H> {}
 
 /// Possible proxy types that libcurl currently understands.
+#[non_exhaustive]
 #[allow(missing_docs)]
 #[derive(Debug, Clone, Copy)]
 pub enum ProxyType {
@@ -401,14 +401,10 @@ pub enum ProxyType {
     Socks5 = curl_sys::CURLPROXY_SOCKS5 as isize,
     Socks4a = curl_sys::CURLPROXY_SOCKS4A as isize,
     Socks5Hostname = curl_sys::CURLPROXY_SOCKS5_HOSTNAME as isize,
-
-    /// Hidden variant to indicate that this enum should not be matched on, it
-    /// may grow over time.
-    #[doc(hidden)]
-    __Nonexhaustive,
 }
 
 /// Possible conditions for the `time_condition` method.
+#[non_exhaustive]
 #[allow(missing_docs)]
 #[derive(Debug, Clone, Copy)]
 pub enum TimeCondition {
@@ -416,28 +412,20 @@ pub enum TimeCondition {
     IfModifiedSince = curl_sys::CURL_TIMECOND_IFMODSINCE as isize,
     IfUnmodifiedSince = curl_sys::CURL_TIMECOND_IFUNMODSINCE as isize,
     LastModified = curl_sys::CURL_TIMECOND_LASTMOD as isize,
-
-    /// Hidden variant to indicate that this enum should not be matched on, it
-    /// may grow over time.
-    #[doc(hidden)]
-    __Nonexhaustive,
 }
 
 /// Possible values to pass to the `ip_resolve` method.
+#[non_exhaustive]
 #[allow(missing_docs)]
 #[derive(Debug, Clone, Copy)]
 pub enum IpResolve {
     V4 = curl_sys::CURL_IPRESOLVE_V4 as isize,
     V6 = curl_sys::CURL_IPRESOLVE_V6 as isize,
     Any = curl_sys::CURL_IPRESOLVE_WHATEVER as isize,
-
-    /// Hidden variant to indicate that this enum should not be matched on, it
-    /// may grow over time.
-    #[doc(hidden)]
-    __Nonexhaustive = 500,
 }
 
 /// Possible values to pass to the `http_version` method.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy)]
 pub enum HttpVersion {
     /// We don't care what http version to use, and we'd like the library to
@@ -472,14 +460,10 @@ pub enum HttpVersion {
     ///
     /// (Added in CURL 7.66.0)
     V3 = curl_sys::CURL_HTTP_VERSION_3 as isize,
-
-    /// Hidden variant to indicate that this enum should not be matched on, it
-    /// may grow over time.
-    #[doc(hidden)]
-    __Nonexhaustive = 500,
 }
 
 /// Possible values to pass to the `ssl_version` and `ssl_min_max_version` method.
+#[non_exhaustive]
 #[allow(missing_docs)]
 #[derive(Debug, Clone, Copy)]
 pub enum SslVersion {
@@ -491,14 +475,10 @@ pub enum SslVersion {
     Tlsv11 = curl_sys::CURL_SSLVERSION_TLSv1_1 as isize,
     Tlsv12 = curl_sys::CURL_SSLVERSION_TLSv1_2 as isize,
     Tlsv13 = curl_sys::CURL_SSLVERSION_TLSv1_3 as isize,
-
-    /// Hidden variant to indicate that this enum should not be matched on, it
-    /// may grow over time.
-    #[doc(hidden)]
-    __Nonexhaustive = 500,
 }
 
 /// Possible return values from the `seek_function` callback.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy)]
 pub enum SeekResult {
     /// Indicates that the seek operation was a success
@@ -511,15 +491,11 @@ pub enum SeekResult {
     /// Indicates that although the seek failed libcurl should attempt to keep
     /// working if possible (for example "seek" through reading).
     CantSeek = curl_sys::CURL_SEEKFUNC_CANTSEEK as isize,
-
-    /// Hidden variant to indicate that this enum should not be matched on, it
-    /// may grow over time.
-    #[doc(hidden)]
-    __Nonexhaustive = 500,
 }
 
 /// Possible data chunks that can be witnessed as part of the `debug_function`
 /// callback.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy)]
 pub enum InfoType {
     /// The data is informational text.
@@ -542,14 +518,10 @@ pub enum InfoType {
 
     /// The data is SSL/TLS (binary) data sent to the peer.
     SslDataOut,
-
-    /// Hidden variant to indicate that this enum should not be matched on, it
-    /// may grow over time.
-    #[doc(hidden)]
-    __Nonexhaustive,
 }
 
 /// Possible error codes that can be returned from the `read_function` callback.
+#[non_exhaustive]
 #[derive(Debug)]
 pub enum ReadError {
     /// Indicates that the connection should be aborted immediately
@@ -557,23 +529,14 @@ pub enum ReadError {
 
     /// Indicates that reading should be paused until `unpause` is called.
     Pause,
-
-    /// Hidden variant to indicate that this enum should not be matched on, it
-    /// may grow over time.
-    #[doc(hidden)]
-    __Nonexhaustive,
 }
 
 /// Possible error codes that can be returned from the `write_function` callback.
+#[non_exhaustive]
 #[derive(Debug)]
 pub enum WriteError {
     /// Indicates that reading should be paused until `unpause` is called.
     Pause,
-
-    /// Hidden variant to indicate that this enum should not be matched on, it
-    /// may grow over time.
-    #[doc(hidden)]
-    __Nonexhaustive,
 }
 
 /// Options for `.netrc` parsing.
@@ -3060,9 +3023,7 @@ extern "C" fn write_cb<H: Handler>(
         let input = slice::from_raw_parts(ptr as *const u8, size * nmemb);
         match (*(data as *mut Inner<H>)).handler.write(input) {
             Ok(s) => s,
-            Err(WriteError::Pause) | Err(WriteError::__Nonexhaustive) => {
-                curl_sys::CURL_WRITEFUNC_PAUSE
-            }
+            Err(WriteError::Pause) => curl_sys::CURL_WRITEFUNC_PAUSE,
         }
     })
     .unwrap_or(!0)
@@ -3079,9 +3040,7 @@ extern "C" fn read_cb<H: Handler>(
         match (*(data as *mut Inner<H>)).handler.read(input) {
             Ok(s) => s,
             Err(ReadError::Pause) => curl_sys::CURL_READFUNC_PAUSE,
-            Err(ReadError::__Nonexhaustive) | Err(ReadError::Abort) => {
-                curl_sys::CURL_READFUNC_ABORT
-            }
+            Err(ReadError::Abort) => curl_sys::CURL_READFUNC_ABORT,
         }
     })
     .unwrap_or(!0)

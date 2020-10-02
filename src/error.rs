@@ -312,7 +312,7 @@ impl Error {
 
     /// Returns the extra description of this error, if any is available.
     pub fn extra_description(&self) -> Option<&str> {
-        self.extra.as_ref().map(|s| &**s)
+        self.extra.as_deref()
     }
 }
 

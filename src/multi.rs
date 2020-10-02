@@ -576,7 +576,7 @@ impl Multi {
                 // Duration too large, clamp at maximum value.
                 i32::max_value()
             } else {
-                secs as i32 * 1000 + timeout.subsec_nanos() as i32 / 1000_000
+                secs as i32 * 1000 + timeout.subsec_nanos() as i32 / 1_000_000
             }
         };
         unsafe {

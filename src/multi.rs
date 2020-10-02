@@ -2,6 +2,7 @@
 
 use std::fmt;
 use std::marker;
+use std::ptr;
 use std::time::Duration;
 
 use curl_sys;
@@ -379,7 +380,7 @@ impl Multi {
             cvt(curl_sys::curl_multi_add_handle(self.raw, easy.raw()))?;
         }
         Ok(EasyHandle {
-            easy: easy,
+            easy,
             _marker: marker::PhantomData,
         })
     }
@@ -390,7 +391,7 @@ impl Multi {
             cvt(curl_sys::curl_multi_add_handle(self.raw, easy.raw()))?;
         }
         Ok(Easy2Handle {
-            easy: easy,
+            easy,
             _marker: marker::PhantomData,
         })
     }
@@ -448,10 +449,7 @@ impl Multi {
                 if ptr.is_null() {
                     break;
                 }
-                f(Message {
-                    ptr: ptr,
-                    _multi: self,
-                })
+                f(Message { ptr, _multi: self })
             }
         }
     }
@@ -579,7 +577,7 @@ impl Multi {
                 // Duration too large, clamp at maximum value.
                 i32::max_value()
             } else {
-                secs as i32 * 1000 + timeout.subsec_nanos() as i32 / 1000_000
+                secs as i32 * 1000 + timeout.subsec_nanos() as i32 / 1_000_000
             }
         };
         unsafe {
@@ -682,9 +680,9 @@ impl Multi {
     ) -> Result<Option<i32>, MultiError> {
         unsafe {
             let mut ret = 0;
-            let read = read.map(|r| r as *mut _).unwrap_or(0 as *mut _);
-            let write = write.map(|r| r as *mut _).unwrap_or(0 as *mut _);
-            let except = except.map(|r| r as *mut _).unwrap_or(0 as *mut _);
+            let read = read.map(|r| r as *mut _).unwrap_or(ptr::null_mut());
+            let write = write.map(|r| r as *mut _).unwrap_or(ptr::null_mut());
+            let except = except.map(|r| r as *mut _).unwrap_or(ptr::null_mut());
             cvt(curl_sys::curl_multi_fdset(
                 self.raw, read, write, except, &mut ret,
             ))?;
@@ -950,7 +948,7 @@ impl<'multi> Message<'multi> {
                 e.set_extra(s);
             }
         }
-        return err;
+        err
     }
 
     /// Same as `result`, except only returns `Some` for the specified handle.
@@ -968,7 +966,7 @@ impl<'multi> Message<'multi> {
                 e.set_extra(s);
             }
         }
-        return err;
+        err
     }
 
     /// Returns whether this easy message was for the specified easy handle or
@@ -1167,7 +1165,7 @@ impl From<pollfd> for WaitFd {
         WaitFd {
             inner: curl_sys::curl_waitfd {
                 fd: pfd.fd,
-                events: events,
+                events,
                 revents: 0,
             },
         }

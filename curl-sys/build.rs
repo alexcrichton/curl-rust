@@ -23,10 +23,10 @@ fn main() {
     if !cfg!(feature = "static-curl") {
         // OSX and Haiku ships libcurl by default, so we just use that version
         // so long as it has the right features enabled.
-        if target.contains("apple") || target.contains("haiku") {
-            if !cfg!(feature = "http2") || curl_config_reports_http2() {
-                return println!("cargo:rustc-flags=-l curl");
-            }
+        if (target.contains("apple") || target.contains("haiku"))
+            && (!cfg!(feature = "http2") || curl_config_reports_http2())
+        {
+            return println!("cargo:rustc-flags=-l curl");
         }
 
         // Next, fall back and try to use pkg-config if its available.
@@ -34,10 +34,8 @@ fn main() {
             if try_vcpkg() {
                 return;
             }
-        } else {
-            if try_pkg_config() {
-                return;
-            }
+        } else if try_pkg_config() {
+            return;
         }
     }
 
@@ -468,7 +466,7 @@ fn try_pkg_config() -> bool {
     for path in lib.include_paths.iter() {
         println!("cargo:include={}", path.display());
     }
-    return true;
+    true
 }
 
 fn xcode_major_version() -> Option<u8> {
@@ -508,7 +506,7 @@ fn curl_config_reports_http2() -> bool {
         return false;
     }
 
-    return true;
+    true
 }
 
 fn macos_link_search_path() -> Option<String> {

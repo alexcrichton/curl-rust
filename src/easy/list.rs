@@ -1,5 +1,6 @@
 use std::ffi::{CStr, CString};
 use std::fmt;
+use std::ptr;
 
 use curl_sys;
 use Error;
@@ -21,7 +22,7 @@ pub fn raw(list: &List) -> *mut curl_sys::curl_slist {
 }
 
 pub unsafe fn from_raw(raw: *mut curl_sys::curl_slist) -> List {
-    List { raw: raw }
+    List { raw }
 }
 
 unsafe impl Send for List {}
@@ -29,7 +30,9 @@ unsafe impl Send for List {}
 impl List {
     /// Creates a new empty list of strings.
     pub fn new() -> List {
-        List { raw: 0 as *mut _ }
+        List {
+            raw: ptr::null_mut(),
+        }
     }
 
     /// Appends some data into this list.
@@ -86,7 +89,7 @@ impl<'a> Iterator for Iter<'a> {
         unsafe {
             let ret = Some(CStr::from_ptr((*self.cur).data).to_bytes());
             self.cur = (*self.cur).next;
-            return ret;
+            ret
         }
     }
 }

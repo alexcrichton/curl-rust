@@ -18,10 +18,7 @@ pub struct Error {
 impl Error {
     /// Creates a new error from the underlying code returned by libcurl.
     pub fn new(code: curl_sys::CURLcode) -> Error {
-        Error {
-            code: code,
-            extra: None,
-        }
+        Error { code, extra: None }
     }
 
     /// Stores some extra information about this error inside this error.
@@ -315,7 +312,7 @@ impl Error {
 
     /// Returns the extra description of this error, if any is available.
     pub fn extra_description(&self) -> Option<&str> {
-        self.extra.as_ref().map(|s| &**s)
+        self.extra.as_deref()
     }
 }
 
@@ -352,7 +349,7 @@ pub struct ShareError {
 impl ShareError {
     /// Creates a new error from the underlying code returned by libcurl.
     pub fn new(code: curl_sys::CURLSHcode) -> ShareError {
-        ShareError { code: code }
+        ShareError { code }
     }
 
     /// Returns whether this error corresponds to CURLSHE_BAD_OPTION.
@@ -425,7 +422,7 @@ pub struct MultiError {
 impl MultiError {
     /// Creates a new error from the underlying code returned by libcurl.
     pub fn new(code: curl_sys::CURLMcode) -> MultiError {
-        MultiError { code: code }
+        MultiError { code }
     }
 
     /// Returns whether this error corresponds to CURLM_BAD_HANDLE.
@@ -511,7 +508,7 @@ pub struct FormError {
 impl FormError {
     /// Creates a new error from the underlying code returned by libcurl.
     pub fn new(code: curl_sys::CURLFORMcode) -> FormError {
-        FormError { code: code }
+        FormError { code }
     }
 
     /// Returns whether this error corresponds to CURL_FORMADD_MEMORY.

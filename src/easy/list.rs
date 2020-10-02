@@ -1,5 +1,6 @@
 use std::ffi::{CStr, CString};
 use std::fmt;
+use std::ptr;
 
 use curl_sys;
 use Error;
@@ -29,7 +30,9 @@ unsafe impl Send for List {}
 impl List {
     /// Creates a new empty list of strings.
     pub fn new() -> List {
-        List { raw: 0 as *mut _ }
+        List {
+            raw: ptr::null_mut(),
+        }
     }
 
     /// Appends some data into this list.

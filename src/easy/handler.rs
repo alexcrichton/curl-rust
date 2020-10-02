@@ -3,6 +3,7 @@ use std::ffi::{CStr, CString};
 use std::fmt;
 use std::io::{self, SeekFrom, Write};
 use std::path::Path;
+use std::ptr;
 use std::slice;
 use std::str;
 use std::time::Duration;
@@ -2621,7 +2622,7 @@ impl<H> Easy2<H> {
     /// if the option isn't supported.
     pub fn cookies(&mut self) -> Result<List, Error> {
         unsafe {
-            let mut list = 0 as *mut _;
+            let mut list = ptr::null_mut();
             let rc = curl_sys::curl_easy_getinfo(
                 self.inner.handle,
                 curl_sys::CURLINFO_COOKIELIST,

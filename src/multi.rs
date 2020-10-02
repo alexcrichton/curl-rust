@@ -2,6 +2,7 @@
 
 use std::fmt;
 use std::marker;
+use std::ptr;
 use std::time::Duration;
 
 use curl_sys;
@@ -679,9 +680,9 @@ impl Multi {
     ) -> Result<Option<i32>, MultiError> {
         unsafe {
             let mut ret = 0;
-            let read = read.map(|r| r as *mut _).unwrap_or(0 as *mut _);
-            let write = write.map(|r| r as *mut _).unwrap_or(0 as *mut _);
-            let except = except.map(|r| r as *mut _).unwrap_or(0 as *mut _);
+            let read = read.map(|r| r as *mut _).unwrap_or(ptr::null_mut());
+            let write = write.map(|r| r as *mut _).unwrap_or(ptr::null_mut());
+            let except = except.map(|r| r as *mut _).unwrap_or(ptr::null_mut());
             cvt(curl_sys::curl_multi_fdset(
                 self.raw, read, write, except, &mut ret,
             ))?;

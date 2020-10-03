@@ -2,7 +2,7 @@
 
 extern crate curl;
 extern crate mio;
-extern crate mio_extras;
+extern crate mio_misc;
 
 use std::collections::HashMap;
 use std::io::{Cursor, Read};
@@ -99,8 +99,12 @@ fn upload_lots() {
     }
 
     let mut m = Multi::new();
-    let poll = t!(mio::Poll::new());
-    let (tx, rx) = mio_extras::channel::channel();
+    let mut poll = t!(mio::Poll::new());
+    let q = mio_misc::queue::NotificationQueue::new(std::sync::Arc::new(
+        mio::Waker::new(poll.registry(), mio::Token(0)).unwrap(),
+    ));
+    let (tx, rx) =
+        mio_misc::channel::channel(std::sync::Arc::new(q), mio_misc::NotificationId::gen_next());
     let tx2 = tx.clone();
     t!(m.socket_function(move |socket, events, token| {
         t!(tx2.send(Message::Wait(socket, events, token)));
@@ -140,8 +144,6 @@ fn upload_lots() {
     t!(h.upload(true));
     t!(h.http_headers(list));
 
-    t!(poll.register(&rx, mio::Token(0), mio::Ready::all(), mio::PollOpt::level()));
-
     let e = t!(m.add(h));
 
     assert!(t!(m.perform()) > 0);
@@ -152,9 +154,9 @@ fn upload_lots() {
     let mut running = true;
 
     while running {
-        let n = t!(poll.poll(&mut events, cur_timeout));
+        t!(poll.poll(&mut events, cur_timeout));
 
-        if n == 0 {
+        if events.is_empty() {
             if t!(m.timeout()) == 0 {
                 running = false;
             }
@@ -165,35 +167,31 @@ fn upload_lots() {
                 match rx.try_recv() {
                     Ok(Message::Timeout(dur)) => cur_timeout = dur,
                     Ok(Message::Wait(socket, events, token)) => {
-                        let evented = mio::unix::EventedFd(&socket);
+                        let mut evented = mio::unix::SourceFd(&socket);
                         if events.remove() {
                             token_map.remove(&token).unwrap();
                         } else {
-                            let mut e = mio::Ready::none();
-                            if events.input() {
-                                e = e | mio::Ready::readable();
-                            }
-                            if events.output() {
-                                e = e | mio::Ready::writable();
-                            }
+                            let e = {
+                                if events.input() & events.output() {
+                                    mio::Interest::READABLE | mio::Interest::WRITABLE
+                                } else if events.input() {
+                                    mio::Interest::READABLE
+                                } else if events.output() {
+                                    mio::Interest::WRITABLE
+                                } else {
+                                    continue;
+                                }
+                            };
                             if token == 0 {
                                 let token = next_token;
                                 next_token += 1;
                                 t!(m.assign(socket, token));
                                 token_map.insert(token, socket);
-                                t!(poll.register(
-                                    &evented,
-                                    mio::Token(token),
-                                    e,
-                                    mio::PollOpt::level()
-                                ));
+                                t!(poll.registry().register(&mut evented, mio::Token(token), e));
                             } else {
-                                t!(poll.reregister(
-                                    &evented,
-                                    mio::Token(token),
-                                    e,
-                                    mio::PollOpt::level()
-                                ));
+                                t!(poll
+                                    .registry()
+                                    .reregister(&mut evented, mio::Token(token), e));
                             }
                         }
                     }
@@ -208,13 +206,13 @@ fn upload_lots() {
             let token = event.token();
             let socket = token_map[&token.into()];
             let mut e = Events::new();
-            if event.kind().is_readable() {
+            if event.is_readable() {
                 e.input(true);
             }
-            if event.kind().is_writable() {
+            if event.is_writable() {
                 e.output(true);
             }
-            if event.kind().is_error() {
+            if event.is_error() {
                 e.error(true);
             }
             let remaining = t!(m.action(socket, &e));

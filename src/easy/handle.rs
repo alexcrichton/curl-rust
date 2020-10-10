@@ -907,7 +907,7 @@ impl Easy {
 
     /// Same as [`Easy2::maxage_conn`](struct.Easy2.html#method.maxage_conn)
     pub fn maxage_conn(&mut self, max_age: Duration) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_MAXAGE_CONN, max_age.as_secs() as c_long)
+        self.inner.maxage_conn(max_age)
     }
 
     /// Same as [`Easy2::fresh_connect`](struct.Easy2.html#method.fresh_connect)

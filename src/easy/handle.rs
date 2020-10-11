@@ -905,6 +905,11 @@ impl Easy {
         self.inner.max_connects(max)
     }
 
+    /// Same as [`Easy2::maxage_conn`](struct.Easy2.html#method.maxage_conn)
+    pub fn maxage_conn(&mut self, max_age: Duration) -> Result<(), Error> {
+        self.inner.maxage_conn(max_age)
+    }
+
     /// Same as [`Easy2::fresh_connect`](struct.Easy2.html#method.fresh_connect)
     pub fn fresh_connect(&mut self, enable: bool) -> Result<(), Error> {
         self.inner.fresh_connect(enable)

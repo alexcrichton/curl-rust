@@ -1741,6 +1741,17 @@ impl<H> Easy2<H> {
         self.setopt_long(curl_sys::CURLOPT_MAXCONNECTS, max as c_long)
     }
 
+    /// Set the maximum idle time allowed for a connection.
+    ///
+    /// This configuration sets the maximum time that a connection inside of the connection cache
+    /// can be reused. Any connection older than this value will be considered stale and will
+    /// be closed.
+    ///
+    /// By default, a value of 118 seconds is used.
+    pub fn maxage_conn(&mut self, max_age: Duration) -> Result<(), Error> {
+        self.setopt_long(curl_sys::CURLOPT_MAXAGE_CONN, max_age.as_secs() as c_long)
+    }
+
     /// Force a new connection to be used.
     ///
     /// Makes the next transfer use a new (fresh) connection by force instead of

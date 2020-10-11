@@ -79,6 +79,7 @@ fn main() {
         if version < 66 {
             match s {
                 "CURL_HTTP_VERSION_3" => return true,
+                "CURLOPT_MAXAGE_CONN" => return true,
                 _ => {}
             }
         }

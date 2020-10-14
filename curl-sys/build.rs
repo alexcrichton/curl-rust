@@ -63,31 +63,27 @@ fn main() {
     println!("cargo:include={}", include.display());
     println!("cargo:static=1");
     fs::create_dir_all(include.join("curl")).unwrap();
-    fs::copy("curl/include/curl/curl.h", include.join("curl/curl.h")).unwrap();
-    fs::copy(
-        "curl/include/curl/curlver.h",
-        include.join("curl/curlver.h"),
-    )
-    .unwrap();
-    fs::copy("curl/include/curl/easy.h", include.join("curl/easy.h")).unwrap();
-    fs::copy(
-        "curl/include/curl/mprintf.h",
-        include.join("curl/mprintf.h"),
-    )
-    .unwrap();
-    fs::copy("curl/include/curl/multi.h", include.join("curl/multi.h")).unwrap();
-    fs::copy(
-        "curl/include/curl/stdcheaders.h",
-        include.join("curl/stdcheaders.h"),
-    )
-    .unwrap();
-    fs::copy("curl/include/curl/system.h", include.join("curl/system.h")).unwrap();
-    fs::copy("curl/include/curl/urlapi.h", include.join("curl/urlapi.h")).unwrap();
-    fs::copy(
-        "curl/include/curl/typecheck-gcc.h",
-        include.join("curl/typecheck-gcc.h"),
-    )
-    .unwrap();
+
+    for header in [
+        "curl.h",
+        "curlver.h",
+        "easy.h",
+        "options.h",
+        "mprintf.h",
+        "multi.h",
+        "stdcheaders.h",
+        "system.h",
+        "urlapi.h",
+        "typecheck-gcc.h",
+    ]
+    .iter()
+    {
+        fs::copy(
+            format!("curl/include/curl/{}", header),
+            include.join("curl").join(header),
+        )
+        .unwrap();
+    }
 
     let pkgconfig = dst.join("lib/pkgconfig");
     fs::create_dir_all(&pkgconfig).unwrap();
@@ -168,6 +164,7 @@ fn main() {
         .file("curl/lib/llist.c")
         .file("curl/lib/mime.c")
         .file("curl/lib/mprintf.c")
+        .file("curl/lib/mqtt.c")
         .file("curl/lib/multi.c")
         .file("curl/lib/netrc.c")
         .file("curl/lib/nonblock.c")

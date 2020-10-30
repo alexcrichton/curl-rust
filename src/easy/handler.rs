@@ -683,9 +683,7 @@ impl<H: Handler> Easy2<H> {
         INIT.call_once(|| unsafe {
             PROBE = Some(::openssl_probe::probe());
         });
-        let probe = unsafe {
-            PROBE.as_ref().unwrap()
-        };
+        let probe = unsafe { PROBE.as_ref().unwrap() };
 
         if let Some(ref path) = probe.cert_file {
             let _ = self.cainfo(path);

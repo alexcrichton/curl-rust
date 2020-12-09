@@ -128,6 +128,7 @@ fn main() {
         .define("HAVE_ZLIB_H", None)
         .define("HAVE_LIBZ", None)
         .file("curl/lib/asyn-thread.c")
+        .file("curl/lib/altsvc.c")
         .file("curl/lib/base64.c")
         .file("curl/lib/conncache.c")
         .file("curl/lib/connect.c")

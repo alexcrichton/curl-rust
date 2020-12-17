@@ -1074,3 +1074,7 @@ extern "C" {
         sockp: *mut c_void,
     ) -> CURLMcode;
 }
+
+pub fn rust_crate_version() -> &'static str {
+    env!("CARGO_PKG_VERSION")
+}

@@ -340,6 +340,8 @@ impl fmt::Debug for Version {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut f = f.debug_struct("Version");
         f.field("version", &self.version())
+            .field("rust_crate_version", &env!("CARGO_PKG_VERSION"))
+            .field("rust_sys_crate_version", &curl_sys::rust_crate_version())
             .field("host", &self.host())
             .field("feature_ipv6", &self.feature_ipv6())
             .field("feature_ssl", &self.feature_ssl())
@@ -392,6 +394,18 @@ impl fmt::Debug for Version {
         }
         if let Some(s) = self.quic_version() {
             f.field("quic_version", &s);
+        }
+        if let Some(s) = self.zstd_ver_num() {
+            f.field("zstd_ver_num", &format!("{:x}", s));
+        }
+        if let Some(s) = self.zstd_version() {
+            f.field("zstd_version", &s);
+        }
+        if let Some(s) = self.cainfo() {
+            f.field("cainfo", &s);
+        }
+        if let Some(s) = self.capath() {
+            f.field("capath", &s);
         }
 
         f.field("protocols", &self.protocols().collect::<Vec<_>>());

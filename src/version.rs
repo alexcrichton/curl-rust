@@ -334,6 +334,17 @@ impl Version {
             }
         }
     }
+
+    /// If available, the human readable version of hyper
+    pub fn hyper_version(&self) -> Option<&str> {
+        unsafe {
+            if (*self.inner).age >= curl_sys::CURLVERSION_NINTH {
+                ::opt_str((*self.inner).hyper_version)
+            } else {
+                None
+            }
+        }
+    }
 }
 
 impl fmt::Debug for Version {
@@ -406,6 +417,9 @@ impl fmt::Debug for Version {
         }
         if let Some(s) = self.capath() {
             f.field("capath", &s);
+        }
+        if let Some(s) = self.hyper_version() {
+            f.field("hyper_version", &s);
         }
 
         f.field("protocols", &self.protocols().collect::<Vec<_>>());

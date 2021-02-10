@@ -123,6 +123,9 @@ libcurl and the system-wide SSL library. Some of this behavior can be customized
 with various Cargo features:
 
 - `ssl`: Enable SSL/TLS support using the platform-default TLS backend. On Windows this is [Schannel], on macOS [Secure Transport], and [OpenSSL] (or equivalent) on all other platforms.  Enabled by default.
+- `rustls` Enable SSL/TLS support via [Rustls], a well-received alternative TLS backend written in Rust. Rustls is always statically linked. Disabled by default.
+
+  Note that Rustls support is experimental within Curl itself and may have significant bugs, so we don't offer any sort of stability guarantee with this feature.
 - `mesalink`: Enable SSL/TLS support via [MesaLink], an alternative TLS backend written in Rust based on [Rustls]. MesaLink is always statically linked. Disabled by default.
 - `http2`: Enable HTTP/2 support via libnghttp2. Disabled by default.
 - `static-curl`: Use a bundled libcurl version and statically link to it. Disabled by default.

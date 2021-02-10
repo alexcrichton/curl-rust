@@ -344,6 +344,10 @@ fn main() {
                 .file("curl/lib/curl_gssapi.c")
                 .file("curl/lib/socks_gssapi.c")
                 .file("curl/lib/vauth/spnego_gssapi.c");
+            if let Some(path) = env::var_os("GSSAPI_ROOT") {
+                let path = PathBuf::from(path);
+                cfg.include(path.join("include"));
+            }
 
             // Link against the MIT gssapi library. It might be desirable to add support for
             // choosing between MIT and Heimdal libraries in the future.

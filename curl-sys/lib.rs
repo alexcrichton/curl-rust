@@ -5,6 +5,7 @@
 extern crate libc;
 #[cfg(feature = "rustls")]
 extern crate crustls;
+extern crate libc;
 #[cfg(link_libnghttp2)]
 extern crate libnghttp2_sys;
 #[cfg(link_libz)]

@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 fn main() {
+    let host = env::var("HOST").unwrap();
     let target = env::var("TARGET").unwrap();
     let windows = target.contains("windows");
 
@@ -19,13 +20,18 @@ fn main() {
         return println!("cargo:rustc-flags=-l curl");
     }
 
+    // When cross-compiling for Haiku, use the system's default supplied
+    // libcurl (it supports http2). This is in the case where rustc and
+    // cargo are built for Haiku, which is done from a Linux host.
+    if host != target && target.contains("haiku") {
+        return println!("cargo:rustc-flags=-l curl");
+    }
+
     // If the static-curl feature is disabled, probe for a system-wide libcurl.
     if !cfg!(feature = "static-curl") {
-        // OSX and Haiku ships libcurl by default, so we just use that version
+        // OSX ships libcurl by default, so we just use that version
         // so long as it has the right features enabled.
-        if (target.contains("apple") || target.contains("haiku"))
-            && (!cfg!(feature = "http2") || curl_config_reports_http2())
-        {
+        if target.contains("apple") && (!cfg!(feature = "http2") || curl_config_reports_http2()) {
             return println!("cargo:rustc-flags=-l curl");
         }
 

@@ -2290,6 +2290,33 @@ impl<H> Easy2<H> {
     // =========================================================================
     // getters
 
+    /// Set maximum time to wait for Expect 100 request before sending body.
+    ///
+    /// `curl` has internal heuristics that trigger the use of a `Expect`
+    /// header for large enough request bodies where the client first sends the
+    /// request header along with an `Expect: 100-continue` header. The server
+    /// is supposed to validate the headers and respond with a `100` response
+    /// status code after which `curl` will send the actual request body.
+    ///
+    /// However, if the server does not respond to the initial request
+    /// within `CURLOPT_EXPECT_100_TIMEOUT_MS` then `curl` will send the
+    /// request body anyways.
+    ///
+    /// The best-case scenario is where the request is invalid and the server
+    /// replies with a `417 Expectation Failed` without having to wait for or process
+    /// the request body at all. However, this behaviour can also lead to higher
+    /// total latency since in the best case, an additional server roundtrip is required
+    /// and in the worst case, the request is delayed by `CURLOPT_EXPECT_100_TIMEOUT_MS`.
+    ///
+    /// More info: https://curl.se/libcurl/c/CURLOPT_EXPECT_100_TIMEOUT_MS.html
+    ///
+    /// By default this option is not set and corresponds to
+    /// `CURLOPT_EXPECT_100_TIMEOUT_MS`.
+    pub fn expect_100_timeout(&mut self, timeout: Duration) -> Result<(), Error> {
+        let ms = timeout.as_secs() * 1000 + (timeout.subsec_nanos() / 1_000_000) as u64;
+        self.setopt_long(curl_sys::CURLOPT_EXPECT_100_TIMEOUT_MS, ms as c_long)
+    }
+
     /// Get info on unmet time conditional
     ///
     /// Returns if the condition provided in the previous request didn't match

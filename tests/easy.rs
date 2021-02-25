@@ -828,3 +828,24 @@ fn check_unix_socket() {
     t!(h.post_fields_copy(b"data\n"));
     t!(h.perform());
 }
+
+#[cfg(feature = "upkeep_7_62_0")]
+#[test]
+fn test_upkeep() {
+    let s = Server::new();
+    s.receive(
+        "\
+         GET / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         \r\n",
+    );
+    s.send("HTTP/1.1 200 OK\r\n\r\n");
+
+    let mut handle = handle();
+    t!(handle.url(&s.url("/")));
+    t!(handle.perform());
+
+    // Ensure that upkeep can be called on the handle without problem.
+    t!(handle.upkeep());
+}

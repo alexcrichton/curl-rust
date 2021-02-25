@@ -1256,6 +1256,12 @@ impl Easy {
         }
     }
 
+    /// Same as [`Easy2::upkeep`](struct.Easy2.html#method.upkeep)
+    #[cfg(feature = "upkeep_7_62_0")]
+    pub fn upkeep(&self) -> Result<(), Error> {
+        self.inner.upkeep()
+    }
+
     /// Same as [`Easy2::unpause_read`](struct.Easy2.html#method.unpause_read)
     pub fn unpause_read(&self) -> Result<(), Error> {
         self.inner.unpause_read()
@@ -1502,6 +1508,12 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
         let _reset = Reset(&inner.borrowed);
 
         self.easy.do_perform()
+    }
+
+    /// Same as `Easy::upkeep`
+    #[cfg(feature = "upkeep_7_62_0")]
+    pub fn upkeep(&self) -> Result<(), Error> {
+        self.easy.upkeep()
     }
 
     /// Same as `Easy::unpause_read`.

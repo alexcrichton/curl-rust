@@ -2737,6 +2737,21 @@ impl<H> Easy2<H> {
         ret
     }
 
+    /// Some protocols have "connection upkeep" mechanisms. These mechanisms
+    /// usually send some traffic on existing connections in order to keep them
+    /// alive; this can prevent connections from being closed due to overzealous
+    /// firewalls, for example.
+    ///
+    /// Currently the only protocol with a connection upkeep mechanism is
+    /// HTTP/2: when the connection upkeep interval is exceeded and upkeep() is
+    /// called, an HTTP/2 PING frame is sent on the connection.
+    #[cfg(feature = "upkeep_7_62_0")]
+    pub fn upkeep(&self) -> Result<(), Error> {
+        let ret = unsafe { self.cvt(curl_sys::curl_easy_upkeep(self.inner.handle)) };
+        panic::propagate();
+        return ret;
+    }
+
     /// Unpause reading on a connection.
     ///
     /// Using this function, you can explicitly unpause a connection that was

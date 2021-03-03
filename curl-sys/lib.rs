@@ -1030,6 +1030,9 @@ extern "C" {
         n: *mut size_t,
     ) -> CURLcode;
 
+    #[cfg(feature = "upkeep_7_62_0")]
+    pub fn curl_easy_upkeep(curl: *mut CURL) -> CURLcode;
+
     pub fn curl_multi_init() -> *mut CURLM;
     pub fn curl_multi_add_handle(multi_handle: *mut CURLM, curl_handle: *mut CURL) -> CURLMcode;
     pub fn curl_multi_remove_handle(multi_handle: *mut CURLM, curl_handle: *mut CURL) -> CURLMcode;

@@ -344,10 +344,6 @@ fn main() {
                 .define("HAVE_GETTIMEOFDAY", None);
         }
 
-        if target.contains("-linux-") {
-            cfg.define("HAVE_LINUX_TCP_H", None);
-        }
-
         if cfg!(feature = "spnego") {
             cfg.define("HAVE_GSSAPI", None)
                 .file("curl/lib/curl_gssapi.c")

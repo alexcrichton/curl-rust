@@ -934,6 +934,17 @@ impl<H> Easy2<H> {
         self.setopt_str(curl_sys::CURLOPT_PROXY_SSLCERT, &sslcert)
     }
 
+    /// Set the client certificate for the proxy using an in-memory blob.
+    ///
+    /// The specified byte buffer should contain the binary content of the
+    /// certificate, which will be copied into the handle.
+    ///
+    /// By default this option is not set and corresponds to
+    /// `CURLOPT_PROXY_SSLCERT_BLOB`.
+    pub fn proxy_sslcert_blob(&mut self, blob: &[u8]) -> Result<(), Error> {
+        self.setopt_blob(curl_sys::CURLOPT_PROXY_SSLCERT_BLOB, blob)
+    }
+
     /// Set private key for HTTPS proxy.
     ///
     /// By default this value is not set and corresponds to
@@ -941,6 +952,17 @@ impl<H> Easy2<H> {
     pub fn proxy_sslkey(&mut self, sslkey: &str) -> Result<(), Error> {
         let sslkey = CString::new(sslkey)?;
         self.setopt_str(curl_sys::CURLOPT_PROXY_SSLKEY, &sslkey)
+    }
+
+    /// Set the pricate key for the proxy using an in-memory blob.
+    ///
+    /// The specified byte buffer should contain the binary content of the
+    /// private key, which will be copied into the handle.
+    ///
+    /// By default this option is not set and corresponds to
+    /// `CURLOPT_PROXY_SSLKEY_BLOB`.
+    pub fn proxy_sslkey_blob(&mut self, blob: &[u8]) -> Result<(), Error> {
+        self.setopt_blob(curl_sys::CURLOPT_PROXY_SSLKEY_BLOB, blob)
     }
 
     /// Indicates the type of proxy being used.
@@ -1929,6 +1951,18 @@ impl<H> Easy2<H> {
         self.setopt_path(curl_sys::CURLOPT_SSLCERT, cert.as_ref())
     }
 
+    /// Set the SSL client certificate using an in-memory blob.
+    ///
+    /// The specified byte buffer should contain the binary content of your
+    /// client certificate, which will be copied into the handle. The format of
+    /// the certificate can be specified with `ssl_cert_type`.
+    ///
+    /// By default this option is not set and corresponds to
+    /// `CURLOPT_SSLCERT_BLOB`.
+    pub fn ssl_cert_blob(&mut self, blob: &[u8]) -> Result<(), Error> {
+        self.setopt_blob(curl_sys::CURLOPT_SSLCERT_BLOB, blob)
+    }
+
     /// Specify type of the client SSL certificate.
     ///
     /// The string should be the format of your certificate. Supported formats
@@ -1955,6 +1989,18 @@ impl<H> Easy2<H> {
     /// By default this option is not set and corresponds to `CURLOPT_SSLKEY`.
     pub fn ssl_key<P: AsRef<Path>>(&mut self, key: P) -> Result<(), Error> {
         self.setopt_path(curl_sys::CURLOPT_SSLKEY, key.as_ref())
+    }
+
+    /// Specify an SSL private key using an in-memory blob.
+    ///
+    /// The specified byte buffer should contain the binary content of your
+    /// private key, which will be copied into the handle. The format of
+    /// the private key can be specified with `ssl_key_type`.
+    ///
+    /// By default this option is not set and corresponds to
+    /// `CURLOPT_SSLKEY_BLOB`.
+    pub fn ssl_key_blob(&mut self, blob: &[u8]) -> Result<(), Error> {
+        self.setopt_blob(curl_sys::CURLOPT_SSLKEY_BLOB, blob)
     }
 
     /// Set type of the private key file.
@@ -2119,6 +2165,18 @@ impl<H> Easy2<H> {
     /// `CURLOPT_ISSUERCERT`.
     pub fn issuer_cert<P: AsRef<Path>>(&mut self, path: P) -> Result<(), Error> {
         self.setopt_path(curl_sys::CURLOPT_ISSUERCERT, path.as_ref())
+    }
+
+    /// Set the issuer SSL certificate using an in-memory blob.
+    ///
+    /// The specified byte buffer should contain the binary content of a CA
+    /// certificate in the PEM format. The certificate will be copied into the
+    /// handle.
+    ///
+    /// By default this option is not set and corresponds to
+    /// `CURLOPT_ISSUERCERT_BLOB`.
+    pub fn issuer_cert_blob(&mut self, blob: &[u8]) -> Result<(), Error> {
+        self.setopt_blob(curl_sys::CURLOPT_ISSUERCERT_BLOB, blob)
     }
 
     /// Specify directory holding CA certificates
@@ -2955,6 +3013,16 @@ impl<H> Easy2<H> {
             let rc = curl_sys::curl_easy_setopt(self.inner.handle, opt, val);
             self.cvt(rc)
         }
+    }
+
+    fn setopt_blob(&mut self, opt: curl_sys::CURLoption, val: &[u8]) -> Result<(), Error> {
+        let blob = curl_sys::curl_blob {
+            data: val.as_ptr() as *const c_void as *mut c_void,
+            len: val.len(),
+            flags: curl_sys::CURL_BLOB_COPY,
+        };
+        let blob_ptr = &blob as *const curl_sys::curl_blob;
+        unsafe { self.cvt(curl_sys::curl_easy_setopt(self.inner.handle, opt, blob_ptr)) }
     }
 
     fn getopt_bytes(&mut self, opt: curl_sys::CURLINFO) -> Result<Option<&[u8]>, Error> {

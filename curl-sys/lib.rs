@@ -130,6 +130,16 @@ pub struct curl_fileinfo {
     pub b_used: size_t,
 }
 
+pub const CURL_BLOB_NOCOPY: c_uint = 0;
+pub const CURL_BLOB_COPY: c_uint = 1;
+
+#[repr(C)]
+pub struct curl_blob {
+    pub data: *mut c_void,
+    pub len: size_t,
+    pub flags: c_uint,
+}
+
 pub const CURL_CHUNK_BGN_FUNC_OK: c_long = 0;
 pub const CURL_CHUNK_BGN_FUNC_FAIL: c_long = 1;
 pub const CURL_CHUNK_BGN_FUNC_SKIP: c_long = 2;
@@ -367,6 +377,7 @@ pub const CURLOPTTYPE_LONG: CURLoption = 0;
 pub const CURLOPTTYPE_OBJECTPOINT: CURLoption = 10_000;
 pub const CURLOPTTYPE_FUNCTIONPOINT: CURLoption = 20_000;
 pub const CURLOPTTYPE_OFF_T: CURLoption = 30_000;
+pub const CURLOPTTYPE_BLOB: CURLoption = 40_000;
 
 pub const CURLOPT_FILE: CURLoption = CURLOPTTYPE_OBJECTPOINT + 1;
 pub const CURLOPT_URL: CURLoption = CURLOPTTYPE_OBJECTPOINT + 2;
@@ -584,6 +595,12 @@ pub const CURLOPT_PROXY_SSLCERT: CURLoption = CURLOPTTYPE_OBJECTPOINT + 254;
 pub const CURLOPT_PROXY_SSLKEY: CURLoption = CURLOPTTYPE_OBJECTPOINT + 256;
 
 pub const CURLOPT_MAXAGE_CONN: CURLoption = CURLOPTTYPE_LONG + 288;
+
+pub const CURLOPT_SSLCERT_BLOB: CURLoption = CURLOPTTYPE_BLOB + 291;
+pub const CURLOPT_SSLKEY_BLOB: CURLoption = CURLOPTTYPE_BLOB + 292;
+pub const CURLOPT_PROXY_SSLCERT_BLOB: CURLoption = CURLOPTTYPE_BLOB + 293;
+pub const CURLOPT_PROXY_SSLKEY_BLOB: CURLoption = CURLOPTTYPE_BLOB + 294;
+pub const CURLOPT_ISSUERCERT_BLOB: CURLoption = CURLOPTTYPE_BLOB + 295;
 
 pub const CURL_IPRESOLVE_WHATEVER: c_int = 0;
 pub const CURL_IPRESOLVE_V4: c_int = 1;

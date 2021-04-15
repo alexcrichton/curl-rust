@@ -58,3 +58,8 @@ harness = false
 name = "ssl_proxy"
 path = "examples/ssl_proxy.rs"
 required-features = ["ssl"]
+
+[[example]]
+name = "ssl_cert_blob"
+path = "examples/ssl_cert_blob.rs"
+required-features = ["ssl"]

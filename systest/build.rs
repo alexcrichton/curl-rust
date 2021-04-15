@@ -50,6 +50,12 @@ fn main() {
     cfg.skip_signededness(|s| s.ends_with("callback") || s.ends_with("function"));
 
     cfg.skip_struct(move |s| {
+        if version < 71 {
+            match s {
+                "curl_blob" => return true,
+                _ => {}
+            }
+        }
         if version < 70 {
             match s {
                 "curl_version_info_data" => return true,
@@ -70,6 +76,19 @@ fn main() {
         if version < 72 {
             match s {
                 "CURLVERSION_EIGHTH" => return true,
+                _ => {}
+            }
+        }
+        if version < 71 {
+            match s {
+                "CURLOPT_SSLCERT_BLOB"
+                | "CURLOPT_SSLKEY_BLOB"
+                | "CURLOPT_PROXY_SSLCERT_BLOB"
+                | "CURLOPT_PROXY_SSLKEY_BLOB"
+                | "CURLOPT_ISSUERCERT_BLOB"
+                | "CURLOPTTYPE_BLOB"
+                | "CURL_BLOB_NOCOPY"
+                | "CURL_BLOB_COPY" => return true,
                 _ => {}
             }
         }

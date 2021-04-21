@@ -880,12 +880,13 @@ impl<H> Easy2<H> {
         self.setopt_ptr(curl_sys::CURLOPT_CONNECT_TO, ptr as *const _)
     }
 
-    // /// Indicates whether sequences of `/../` and `/./` will be squashed or not.
-    // ///
-    // /// By default this option is `false` and corresponds to
-    // /// `CURLOPT_PATH_AS_IS`.
-    // pub fn path_as_is(&mut self, as_is: bool) -> Result<(), Error> {
-    // }
+    /// Indicates whether sequences of `/../` and `/./` will be squashed or not.
+    ///
+    /// By default this option is `false` and corresponds to
+    /// `CURLOPT_PATH_AS_IS`.
+    pub fn path_as_is(&mut self, as_is: bool) -> Result<(), Error> {
+        self.setopt_long(curl_sys::CURLOPT_PATH_AS_IS, as_is as c_long)
+    }
 
     /// Provide the URL of a proxy to use.
     ///

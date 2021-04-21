@@ -849,3 +849,29 @@ fn test_upkeep() {
     // Ensure that upkeep can be called on the handle without problem.
     t!(handle.upkeep());
 }
+
+#[test]
+fn path_as_is() {
+    let s = Server::new();
+    s.receive(
+        "\
+         GET /test/../ HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         \r\n",
+    );
+    s.send(
+        "\
+         HTTP/1.1 200 OK\r\n\
+         \r\n",
+    );
+
+    let mut h = handle();
+    t!(h.url(&s.url("/test/../")));
+    t!(h.path_as_is(true));
+    t!(h.perform());
+
+    let addr = format!("http://{}/test/../", s.addr());
+    assert_eq!(t!(h.response_code()), 200);
+    assert_eq!(t!(h.effective_url()), Some(&addr[..]));
+}

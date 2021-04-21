@@ -563,6 +563,11 @@ impl Easy {
         self.inner.connect_to(list)
     }
 
+    /// Same as [`Easy2::path_as_is`](struct.Easy2.html#method.path_as_is)
+    pub fn path_as_is(&mut self, as_is: bool) -> Result<(), Error> {
+        self.inner.path_as_is(as_is)
+    }
+
     /// Same as [`Easy2::proxy`](struct.Easy2.html#method.proxy)
     pub fn proxy(&mut self, url: &str) -> Result<(), Error> {
         self.inner.proxy(url)

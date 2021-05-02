@@ -2,8 +2,8 @@ use std::ffi::{CStr, CString};
 use std::fmt;
 use std::ptr;
 
+use crate::Error;
 use curl_sys;
-use Error;
 
 /// A linked list of a strings
 pub struct List {

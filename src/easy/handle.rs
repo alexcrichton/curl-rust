@@ -9,12 +9,12 @@ use std::time::Duration;
 use curl_sys;
 use libc::c_void;
 
-use easy::handler::{self, InfoType, ReadError, SeekResult, WriteError};
-use easy::handler::{Auth, NetRc, ProxyType, SslOpt};
-use easy::handler::{HttpVersion, IpResolve, SslVersion, TimeCondition};
-use easy::{Easy2, Handler};
-use easy::{Form, List};
-use Error;
+use crate::easy::handler::{self, InfoType, ReadError, SeekResult, WriteError};
+use crate::easy::handler::{Auth, NetRc, ProxyType, SslOpt};
+use crate::easy::handler::{HttpVersion, IpResolve, SslVersion, TimeCondition};
+use crate::easy::{Easy2, Handler};
+use crate::easy::{Form, List};
+use crate::Error;
 
 /// Raw bindings to a libcurl "easy session".
 ///

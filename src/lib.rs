@@ -72,10 +72,10 @@ use std::ffi::CStr;
 use std::str;
 use std::sync::Once;
 
-pub use error::{Error, FormError, MultiError, ShareError};
+pub use crate::error::{Error, FormError, MultiError, ShareError};
 mod error;
 
-pub use version::{Protocols, Version};
+pub use crate::version::{Protocols, Version};
 mod version;
 
 pub mod easy;

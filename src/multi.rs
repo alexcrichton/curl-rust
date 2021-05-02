@@ -11,9 +11,9 @@ use libc::{c_char, c_int, c_long, c_short, c_void};
 #[cfg(unix)]
 use libc::{pollfd, POLLIN, POLLOUT, POLLPRI};
 
-use easy::{Easy, Easy2, List};
-use panic;
-use {Error, MultiError};
+use crate::easy::{Easy, Easy2, List};
+use crate::panic;
+use crate::{Error, MultiError};
 
 /// A multi handle for initiating multiple connections simultaneously.
 ///
@@ -97,7 +97,7 @@ impl Multi {
     /// initiated.
     pub fn new() -> Multi {
         unsafe {
-            ::init();
+            crate::init();
             let ptr = curl_sys::curl_multi_init();
             assert!(!ptr.is_null());
             Multi {
@@ -799,7 +799,7 @@ impl EasyHandle {
     /// easy handle.
     pub fn set_token(&mut self, token: usize) -> Result<(), Error> {
         unsafe {
-            ::cvt(curl_sys::curl_easy_setopt(
+            crate::cvt(curl_sys::curl_easy_setopt(
                 self.easy.raw(),
                 curl_sys::CURLOPT_PRIVATE,
                 token,
@@ -863,7 +863,7 @@ impl<H> Easy2Handle<H> {
     /// Same as `EasyHandle::set_token`
     pub fn set_token(&mut self, token: usize) -> Result<(), Error> {
         unsafe {
-            ::cvt(curl_sys::curl_easy_setopt(
+            crate::cvt(curl_sys::curl_easy_setopt(
                 self.easy.raw(),
                 curl_sys::CURLOPT_PRIVATE,
                 token,
@@ -926,7 +926,7 @@ impl<'multi> Message<'multi> {
     pub fn result(&self) -> Option<Result<(), Error>> {
         unsafe {
             if (*self.ptr).msg == curl_sys::CURLMSG_DONE {
-                Some(::cvt((*self.ptr).data as curl_sys::CURLcode))
+                Some(crate::cvt((*self.ptr).data as curl_sys::CURLcode))
             } else {
                 None
             }
@@ -989,7 +989,7 @@ impl<'multi> Message<'multi> {
     pub fn token(&self) -> Result<usize, Error> {
         unsafe {
             let mut p = 0usize;
-            ::cvt(curl_sys::curl_easy_getinfo(
+            crate::cvt(curl_sys::curl_easy_getinfo(
                 (*self.ptr).easy_handle,
                 curl_sys::CURLINFO_PRIVATE,
                 &mut p,

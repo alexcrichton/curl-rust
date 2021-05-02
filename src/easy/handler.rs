@@ -12,12 +12,12 @@ use curl_sys;
 use libc::{self, c_char, c_double, c_int, c_long, c_ulong, c_void, size_t};
 use socket2::Socket;
 
-use easy::form;
-use easy::list;
-use easy::windows;
-use easy::{Form, List};
-use panic;
-use Error;
+use crate::easy::form;
+use crate::easy::list;
+use crate::easy::windows;
+use crate::easy::{Form, List};
+use crate::panic;
+use crate::Error;
 
 /// A trait for the various callbacks used by libcurl to invoke user code.
 ///
@@ -581,7 +581,7 @@ impl<H: Handler> Easy2<H> {
     /// `perform` and need to be reset manually (or via the `reset` method) if
     /// this is not desired.
     pub fn new(handler: H) -> Easy2<H> {
-        ::init();
+        crate::init();
         unsafe {
             let handle = curl_sys::curl_easy_init();
             assert!(!handle.is_null());

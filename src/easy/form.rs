@@ -3,9 +3,9 @@ use std::fmt;
 use std::path::Path;
 use std::ptr;
 
+use crate::easy::{list, List};
+use crate::FormError;
 use curl_sys;
-use easy::{list, List};
-use FormError;
 
 /// Multipart/formdata for an HTTP POST request.
 ///

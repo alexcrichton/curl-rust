@@ -20,7 +20,7 @@ macro_rules! t {
     };
 }
 
-use server::Server;
+use crate::server::Server;
 mod server;
 
 #[test]

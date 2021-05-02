@@ -1,5 +1,3 @@
-extern crate anyhow;
-
 use anyhow::Result;
 
 fn main() -> Result<()> {

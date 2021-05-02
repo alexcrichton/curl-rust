@@ -56,18 +56,6 @@
 #![deny(missing_docs, missing_debug_implementations)]
 #![doc(html_root_url = "https://docs.rs/curl/0.4")]
 
-extern crate curl_sys;
-extern crate libc;
-extern crate socket2;
-
-#[cfg(need_openssl_probe)]
-extern crate openssl_probe;
-#[cfg(need_openssl_init)]
-extern crate openssl_sys;
-
-#[cfg(target_env = "msvc")]
-extern crate schannel;
-
 use std::ffi::CStr;
 use std::str;
 use std::sync::Once;

@@ -1,5 +1,3 @@
-extern crate curl;
-
 use std::cell::{Cell, RefCell};
 use std::io::Read;
 use std::rc::Rc;

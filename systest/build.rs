@@ -1,6 +1,3 @@
-extern crate cc;
-extern crate ctest;
-
 use std::env;
 use std::str;
 

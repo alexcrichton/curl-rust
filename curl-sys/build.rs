@@ -1,8 +1,3 @@
-extern crate cc;
-extern crate pkg_config;
-#[cfg(target_env = "msvc")]
-extern crate vcpkg;
-
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};

@@ -1,9 +1,5 @@
 #![cfg(unix)]
 
-extern crate curl;
-extern crate mio;
-extern crate mio_extras;
-
 use std::collections::HashMap;
 use std::io::{Cursor, Read};
 use std::time::Duration;

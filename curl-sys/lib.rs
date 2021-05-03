@@ -1,17 +1,15 @@
 #![allow(bad_style)]
 #![doc(html_root_url = "https://docs.rs/curl-sys/0.3")]
 
-extern crate libc;
+// These `extern crate` are required for conditional linkages of curl.
 #[cfg(link_libnghttp2)]
 extern crate libnghttp2_sys;
 #[cfg(link_libz)]
 extern crate libz_sys;
 #[cfg(feature = "mesalink")]
-extern crate mesalink; // ensure lib is linked to
+extern crate mesalink;
 #[cfg(link_openssl)]
 extern crate openssl_sys;
-#[cfg(windows)]
-extern crate winapi;
 
 use libc::c_ulong;
 use libc::{c_char, c_double, c_int, c_long, c_short, c_uint, c_void, size_t, time_t};

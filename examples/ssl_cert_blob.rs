@@ -1,6 +1,3 @@
-extern crate anyhow;
-extern crate curl;
-
 use std::env;
 use std::fs::File;
 use std::io::{stdout, Read, Write};

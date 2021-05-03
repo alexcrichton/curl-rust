@@ -1,6 +1,3 @@
-extern crate curl;
-extern crate libc;
-
 use curl::easy::Easy;
 
 pub extern "C" fn hook() {

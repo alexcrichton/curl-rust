@@ -1,5 +1,3 @@
-extern crate curl;
-
 #[cfg(all(feature = "static-curl", not(feature = "protocol-ftp")))]
 #[test]
 fn static_with_ftp_disabled() {

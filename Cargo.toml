@@ -10,6 +10,7 @@ description = "Rust bindings to libcurl for making HTTP requests"
 categories = ["api-bindings", "web-programming::http-client"]
 readme = "README.md"
 autotests = true
+edition = "2018"
 
 [badges]
 travis-ci = { repository = "alexcrichton/curl-rust" }

@@ -6,6 +6,8 @@
 extern crate libnghttp2_sys;
 #[cfg(link_libz)]
 extern crate libz_sys;
+#[cfg(feature = "mesalink")]
+extern crate mesalink;
 #[cfg(link_openssl)]
 extern crate openssl_sys;
 

@@ -2086,24 +2086,25 @@ impl<H> Easy2<H> {
         self.setopt_long(curl_sys::CURLOPT_CERTINFO, enable as c_long)
     }
 
-    // /// Set pinned public key.
-    // ///
-    // /// Pass a pointer to a zero terminated string as parameter. The string can
-    // /// be the file name of your pinned public key. The file format expected is
-    // /// "PEM" or "DER". The string can also be any number of base64 encoded
-    // /// sha256 hashes preceded by "sha256//" and separated by ";"
-    // ///
-    // /// When negotiating a TLS or SSL connection, the server sends a certificate
-    // /// indicating its identity. A public key is extracted from this certificate
-    // /// and if it does not exactly match the public key provided to this option,
-    // /// curl will abort the connection before sending or receiving any data.
-    // ///
-    // /// By default this option is not set and corresponds to
-    // /// `CURLOPT_PINNEDPUBLICKEY`.
-    // pub fn pinned_public_key(&mut self, enable: bool) -> Result<(), Error> {
-    //     self.setopt_long(curl_sys::CURLOPT_CERTINFO, enable as c_long)
-    // }
-
+    /// Set pinned public key.
+    ///
+    /// Pass a pointer to a zero terminated string as parameter. The string can
+    /// be the file name of your pinned public key. The file format expected is
+    /// "PEM" or "DER". The string can also be any number of base64 encoded
+    /// sha256 hashes preceded by "sha256//" and separated by ";"
+    ///
+    /// When negotiating a TLS or SSL connection, the server sends a certificate
+    /// indicating its identity. A public key is extracted from this certificate
+    /// and if it does not exactly match the public key provided to this option,
+    /// curl will abort the connection before sending or receiving any data.
+    ///
+    /// By default this option is not set and corresponds to
+    /// `CURLOPT_PINNEDPUBLICKEY`.
+    pub fn pinned_public_key(&mut self, pubkey: &str) -> Result<(), Error> {
+        let key = CString::new(pubkey)?;
+        self.setopt_str(curl_sys::CURLOPT_PINNEDPUBLICKEY, &key)
+    }
+    
     /// Specify a source for random data
     ///
     /// The file will be used to read from to seed the random engine for SSL and

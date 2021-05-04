@@ -1087,6 +1087,11 @@ impl Easy {
         self.inner.ssl_options(bits)
     }
 
+    /// Same as [`Easy2::pinned_public_key`](struct.Easy2.html#method.pinned_public_key)
+    pub fn pinned_public_key(&mut self, pubkey: &str) -> Result<(), Error> {
+        self.inner.pinned_public_key(pubkey)
+    }
+
     // =========================================================================
     // getters
 

@@ -4,15 +4,14 @@ use libc::c_void;
 
 #[cfg(target_env = "msvc")]
 mod win {
-    extern crate winapi;
-    use self::winapi::ctypes::*;
-    use self::winapi::um::libloaderapi::*;
-    use self::winapi::um::wincrypt::*;
     use schannel::cert_context::ValidUses;
     use schannel::cert_store::CertStore;
     use std::ffi::CString;
     use std::mem;
     use std::ptr;
+    use winapi::ctypes::*;
+    use winapi::um::libloaderapi::*;
+    use winapi::um::wincrypt::*;
 
     fn lookup(module: &str, symbol: &str) -> Option<*const c_void> {
         unsafe {
@@ -75,7 +74,7 @@ mod win {
 
     pub unsafe fn add_certs_to_context(ssl_ctx: *mut c_void) {
         // check the runtime version of OpenSSL
-        let openssl = match ::version::Version::get().ssl_version() {
+        let openssl = match crate::version::Version::get().ssl_version() {
             Some(ssl_ver) if ssl_ver.starts_with("OpenSSL/1.1.0") => {
                 lookup_functions("libcrypto", "libssl")
             }

@@ -1,10 +1,11 @@
 use std::ffi::CString;
 use std::fmt;
 use std::path::Path;
+use std::ptr;
 
+use crate::easy::{list, List};
+use crate::FormError;
 use curl_sys;
-use easy::{list, List};
-use FormError;
 
 /// Multipart/formdata for an HTTP POST request.
 ///
@@ -34,8 +35,8 @@ impl Form {
     /// Creates a new blank form ready for the addition of new data.
     pub fn new() -> Form {
         Form {
-            head: 0 as *mut _,
-            tail: 0 as *mut _,
+            head: ptr::null_mut(),
+            tail: ptr::null_mut(),
             headers: Vec::new(),
             buffers: Vec::new(),
             strings: Vec::new(),
@@ -50,10 +51,10 @@ impl Form {
         Part {
             error: None,
             form: self,
-            name: name,
+            name,
             array: vec![curl_sys::curl_forms {
                 option: curl_sys::CURLFORM_END,
-                value: 0 as *mut _,
+                value: ptr::null_mut(),
             }],
         }
     }

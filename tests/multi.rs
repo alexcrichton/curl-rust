@@ -1,9 +1,5 @@
 #![cfg(unix)]
 
-extern crate curl;
-extern crate mio;
-extern crate mio_extras;
-
 use std::collections::HashMap;
 use std::io::{Cursor, Read};
 use std::time::Duration;
@@ -20,7 +16,7 @@ macro_rules! t {
     };
 }
 
-use server::Server;
+use crate::server::Server;
 mod server;
 
 #[test]
@@ -169,7 +165,7 @@ fn upload_lots() {
                         if events.remove() {
                             token_map.remove(&token).unwrap();
                         } else {
-                            let mut e = mio::Ready::none();
+                            let mut e = mio::Ready::empty();
                             if events.input() {
                                 e = e | mio::Ready::readable();
                             }
@@ -208,13 +204,13 @@ fn upload_lots() {
             let token = event.token();
             let socket = token_map[&token.into()];
             let mut e = Events::new();
-            if event.kind().is_readable() {
+            if event.readiness().is_readable() {
                 e.input(true);
             }
-            if event.kind().is_writable() {
+            if event.readiness().is_writable() {
                 e.output(true);
             }
-            if event.kind().is_error() {
+            if mio::unix::UnixReady::from(event.readiness()).is_error() {
                 e.error(true);
             }
             let remaining = t!(m.action(socket, &e));

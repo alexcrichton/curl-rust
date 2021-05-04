@@ -3,6 +3,7 @@ use std::ffi::{CStr, CString};
 use std::fmt;
 use std::io::{self, SeekFrom, Write};
 use std::path::Path;
+use std::ptr;
 use std::slice;
 use std::str;
 use std::time::Duration;
@@ -11,12 +12,12 @@ use curl_sys;
 use libc::{self, c_char, c_double, c_int, c_long, c_ulong, c_void, size_t};
 use socket2::Socket;
 
-use easy::form;
-use easy::list;
-use easy::windows;
-use easy::{Form, List};
-use panic;
-use Error;
+use crate::easy::form;
+use crate::easy::list;
+use crate::easy::windows;
+use crate::easy::{Form, List};
+use crate::panic;
+use crate::Error;
 
 /// A trait for the various callbacks used by libcurl to invoke user code.
 ///
@@ -306,13 +307,12 @@ pub fn debug(kind: InfoType, data: &[u8]) {
         InfoType::HeaderOut => ">",
         InfoType::DataIn | InfoType::SslDataIn => "{",
         InfoType::DataOut | InfoType::SslDataOut => "}",
-        InfoType::__Nonexhaustive => " ",
     };
     let mut out = out.lock();
     drop(write!(out, "{} ", prefix));
     match str::from_utf8(data) {
         Ok(s) => drop(out.write_all(s.as_bytes())),
-        Err(_) => drop(write!(out, "({} bytes of data)\n", data.len())),
+        Err(_) => drop(writeln!(out, "({} bytes of data)", data.len())),
     }
 }
 
@@ -383,6 +383,7 @@ struct Inner<H> {
     handle: *mut curl_sys::CURL,
     header_list: Option<List>,
     resolve_list: Option<List>,
+    connect_to_list: Option<List>,
     form: Option<Form>,
     error_buf: RefCell<Vec<u8>>,
     handler: H,
@@ -391,6 +392,7 @@ struct Inner<H> {
 unsafe impl<H: Send> Send for Inner<H> {}
 
 /// Possible proxy types that libcurl currently understands.
+#[non_exhaustive]
 #[allow(missing_docs)]
 #[derive(Debug, Clone, Copy)]
 pub enum ProxyType {
@@ -400,14 +402,10 @@ pub enum ProxyType {
     Socks5 = curl_sys::CURLPROXY_SOCKS5 as isize,
     Socks4a = curl_sys::CURLPROXY_SOCKS4A as isize,
     Socks5Hostname = curl_sys::CURLPROXY_SOCKS5_HOSTNAME as isize,
-
-    /// Hidden variant to indicate that this enum should not be matched on, it
-    /// may grow over time.
-    #[doc(hidden)]
-    __Nonexhaustive,
 }
 
 /// Possible conditions for the `time_condition` method.
+#[non_exhaustive]
 #[allow(missing_docs)]
 #[derive(Debug, Clone, Copy)]
 pub enum TimeCondition {
@@ -415,28 +413,20 @@ pub enum TimeCondition {
     IfModifiedSince = curl_sys::CURL_TIMECOND_IFMODSINCE as isize,
     IfUnmodifiedSince = curl_sys::CURL_TIMECOND_IFUNMODSINCE as isize,
     LastModified = curl_sys::CURL_TIMECOND_LASTMOD as isize,
-
-    /// Hidden variant to indicate that this enum should not be matched on, it
-    /// may grow over time.
-    #[doc(hidden)]
-    __Nonexhaustive,
 }
 
 /// Possible values to pass to the `ip_resolve` method.
+#[non_exhaustive]
 #[allow(missing_docs)]
 #[derive(Debug, Clone, Copy)]
 pub enum IpResolve {
     V4 = curl_sys::CURL_IPRESOLVE_V4 as isize,
     V6 = curl_sys::CURL_IPRESOLVE_V6 as isize,
     Any = curl_sys::CURL_IPRESOLVE_WHATEVER as isize,
-
-    /// Hidden variant to indicate that this enum should not be matched on, it
-    /// may grow over time.
-    #[doc(hidden)]
-    __Nonexhaustive = 500,
 }
 
 /// Possible values to pass to the `http_version` method.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy)]
 pub enum HttpVersion {
     /// We don't care what http version to use, and we'd like the library to
@@ -461,13 +451,20 @@ pub enum HttpVersion {
     /// (Added in CURL 7.49.0)
     V2PriorKnowledge = curl_sys::CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE as isize,
 
-    /// Hidden variant to indicate that this enum should not be matched on, it
-    /// may grow over time.
-    #[doc(hidden)]
-    __Nonexhaustive = 500,
+    /// Setting this value will make libcurl attempt to use HTTP/3 directly to
+    /// server given in the URL. Note that this cannot gracefully downgrade to
+    /// earlier HTTP version if the server doesn't support HTTP/3.
+    ///
+    /// For more reliably upgrading to HTTP/3, set the preferred version to
+    /// something lower and let the server announce its HTTP/3 support via
+    /// Alt-Svc:.
+    ///
+    /// (Added in CURL 7.66.0)
+    V3 = curl_sys::CURL_HTTP_VERSION_3 as isize,
 }
 
 /// Possible values to pass to the `ssl_version` and `ssl_min_max_version` method.
+#[non_exhaustive]
 #[allow(missing_docs)]
 #[derive(Debug, Clone, Copy)]
 pub enum SslVersion {
@@ -479,14 +476,10 @@ pub enum SslVersion {
     Tlsv11 = curl_sys::CURL_SSLVERSION_TLSv1_1 as isize,
     Tlsv12 = curl_sys::CURL_SSLVERSION_TLSv1_2 as isize,
     Tlsv13 = curl_sys::CURL_SSLVERSION_TLSv1_3 as isize,
-
-    /// Hidden variant to indicate that this enum should not be matched on, it
-    /// may grow over time.
-    #[doc(hidden)]
-    __Nonexhaustive = 500,
 }
 
 /// Possible return values from the `seek_function` callback.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy)]
 pub enum SeekResult {
     /// Indicates that the seek operation was a success
@@ -499,15 +492,11 @@ pub enum SeekResult {
     /// Indicates that although the seek failed libcurl should attempt to keep
     /// working if possible (for example "seek" through reading).
     CantSeek = curl_sys::CURL_SEEKFUNC_CANTSEEK as isize,
-
-    /// Hidden variant to indicate that this enum should not be matched on, it
-    /// may grow over time.
-    #[doc(hidden)]
-    __Nonexhaustive = 500,
 }
 
 /// Possible data chunks that can be witnessed as part of the `debug_function`
 /// callback.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy)]
 pub enum InfoType {
     /// The data is informational text.
@@ -530,14 +519,10 @@ pub enum InfoType {
 
     /// The data is SSL/TLS (binary) data sent to the peer.
     SslDataOut,
-
-    /// Hidden variant to indicate that this enum should not be matched on, it
-    /// may grow over time.
-    #[doc(hidden)]
-    __Nonexhaustive,
 }
 
 /// Possible error codes that can be returned from the `read_function` callback.
+#[non_exhaustive]
 #[derive(Debug)]
 pub enum ReadError {
     /// Indicates that the connection should be aborted immediately
@@ -545,23 +530,14 @@ pub enum ReadError {
 
     /// Indicates that reading should be paused until `unpause` is called.
     Pause,
-
-    /// Hidden variant to indicate that this enum should not be matched on, it
-    /// may grow over time.
-    #[doc(hidden)]
-    __Nonexhaustive,
 }
 
 /// Possible error codes that can be returned from the `write_function` callback.
+#[non_exhaustive]
 #[derive(Debug)]
 pub enum WriteError {
     /// Indicates that reading should be paused until `unpause` is called.
     Pause,
-
-    /// Hidden variant to indicate that this enum should not be matched on, it
-    /// may grow over time.
-    #[doc(hidden)]
-    __Nonexhaustive,
 }
 
 /// Options for `.netrc` parsing.
@@ -605,22 +581,23 @@ impl<H: Handler> Easy2<H> {
     /// `perform` and need to be reset manually (or via the `reset` method) if
     /// this is not desired.
     pub fn new(handler: H) -> Easy2<H> {
-        ::init();
+        crate::init();
         unsafe {
             let handle = curl_sys::curl_easy_init();
             assert!(!handle.is_null());
             let mut ret = Easy2 {
                 inner: Box::new(Inner {
-                    handle: handle,
+                    handle,
                     header_list: None,
                     resolve_list: None,
+                    connect_to_list: None,
                     form: None,
                     error_buf: RefCell::new(vec![0; curl_sys::CURL_ERROR_SIZE]),
-                    handler: handler,
+                    handler,
                 }),
             };
             ret.default_configure();
-            return ret;
+            ret
         }
     }
 
@@ -696,7 +673,18 @@ impl<H: Handler> Easy2<H> {
 
     #[cfg(need_openssl_probe)]
     fn ssl_configure(&mut self) {
-        let probe = ::openssl_probe::probe();
+        use std::sync::Once;
+
+        static mut PROBE: Option<::openssl_probe::ProbeResult> = None;
+        static INIT: Once = Once::new();
+
+        // Probe for certificate stores the first time an easy handle is created,
+        // and re-use the results for subsequent handles.
+        INIT.call_once(|| unsafe {
+            PROBE = Some(::openssl_probe::probe());
+        });
+        let probe = unsafe { PROBE.as_ref().unwrap() };
+
         if let Some(ref path) = probe.cert_file {
             let _ = self.cainfo(path);
         }
@@ -780,16 +768,43 @@ impl<H> Easy2<H> {
         self.setopt_long(curl_sys::CURLOPT_WILDCARDMATCH, m as c_long)
     }
 
-    /// Provides the unix domain socket which this handle will work with.
+    /// Provides the Unix domain socket which this handle will work with.
     ///
-    /// The string provided must be unix domain socket -encoded with the format:
+    /// The string provided must be a path to a Unix domain socket encoded with
+    /// the format:
     ///
     /// ```text
     /// /path/file.sock
     /// ```
+    ///
+    /// By default this option is not set and corresponds to
+    /// [`CURLOPT_UNIX_SOCKET_PATH`](https://curl.haxx.se/libcurl/c/CURLOPT_UNIX_SOCKET_PATH.html).
     pub fn unix_socket(&mut self, unix_domain_socket: &str) -> Result<(), Error> {
         let socket = CString::new(unix_domain_socket)?;
         self.setopt_str(curl_sys::CURLOPT_UNIX_SOCKET_PATH, &socket)
+    }
+
+    /// Provides the Unix domain socket which this handle will work with.
+    ///
+    /// The string provided must be a path to a Unix domain socket encoded with
+    /// the format:
+    ///
+    /// ```text
+    /// /path/file.sock
+    /// ```
+    ///
+    /// This function is an alternative to [`Easy2::unix_socket`] that supports
+    /// non-UTF-8 paths and also supports disabling Unix sockets by setting the
+    /// option to `None`.
+    ///
+    /// By default this option is not set and corresponds to
+    /// [`CURLOPT_UNIX_SOCKET_PATH`](https://curl.haxx.se/libcurl/c/CURLOPT_UNIX_SOCKET_PATH.html).
+    pub fn unix_socket_path<P: AsRef<Path>>(&mut self, path: Option<P>) -> Result<(), Error> {
+        if let Some(path) = path {
+            self.setopt_path(curl_sys::CURLOPT_UNIX_SOCKET_PATH, path.as_ref())
+        } else {
+            self.setopt_ptr(curl_sys::CURLOPT_UNIX_SOCKET_PATH, 0 as _)
+        }
     }
 
     // =========================================================================
@@ -847,12 +862,31 @@ impl<H> Easy2<H> {
         self.setopt_long(curl_sys::CURLOPT_PORT, port as c_long)
     }
 
-    // /// Indicates whether sequences of `/../` and `/./` will be squashed or not.
-    // ///
-    // /// By default this option is `false` and corresponds to
-    // /// `CURLOPT_PATH_AS_IS`.
-    // pub fn path_as_is(&mut self, as_is: bool) -> Result<(), Error> {
-    // }
+    /// Connect to a specific host and port.
+    ///
+    /// Each single string should be written using the format
+    /// `HOST:PORT:CONNECT-TO-HOST:CONNECT-TO-PORT` where `HOST` is the host of
+    /// the request, `PORT` is the port of the request, `CONNECT-TO-HOST` is the
+    /// host name to connect to, and `CONNECT-TO-PORT` is the port to connect
+    /// to.
+    ///
+    /// The first string that matches the request's host and port is used.
+    ///
+    /// By default, this option is empty and corresponds to
+    /// [`CURLOPT_CONNECT_TO`](https://curl.haxx.se/libcurl/c/CURLOPT_CONNECT_TO.html).
+    pub fn connect_to(&mut self, list: List) -> Result<(), Error> {
+        let ptr = list::raw(&list);
+        self.inner.connect_to_list = Some(list);
+        self.setopt_ptr(curl_sys::CURLOPT_CONNECT_TO, ptr as *const _)
+    }
+
+    /// Indicates whether sequences of `/../` and `/./` will be squashed or not.
+    ///
+    /// By default this option is `false` and corresponds to
+    /// `CURLOPT_PATH_AS_IS`.
+    pub fn path_as_is(&mut self, as_is: bool) -> Result<(), Error> {
+        self.setopt_long(curl_sys::CURLOPT_PATH_AS_IS, as_is as c_long)
+    }
 
     /// Provide the URL of a proxy to use.
     ///
@@ -868,6 +902,68 @@ impl<H> Easy2<H> {
     /// protocol is used) and corresponds to `CURLOPT_PROXYPORT`.
     pub fn proxy_port(&mut self, port: u16) -> Result<(), Error> {
         self.setopt_long(curl_sys::CURLOPT_PROXYPORT, port as c_long)
+    }
+
+    /// Set CA certificate to verify peer against for proxy.
+    ///
+    /// By default this value is not set and corresponds to
+    /// `CURLOPT_PROXY_CAINFO`.
+    pub fn proxy_cainfo(&mut self, cainfo: &str) -> Result<(), Error> {
+        let cainfo = CString::new(cainfo)?;
+        self.setopt_str(curl_sys::CURLOPT_PROXY_CAINFO, &cainfo)
+    }
+
+    /// Specify a directory holding CA certificates for proxy.
+    ///
+    /// The specified directory should hold multiple CA certificates to verify
+    /// the HTTPS proxy with. If libcurl is built against OpenSSL, the
+    /// certificate directory must be prepared using the OpenSSL `c_rehash`
+    /// utility.
+    ///
+    /// By default this value is not set and corresponds to
+    /// `CURLOPT_PROXY_CAPATH`.
+    pub fn proxy_capath<P: AsRef<Path>>(&mut self, path: P) -> Result<(), Error> {
+        self.setopt_path(curl_sys::CURLOPT_PROXY_CAPATH, path.as_ref())
+    }
+
+    /// Set client certificate for proxy.
+    ///
+    /// By default this value is not set and corresponds to
+    /// `CURLOPT_PROXY_SSLCERT`.
+    pub fn proxy_sslcert(&mut self, sslcert: &str) -> Result<(), Error> {
+        let sslcert = CString::new(sslcert)?;
+        self.setopt_str(curl_sys::CURLOPT_PROXY_SSLCERT, &sslcert)
+    }
+
+    /// Set the client certificate for the proxy using an in-memory blob.
+    ///
+    /// The specified byte buffer should contain the binary content of the
+    /// certificate, which will be copied into the handle.
+    ///
+    /// By default this option is not set and corresponds to
+    /// `CURLOPT_PROXY_SSLCERT_BLOB`.
+    pub fn proxy_sslcert_blob(&mut self, blob: &[u8]) -> Result<(), Error> {
+        self.setopt_blob(curl_sys::CURLOPT_PROXY_SSLCERT_BLOB, blob)
+    }
+
+    /// Set private key for HTTPS proxy.
+    ///
+    /// By default this value is not set and corresponds to
+    /// `CURLOPT_PROXY_SSLKEY`.
+    pub fn proxy_sslkey(&mut self, sslkey: &str) -> Result<(), Error> {
+        let sslkey = CString::new(sslkey)?;
+        self.setopt_str(curl_sys::CURLOPT_PROXY_SSLKEY, &sslkey)
+    }
+
+    /// Set the pricate key for the proxy using an in-memory blob.
+    ///
+    /// The specified byte buffer should contain the binary content of the
+    /// private key, which will be copied into the handle.
+    ///
+    /// By default this option is not set and corresponds to
+    /// `CURLOPT_PROXY_SSLKEY_BLOB`.
+    pub fn proxy_sslkey_blob(&mut self, blob: &[u8]) -> Result<(), Error> {
+        self.setopt_blob(curl_sys::CURLOPT_PROXY_SSLKEY_BLOB, blob)
     }
 
     /// Indicates the type of proxy being used.
@@ -1679,6 +1775,17 @@ impl<H> Easy2<H> {
         self.setopt_long(curl_sys::CURLOPT_MAXCONNECTS, max as c_long)
     }
 
+    /// Set the maximum idle time allowed for a connection.
+    ///
+    /// This configuration sets the maximum time that a connection inside of the connection cache
+    /// can be reused. Any connection older than this value will be considered stale and will
+    /// be closed.
+    ///
+    /// By default, a value of 118 seconds is used.
+    pub fn maxage_conn(&mut self, max_age: Duration) -> Result<(), Error> {
+        self.setopt_long(curl_sys::CURLOPT_MAXAGE_CONN, max_age.as_secs() as c_long)
+    }
+
     /// Force a new connection to be used.
     ///
     /// Makes the next transfer use a new (fresh) connection by force instead of
@@ -1845,6 +1952,18 @@ impl<H> Easy2<H> {
         self.setopt_path(curl_sys::CURLOPT_SSLCERT, cert.as_ref())
     }
 
+    /// Set the SSL client certificate using an in-memory blob.
+    ///
+    /// The specified byte buffer should contain the binary content of your
+    /// client certificate, which will be copied into the handle. The format of
+    /// the certificate can be specified with `ssl_cert_type`.
+    ///
+    /// By default this option is not set and corresponds to
+    /// `CURLOPT_SSLCERT_BLOB`.
+    pub fn ssl_cert_blob(&mut self, blob: &[u8]) -> Result<(), Error> {
+        self.setopt_blob(curl_sys::CURLOPT_SSLCERT_BLOB, blob)
+    }
+
     /// Specify type of the client SSL certificate.
     ///
     /// The string should be the format of your certificate. Supported formats
@@ -1871,6 +1990,18 @@ impl<H> Easy2<H> {
     /// By default this option is not set and corresponds to `CURLOPT_SSLKEY`.
     pub fn ssl_key<P: AsRef<Path>>(&mut self, key: P) -> Result<(), Error> {
         self.setopt_path(curl_sys::CURLOPT_SSLKEY, key.as_ref())
+    }
+
+    /// Specify an SSL private key using an in-memory blob.
+    ///
+    /// The specified byte buffer should contain the binary content of your
+    /// private key, which will be copied into the handle. The format of
+    /// the private key can be specified with `ssl_key_type`.
+    ///
+    /// By default this option is not set and corresponds to
+    /// `CURLOPT_SSLKEY_BLOB`.
+    pub fn ssl_key_blob(&mut self, blob: &[u8]) -> Result<(), Error> {
+        self.setopt_blob(curl_sys::CURLOPT_SSLKEY_BLOB, blob)
     }
 
     /// Set type of the private key file.
@@ -2035,6 +2166,18 @@ impl<H> Easy2<H> {
     /// `CURLOPT_ISSUERCERT`.
     pub fn issuer_cert<P: AsRef<Path>>(&mut self, path: P) -> Result<(), Error> {
         self.setopt_path(curl_sys::CURLOPT_ISSUERCERT, path.as_ref())
+    }
+
+    /// Set the issuer SSL certificate using an in-memory blob.
+    ///
+    /// The specified byte buffer should contain the binary content of a CA
+    /// certificate in the PEM format. The certificate will be copied into the
+    /// handle.
+    ///
+    /// By default this option is not set and corresponds to
+    /// `CURLOPT_ISSUERCERT_BLOB`.
+    pub fn issuer_cert_blob(&mut self, blob: &[u8]) -> Result<(), Error> {
+        self.setopt_blob(curl_sys::CURLOPT_ISSUERCERT_BLOB, blob)
     }
 
     /// Specify directory holding CA certificates
@@ -2206,6 +2349,33 @@ impl<H> Easy2<H> {
 
     // =========================================================================
     // getters
+
+    /// Set maximum time to wait for Expect 100 request before sending body.
+    ///
+    /// `curl` has internal heuristics that trigger the use of a `Expect`
+    /// header for large enough request bodies where the client first sends the
+    /// request header along with an `Expect: 100-continue` header. The server
+    /// is supposed to validate the headers and respond with a `100` response
+    /// status code after which `curl` will send the actual request body.
+    ///
+    /// However, if the server does not respond to the initial request
+    /// within `CURLOPT_EXPECT_100_TIMEOUT_MS` then `curl` will send the
+    /// request body anyways.
+    ///
+    /// The best-case scenario is where the request is invalid and the server
+    /// replies with a `417 Expectation Failed` without having to wait for or process
+    /// the request body at all. However, this behaviour can also lead to higher
+    /// total latency since in the best case, an additional server roundtrip is required
+    /// and in the worst case, the request is delayed by `CURLOPT_EXPECT_100_TIMEOUT_MS`.
+    ///
+    /// More info: https://curl.se/libcurl/c/CURLOPT_EXPECT_100_TIMEOUT_MS.html
+    ///
+    /// By default this option is not set and corresponds to
+    /// `CURLOPT_EXPECT_100_TIMEOUT_MS`.
+    pub fn expect_100_timeout(&mut self, timeout: Duration) -> Result<(), Error> {
+        let ms = timeout.as_secs() * 1000 + (timeout.subsec_nanos() / 1_000_000) as u64;
+        self.setopt_long(curl_sys::CURLOPT_EXPECT_100_TIMEOUT_MS, ms as c_long)
+    }
 
     /// Get info on unmet time conditional
     ///
@@ -2561,7 +2731,7 @@ impl<H> Easy2<H> {
     /// if the option isn't supported.
     pub fn cookies(&mut self) -> Result<List, Error> {
         unsafe {
-            let mut list = 0 as *mut _;
+            let mut list = ptr::null_mut();
             let rc = curl_sys::curl_easy_getinfo(
                 self.inner.handle,
                 curl_sys::CURLINFO_COOKIELIST,
@@ -2624,6 +2794,21 @@ impl<H> Easy2<H> {
     pub fn perform(&self) -> Result<(), Error> {
         let ret = unsafe { self.cvt(curl_sys::curl_easy_perform(self.inner.handle)) };
         panic::propagate();
+        ret
+    }
+
+    /// Some protocols have "connection upkeep" mechanisms. These mechanisms
+    /// usually send some traffic on existing connections in order to keep them
+    /// alive; this can prevent connections from being closed due to overzealous
+    /// firewalls, for example.
+    ///
+    /// Currently the only protocol with a connection upkeep mechanism is
+    /// HTTP/2: when the connection upkeep interval is exceeded and upkeep() is
+    /// called, an HTTP/2 PING frame is sent on the connection.
+    #[cfg(feature = "upkeep_7_62_0")]
+    pub fn upkeep(&self) -> Result<(), Error> {
+        let ret = unsafe { self.cvt(curl_sys::curl_easy_upkeep(self.inner.handle)) };
+        panic::propagate();
         return ret;
     }
 
@@ -2684,7 +2869,7 @@ impl<H> Easy2<H> {
             let ret = str::from_utf8(CStr::from_ptr(p).to_bytes()).unwrap();
             let ret = String::from(ret);
             curl_sys::curl_free(p as *mut _);
-            return ret;
+            ret
         }
     }
 
@@ -2718,7 +2903,7 @@ impl<H> Easy2<H> {
             let slice = slice::from_raw_parts(p as *const u8, len as usize);
             let ret = slice.to_vec();
             curl_sys::curl_free(p as *mut _);
-            return ret;
+            ret
         }
     }
 
@@ -2832,6 +3017,16 @@ impl<H> Easy2<H> {
         }
     }
 
+    fn setopt_blob(&mut self, opt: curl_sys::CURLoption, val: &[u8]) -> Result<(), Error> {
+        let blob = curl_sys::curl_blob {
+            data: val.as_ptr() as *const c_void as *mut c_void,
+            len: val.len(),
+            flags: curl_sys::CURL_BLOB_COPY,
+        };
+        let blob_ptr = &blob as *const curl_sys::curl_blob;
+        unsafe { self.cvt(curl_sys::curl_easy_setopt(self.inner.handle, opt, blob_ptr)) }
+    }
+
     fn getopt_bytes(&mut self, opt: curl_sys::CURLINFO) -> Result<Option<&[u8]>, Error> {
         unsafe {
             let p = self.getopt_ptr(opt)?;
@@ -2914,7 +3109,7 @@ impl<H> Easy2<H> {
         if let Some(msg) = self.take_error_buf() {
             err.set_extra(msg);
         }
-        Err(Error::new(rc))
+        Err(err)
     }
 }
 
@@ -2922,7 +3117,7 @@ impl<H: fmt::Debug> fmt::Debug for Easy2<H> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("Easy")
             .field("handle", &self.inner.handle)
-            .field("handler", &self.inner.handle)
+            .field("handler", &self.inner.handler)
             .finish()
     }
 }
@@ -2963,9 +3158,7 @@ extern "C" fn write_cb<H: Handler>(
         let input = slice::from_raw_parts(ptr as *const u8, size * nmemb);
         match (*(data as *mut Inner<H>)).handler.write(input) {
             Ok(s) => s,
-            Err(WriteError::Pause) | Err(WriteError::__Nonexhaustive) => {
-                curl_sys::CURL_WRITEFUNC_PAUSE
-            }
+            Err(WriteError::Pause) => curl_sys::CURL_WRITEFUNC_PAUSE,
         }
     })
     .unwrap_or(!0)
@@ -2982,9 +3175,7 @@ extern "C" fn read_cb<H: Handler>(
         match (*(data as *mut Inner<H>)).handler.read(input) {
             Ok(s) => s,
             Err(ReadError::Pause) => curl_sys::CURL_READFUNC_PAUSE,
-            Err(ReadError::__Nonexhaustive) | Err(ReadError::Abort) => {
-                curl_sys::CURL_READFUNC_ABORT
-            }
+            Err(ReadError::Abort) => curl_sys::CURL_READFUNC_ABORT,
         }
     })
     .unwrap_or(!0)
@@ -3048,7 +3239,7 @@ extern "C" fn debug_cb<H: Handler>(
         };
         (*(userptr as *mut Inner<H>)).handler.debug(kind, data)
     });
-    return 0;
+    0
 }
 
 extern "C" fn ssl_ctx_cb<H: Handler>(

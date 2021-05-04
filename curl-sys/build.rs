@@ -1,14 +1,10 @@
-extern crate cc;
-extern crate pkg_config;
-#[cfg(target_env = "msvc")]
-extern crate vcpkg;
-
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
 fn main() {
+    let host = env::var("HOST").unwrap();
     let target = env::var("TARGET").unwrap();
     let windows = target.contains("windows");
 
@@ -19,14 +15,19 @@ fn main() {
         return println!("cargo:rustc-flags=-l curl");
     }
 
+    // When cross-compiling for Haiku, use the system's default supplied
+    // libcurl (it supports http2). This is in the case where rustc and
+    // cargo are built for Haiku, which is done from a Linux host.
+    if host != target && target.contains("haiku") {
+        return println!("cargo:rustc-flags=-l curl");
+    }
+
     // If the static-curl feature is disabled, probe for a system-wide libcurl.
     if !cfg!(feature = "static-curl") {
-        // OSX and Haiku ships libcurl by default, so we just use that version
+        // OSX ships libcurl by default, so we just use that version
         // so long as it has the right features enabled.
-        if target.contains("apple") || target.contains("haiku") {
-            if !cfg!(feature = "http2") || curl_config_reports_http2() {
-                return println!("cargo:rustc-flags=-l curl");
-            }
+        if target.contains("apple") && (!cfg!(feature = "http2") || curl_config_reports_http2()) {
+            return println!("cargo:rustc-flags=-l curl");
         }
 
         // Next, fall back and try to use pkg-config if its available.
@@ -34,10 +35,8 @@ fn main() {
             if try_vcpkg() {
                 return;
             }
-        } else {
-            if try_pkg_config() {
-                return;
-            }
+        } else if try_pkg_config() {
+            return;
         }
     }
 
@@ -47,6 +46,17 @@ fn main() {
             .status();
     }
 
+    if target.contains("apple") {
+        // On (older) OSX we need to link against the clang runtime,
+        // which is hidden in some non-default path.
+        //
+        // More details at https://github.com/alexcrichton/curl-rust/issues/279.
+        if let Some(path) = macos_link_search_path() {
+            println!("cargo:rustc-link-lib=clang_rt.osx");
+            println!("cargo:rustc-link-search={}", path);
+        }
+    }
+
     let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
     let include = dst.join("include");
     let build = dst.join("build");
@@ -54,31 +64,27 @@ fn main() {
     println!("cargo:include={}", include.display());
     println!("cargo:static=1");
     fs::create_dir_all(include.join("curl")).unwrap();
-    fs::copy("curl/include/curl/curl.h", include.join("curl/curl.h")).unwrap();
-    fs::copy(
-        "curl/include/curl/curlver.h",
-        include.join("curl/curlver.h"),
-    )
-    .unwrap();
-    fs::copy("curl/include/curl/easy.h", include.join("curl/easy.h")).unwrap();
-    fs::copy(
-        "curl/include/curl/mprintf.h",
-        include.join("curl/mprintf.h"),
-    )
-    .unwrap();
-    fs::copy("curl/include/curl/multi.h", include.join("curl/multi.h")).unwrap();
-    fs::copy(
-        "curl/include/curl/stdcheaders.h",
-        include.join("curl/stdcheaders.h"),
-    )
-    .unwrap();
-    fs::copy("curl/include/curl/system.h", include.join("curl/system.h")).unwrap();
-    fs::copy("curl/include/curl/urlapi.h", include.join("curl/urlapi.h")).unwrap();
-    fs::copy(
-        "curl/include/curl/typecheck-gcc.h",
-        include.join("curl/typecheck-gcc.h"),
-    )
-    .unwrap();
+
+    for header in [
+        "curl.h",
+        "curlver.h",
+        "easy.h",
+        "options.h",
+        "mprintf.h",
+        "multi.h",
+        "stdcheaders.h",
+        "system.h",
+        "urlapi.h",
+        "typecheck-gcc.h",
+    ]
+    .iter()
+    {
+        fs::copy(
+            format!("curl/include/curl/{}", header),
+            include.join("curl").join(header),
+        )
+        .unwrap();
+    }
 
     let pkgconfig = dst.join("lib/pkgconfig");
     fs::create_dir_all(&pkgconfig).unwrap();
@@ -105,7 +111,6 @@ fn main() {
         .define("BUILDING_LIBCURL", None)
         .define("CURL_DISABLE_CRYPTO_AUTH", None)
         .define("CURL_DISABLE_DICT", None)
-        .define("CURL_DISABLE_FTP", None)
         .define("CURL_DISABLE_GOPHER", None)
         .define("CURL_DISABLE_IMAP", None)
         .define("CURL_DISABLE_LDAP", None)
@@ -124,6 +129,7 @@ fn main() {
         .define("HAVE_ZLIB_H", None)
         .define("HAVE_LIBZ", None)
         .file("curl/lib/asyn-thread.c")
+        .file("curl/lib/altsvc.c")
         .file("curl/lib/base64.c")
         .file("curl/lib/conncache.c")
         .file("curl/lib/connect.c")
@@ -137,6 +143,7 @@ fn main() {
         .file("curl/lib/curl_threads.c")
         .file("curl/lib/dotdot.c")
         .file("curl/lib/doh.c")
+        .file("curl/lib/dynbuf.c")
         .file("curl/lib/easy.c")
         .file("curl/lib/escape.c")
         .file("curl/lib/file.c")
@@ -159,12 +166,14 @@ fn main() {
         .file("curl/lib/llist.c")
         .file("curl/lib/mime.c")
         .file("curl/lib/mprintf.c")
+        .file("curl/lib/mqtt.c")
         .file("curl/lib/multi.c")
         .file("curl/lib/netrc.c")
         .file("curl/lib/nonblock.c")
         .file("curl/lib/parsedate.c")
         .file("curl/lib/progress.c")
         .file("curl/lib/rand.c")
+        .file("curl/lib/rename.c")
         .file("curl/lib/select.c")
         .file("curl/lib/sendf.c")
         .file("curl/lib/setopt.c")
@@ -184,12 +193,23 @@ fn main() {
         .file("curl/lib/url.c")
         .file("curl/lib/urlapi.c")
         .file("curl/lib/version.c")
+        .file("curl/lib/vtls/keylog.c")
         .file("curl/lib/vtls/vtls.c")
         .file("curl/lib/warnless.c")
         .file("curl/lib/wildcard.c")
         .define("HAVE_GETADDRINFO", None)
         .define("HAVE_GETPEERNAME", None)
+        .define("HAVE_GETSOCKNAME", None)
         .warnings(false);
+
+    if cfg!(feature = "protocol-ftp") {
+        cfg.file("curl/lib/curl_fnmatch.c")
+            .file("curl/lib/ftp.c")
+            .file("curl/lib/ftplistparser.c")
+            .file("curl/lib/pingpong.c");
+    } else {
+        cfg.define("CURL_DISABLE_FTP", None);
+    }
 
     if cfg!(feature = "http2") {
         cfg.define("USE_NGHTTP2", None)
@@ -258,30 +278,28 @@ fn main() {
         }
     }
 
+    // Configure platform-specific details.
     if windows {
         cfg.define("WIN32", None)
             .define("USE_THREADS_WIN32", None)
             .define("HAVE_IOCTLSOCKET_FIONBIO", None)
             .define("USE_WINSOCK", None)
-            .file("curl/lib/system_win32.c");
+            .file("curl/lib/system_win32.c")
+            .file("curl/lib/version_win32.c")
+            .file("curl/lib/curl_multibyte.c");
 
         if cfg!(feature = "spnego") {
             cfg.file("curl/lib/vauth/spnego_sspi.c");
         }
     } else {
-        if target.contains("-apple-") {
-            cfg.define("__APPLE__", None).define("macintosh", None);
-        }
-
         cfg.define("RECV_TYPE_ARG1", "int")
-            .define("HAVE_CLOCK_GETTIME_MONOTONIC", None)
-            .define("HAVE_GETTIMEOFDAY", None)
             .define("HAVE_PTHREAD_H", None)
             .define("HAVE_ARPA_INET_H", None)
             .define("HAVE_ERRNO_H", None)
             .define("HAVE_FCNTL_H", None)
             .define("HAVE_NETDB_H", None)
             .define("HAVE_NETINET_IN_H", None)
+            .define("HAVE_NETINET_TCP_H", None)
             .define("HAVE_POLL_FINE", None)
             .define("HAVE_POLL_H", None)
             .define("HAVE_FCNTL_O_NONBLOCK", None)
@@ -295,7 +313,9 @@ fn main() {
             .define("HAVE_STERRROR_R", None)
             .define("HAVE_SOCKETPAIR", None)
             .define("HAVE_STRUCT_TIMEVAL", None)
+            .define("HAVE_SYS_UN_H", None)
             .define("USE_THREADS_POSIX", None)
+            .define("USE_UNIX_SOCKETS", None)
             .define("RECV_TYPE_ARG2", "void*")
             .define("RECV_TYPE_ARG3", "size_t")
             .define("RECV_TYPE_ARG4", "int")
@@ -310,11 +330,24 @@ fn main() {
             .define("SIZEOF_INT", "4")
             .define("SIZEOF_SHORT", "2");
 
+        if target.contains("-apple-") {
+            cfg.define("__APPLE__", None)
+                .define("macintosh", None)
+                .define("HAVE_MACH_ABSOLUTE_TIME", None);
+        } else {
+            cfg.define("HAVE_CLOCK_GETTIME_MONOTONIC", None)
+                .define("HAVE_GETTIMEOFDAY", None);
+        }
+
         if cfg!(feature = "spnego") {
             cfg.define("HAVE_GSSAPI", None)
                 .file("curl/lib/curl_gssapi.c")
                 .file("curl/lib/socks_gssapi.c")
                 .file("curl/lib/vauth/spnego_gssapi.c");
+            if let Some(path) = env::var_os("GSSAPI_ROOT") {
+                let path = PathBuf::from(path);
+                cfg.include(path.join("include"));
+            }
 
             // Link against the MIT gssapi library. It might be desirable to add support for
             // choosing between MIT and Heimdal libraries in the future.
@@ -435,7 +468,7 @@ fn try_pkg_config() -> bool {
     for path in lib.include_paths.iter() {
         println!("cargo:include={}", path.display());
     }
-    return true;
+    true
 }
 
 fn xcode_major_version() -> Option<u8> {
@@ -475,5 +508,29 @@ fn curl_config_reports_http2() -> bool {
         return false;
     }
 
-    return true;
+    true
+}
+
+fn macos_link_search_path() -> Option<String> {
+    let output = Command::new("clang")
+        .arg("--print-search-dirs")
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        println!(
+            "failed to run 'clang --print-search-dirs', continuing without a link search path"
+        );
+        return None;
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    for line in stdout.lines() {
+        if line.contains("libraries: =") {
+            let path = line.split('=').skip(1).next()?;
+            return Some(format!("{}/lib/darwin", path));
+        }
+    }
+
+    println!("failed to determine link search path, continuing without it");
+    None
 }

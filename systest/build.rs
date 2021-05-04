@@ -1,6 +1,3 @@
-extern crate cc;
-extern crate ctest;
-
 use std::env;
 use std::str;
 
@@ -50,7 +47,13 @@ fn main() {
     cfg.skip_signededness(|s| s.ends_with("callback") || s.ends_with("function"));
 
     cfg.skip_struct(move |s| {
-        if version < 65 {
+        if version < 71 {
+            match s {
+                "curl_blob" => return true,
+                _ => {}
+            }
+        }
+        if version < 70 {
             match s {
                 "curl_version_info_data" => return true,
                 _ => {}
@@ -61,9 +64,49 @@ fn main() {
     });
 
     cfg.skip_const(move |s| {
+        if version < 75 {
+            match s {
+                "CURLVERSION_NINTH" | "CURLVERSION_NOW" => return true,
+                _ => {}
+            }
+        }
+        if version < 72 {
+            match s {
+                "CURLVERSION_EIGHTH" => return true,
+                _ => {}
+            }
+        }
+        if version < 71 {
+            match s {
+                "CURLOPT_SSLCERT_BLOB"
+                | "CURLOPT_SSLKEY_BLOB"
+                | "CURLOPT_PROXY_SSLCERT_BLOB"
+                | "CURLOPT_PROXY_SSLKEY_BLOB"
+                | "CURLOPT_ISSUERCERT_BLOB"
+                | "CURLOPTTYPE_BLOB"
+                | "CURL_BLOB_NOCOPY"
+                | "CURL_BLOB_COPY" => return true,
+                _ => {}
+            }
+        }
+        if version < 70 {
+            match s {
+                "CURL_VERSION_HTTP3" | "CURL_VERSION_BROTLI" | "CURLVERSION_SEVENTH" => {
+                    return true
+                }
+                _ => {}
+            }
+        }
+        if version < 66 {
+            match s {
+                "CURL_HTTP_VERSION_3" => return true,
+                "CURLOPT_MAXAGE_CONN" => return true,
+                _ => {}
+            }
+        }
         if version < 65 {
             match s {
-                "CURLVERSION_SIXTH" | "CURLVERSION_NOW" => return true,
+                "CURLVERSION_SIXTH" => return true,
                 _ => {}
             }
         }
@@ -94,14 +137,24 @@ fn main() {
         }
         if version < 54 {
             match s {
-                "CURL_SSLVERSION_TLSv1_3" => return true,
+                "CURL_SSLVERSION_TLSv1_3"
+                | "CURLOPT_PROXY_CAINFO"
+                | "CURLOPT_PROXY_SSLCERT"
+                | "CURLOPT_PROXY_SSLKEY" => return true,
+                _ => {}
+            }
+        }
+        if version < 52 {
+            match s {
+                "CURLOPT_PROXY_CAPATH" => return true,
                 _ => {}
             }
         }
 
         if version < 49 {
-            if s.starts_with("CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE") {
-                return true;
+            match s {
+                "CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE" | "CURLOPT_CONNECT_TO" => return true,
+                _ => {}
             }
         }
 

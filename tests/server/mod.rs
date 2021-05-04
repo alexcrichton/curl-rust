@@ -4,12 +4,13 @@ use std::collections::HashSet;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::net::{SocketAddr, TcpListener, TcpStream};
+use std::path::PathBuf;
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
 
 pub struct Server {
     messages: Option<Sender<Message>>,
-    addr: SocketAddr,
+    addr: Addr,
     thread: Option<thread::JoinHandle<()>>,
 }
 
@@ -18,8 +19,13 @@ enum Message {
     Write(String),
 }
 
-fn run(listener: &TcpListener, rx: &Receiver<Message>) {
-    let mut socket = BufReader::new(listener.accept().unwrap().0);
+enum Addr {
+    Tcp(SocketAddr),
+    Unix(PathBuf),
+}
+
+fn run(stream: impl Read + Write, rx: &Receiver<Message>) {
+    let mut socket = BufReader::new(stream);
     for msg in rx.iter() {
         match msg {
             Message::Read(ref expected) => {
@@ -110,7 +116,7 @@ fn run(listener: &TcpListener, rx: &Receiver<Message>) {
 
     let mut dst = Vec::new();
     t!(socket.read_to_end(&mut dst));
-    assert!(dst.len() == 0);
+    assert_eq!(dst.len(), 0);
 }
 
 fn lines_match(expected: &str, mut actual: &str) -> bool {
@@ -133,22 +139,43 @@ impl Server {
         let listener = t!(TcpListener::bind("127.0.0.1:0"));
         let addr = t!(listener.local_addr());
         let (tx, rx) = channel();
-        let thread = thread::spawn(move || run(&listener, &rx));
+        let thread = thread::spawn(move || run(listener.accept().unwrap().0, &rx));
         Server {
             messages: Some(tx),
-            addr: addr,
+            addr: Addr::Tcp(addr),
+            thread: Some(thread),
+        }
+    }
+
+    #[cfg(not(windows))]
+    pub fn new_unix() -> Server {
+        use std::os::unix::net::UnixListener;
+
+        let path = "/tmp/easy_server.sock";
+        std::fs::remove_file(path).ok();
+        let listener = t!(UnixListener::bind(path));
+        let (tx, rx) = channel();
+        let thread = thread::spawn(move || run(listener.incoming().next().unwrap().unwrap(), &rx));
+        Server {
+            messages: Some(tx),
+            addr: Addr::Unix(path.into()),
             thread: Some(thread),
         }
     }
 
     pub fn receive(&self, msg: &str) {
-        let msg = msg.replace("$PORT", &self.addr.port().to_string());
-        self.msg(Message::Read(msg));
+        self.msg(Message::Read(self.replace_port(msg)));
+    }
+
+    fn replace_port(&self, msg: &str) -> String {
+        match &self.addr {
+            Addr::Tcp(addr) => msg.replace("$PORT", &addr.port().to_string()),
+            Addr::Unix(_) => msg.to_string(),
+        }
     }
 
     pub fn send(&self, msg: &str) {
-        let msg = msg.replace("$PORT", &self.addr.port().to_string());
-        self.msg(Message::Write(msg));
+        self.msg(Message::Write(self.replace_port(msg)));
     }
 
     fn msg(&self, msg: Message) {
@@ -156,17 +183,35 @@ impl Server {
     }
 
     pub fn addr(&self) -> &SocketAddr {
-        &self.addr
+        match &self.addr {
+            Addr::Tcp(addr) => addr,
+            Addr::Unix(_) => panic!("server is a UnixListener"),
+        }
+    }
+
+    #[cfg(not(windows))]
+    pub fn path(&self) -> &str {
+        match &self.addr {
+            Addr::Tcp(_) => panic!("server is a TcpListener"),
+            Addr::Unix(p) => p.as_os_str().to_str().unwrap(),
+        }
     }
 
     pub fn url(&self, path: &str) -> String {
-        format!("http://{}{}", self.addr, path)
+        match &self.addr {
+            Addr::Tcp(addr) => format!("http://{}{}", addr, path),
+            Addr::Unix(_) => format!("http://localhost{}", path),
+        }
     }
 }
 
 impl Drop for Server {
     fn drop(&mut self) {
-        drop(TcpStream::connect(&self.addr));
+        match &self.addr {
+            Addr::Tcp(addr) => drop(TcpStream::connect(addr)),
+            Addr::Unix(p) => t!(std::fs::remove_file(p)),
+        }
+
         drop(self.messages.take());
         let res = self.thread.take().unwrap().join();
         if !thread::panicking() {

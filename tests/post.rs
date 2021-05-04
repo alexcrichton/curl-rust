@@ -1,5 +1,3 @@
-extern crate curl;
-
 use std::time::Duration;
 
 macro_rules! t {
@@ -13,7 +11,7 @@ macro_rules! t {
 
 use curl::easy::{Easy, Form, List};
 
-use server::Server;
+use crate::server::Server;
 mod server;
 
 fn handle() -> Easy {

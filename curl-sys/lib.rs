@@ -1,17 +1,15 @@
 #![allow(bad_style)]
 #![doc(html_root_url = "https://docs.rs/curl-sys/0.3")]
 
-extern crate libc;
+// These `extern crate` are required for conditional linkages of curl.
 #[cfg(link_libnghttp2)]
 extern crate libnghttp2_sys;
 #[cfg(link_libz)]
 extern crate libz_sys;
 #[cfg(feature = "mesalink")]
-extern crate mesalink; // ensure lib is linked to
+extern crate mesalink;
 #[cfg(link_openssl)]
 extern crate openssl_sys;
-#[cfg(windows)]
-extern crate winapi;
 
 use libc::c_ulong;
 use libc::{c_char, c_double, c_int, c_long, c_short, c_uint, c_void, size_t, time_t};
@@ -128,6 +126,16 @@ pub struct curl_fileinfo {
     pub b_data: *mut c_char,
     pub b_size: size_t,
     pub b_used: size_t,
+}
+
+pub const CURL_BLOB_NOCOPY: c_uint = 0;
+pub const CURL_BLOB_COPY: c_uint = 1;
+
+#[repr(C)]
+pub struct curl_blob {
+    pub data: *mut c_void,
+    pub len: size_t,
+    pub flags: c_uint,
 }
 
 pub const CURL_CHUNK_BGN_FUNC_OK: c_long = 0;
@@ -367,6 +375,7 @@ pub const CURLOPTTYPE_LONG: CURLoption = 0;
 pub const CURLOPTTYPE_OBJECTPOINT: CURLoption = 10_000;
 pub const CURLOPTTYPE_FUNCTIONPOINT: CURLoption = 20_000;
 pub const CURLOPTTYPE_OFF_T: CURLoption = 30_000;
+pub const CURLOPTTYPE_BLOB: CURLoption = 40_000;
 
 pub const CURLOPT_FILE: CURLoption = CURLOPTTYPE_OBJECTPOINT + 1;
 pub const CURLOPT_URL: CURLoption = CURLOPTTYPE_OBJECTPOINT + 2;
@@ -574,9 +583,24 @@ pub const CURLOPT_SSL_OPTIONS: CURLoption = CURLOPTTYPE_LONG + 216;
 // pub const CURLOPT_DNS_LOCAL_IP4: CURLoption = CURLOPTTYPE_OBJECTPOINT + 222;
 // pub const CURLOPT_DNS_LOCAL_IP6: CURLoption = CURLOPTTYPE_OBJECTPOINT + 223;
 // pub const CURLOPT_LOGIN_OPTIONS: CURLoption = CURLOPTTYPE_OBJECTPOINT + 224;
+pub const CURLOPT_EXPECT_100_TIMEOUT_MS: CURLoption = CURLOPTTYPE_LONG + 227;
 pub const CURLOPT_PINNEDPUBLICKEY: CURLoption = CURLOPTTYPE_OBJECTPOINT + 230;
 pub const CURLOPT_UNIX_SOCKET_PATH: CURLoption = CURLOPTTYPE_OBJECTPOINT + 231;
+pub const CURLOPT_PATH_AS_IS: CURLoption = CURLOPTTYPE_LONG + 234;
 pub const CURLOPT_PIPEWAIT: CURLoption = CURLOPTTYPE_LONG + 237;
+pub const CURLOPT_CONNECT_TO: CURLoption = CURLOPTTYPE_OBJECTPOINT + 243;
+pub const CURLOPT_PROXY_CAINFO: CURLoption = CURLOPTTYPE_OBJECTPOINT + 246;
+pub const CURLOPT_PROXY_CAPATH: CURLoption = CURLOPTTYPE_OBJECTPOINT + 247;
+pub const CURLOPT_PROXY_SSLCERT: CURLoption = CURLOPTTYPE_OBJECTPOINT + 254;
+pub const CURLOPT_PROXY_SSLKEY: CURLoption = CURLOPTTYPE_OBJECTPOINT + 256;
+
+pub const CURLOPT_MAXAGE_CONN: CURLoption = CURLOPTTYPE_LONG + 288;
+
+pub const CURLOPT_SSLCERT_BLOB: CURLoption = CURLOPTTYPE_BLOB + 291;
+pub const CURLOPT_SSLKEY_BLOB: CURLoption = CURLOPTTYPE_BLOB + 292;
+pub const CURLOPT_PROXY_SSLCERT_BLOB: CURLoption = CURLOPTTYPE_BLOB + 293;
+pub const CURLOPT_PROXY_SSLKEY_BLOB: CURLoption = CURLOPTTYPE_BLOB + 294;
+pub const CURLOPT_ISSUERCERT_BLOB: CURLoption = CURLOPTTYPE_BLOB + 295;
 
 pub const CURL_IPRESOLVE_WHATEVER: c_int = 0;
 pub const CURL_IPRESOLVE_V4: c_int = 1;
@@ -603,6 +627,9 @@ pub const CURL_HTTP_VERSION_2TLS: c_int = 4;
 /// Please use HTTP 2 without HTTP/1.1 Upgrade
 /// (Added in CURL 7.49.0)
 pub const CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE: c_int = 5;
+/// Makes use of explicit HTTP/3 without fallback.
+/// (Added in CURL 7.66.0)
+pub const CURL_HTTP_VERSION_3: c_int = 30;
 
 // Note that the type here is wrong, it's just intended to just be an enum.
 pub const CURL_SSLVERSION_DEFAULT: CURLoption = 0;
@@ -800,7 +827,10 @@ pub const CURLVERSION_THIRD: CURLversion = 2;
 pub const CURLVERSION_FOURTH: CURLversion = 3;
 pub const CURLVERSION_FIFTH: CURLversion = 4;
 pub const CURLVERSION_SIXTH: CURLversion = 5;
-pub const CURLVERSION_NOW: CURLversion = CURLVERSION_SIXTH;
+pub const CURLVERSION_SEVENTH: CURLversion = 6;
+pub const CURLVERSION_EIGHTH: CURLversion = 7;
+pub const CURLVERSION_NINTH: CURLversion = 8;
+pub const CURLVERSION_NOW: CURLversion = CURLVERSION_NINTH;
 
 #[repr(C)]
 pub struct curl_version_info_data {
@@ -823,6 +853,11 @@ pub struct curl_version_info_data {
     pub nghttp2_ver_num: c_uint,
     pub nghttp2_version: *const c_char,
     pub quic_version: *const c_char,
+    pub cainfo: *const c_char,
+    pub capath: *const c_char,
+    pub zstd_ver_num: c_uint,
+    pub zstd_version: *const c_char,
+    pub hyper_version: *const c_char,
 }
 
 pub const CURL_VERSION_IPV6: c_int = 1 << 0;
@@ -843,6 +878,8 @@ pub const CURL_VERSION_TLSAUTH_SRP: c_int = 1 << 14;
 pub const CURL_VERSION_NTLM_WB: c_int = 1 << 15;
 pub const CURL_VERSION_HTTP2: c_int = 1 << 16;
 pub const CURL_VERSION_UNIX_SOCKETS: c_int = 1 << 19;
+pub const CURL_VERSION_BROTLI: c_int = 1 << 23;
+pub const CURL_VERSION_HTTP3: c_int = 1 << 25;
 
 pub const CURLPAUSE_RECV: c_int = 1 << 0;
 pub const CURLPAUSE_RECV_CONT: c_int = 0;
@@ -1010,6 +1047,9 @@ extern "C" {
         n: *mut size_t,
     ) -> CURLcode;
 
+    #[cfg(feature = "upkeep_7_62_0")]
+    pub fn curl_easy_upkeep(curl: *mut CURL) -> CURLcode;
+
     pub fn curl_multi_init() -> *mut CURLM;
     pub fn curl_multi_add_handle(multi_handle: *mut CURLM, curl_handle: *mut CURL) -> CURLMcode;
     pub fn curl_multi_remove_handle(multi_handle: *mut CURLM, curl_handle: *mut CURL) -> CURLMcode;
@@ -1056,4 +1096,8 @@ extern "C" {
         sockfd: curl_socket_t,
         sockp: *mut c_void,
     ) -> CURLMcode;
+}
+
+pub fn rust_crate_version() -> &'static str {
+    env!("CARGO_PKG_VERSION")
 }

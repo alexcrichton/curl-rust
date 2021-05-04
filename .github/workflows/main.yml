@@ -71,18 +71,12 @@ jobs:
             rust: stable
             target: x86_64-pc-windows-msvc
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v1
       with:
         submodules: true
     - name: Install Rust (rustup)
       run: rustup update ${{ matrix.rust }} --no-self-update && rustup default ${{ matrix.rust }}
-      if: matrix.os != 'macos-latest'
       shell: bash
-    - name: Install Rust (macos)
-      run: |
-        curl https://sh.rustup.rs | sh -s -- -y --default-toolchain ${{ matrix.rust }}
-        echo "##[add-path]$HOME/.cargo/bin"
-      if: matrix.os == 'macos-latest'
     - run: rustup target add ${{ matrix.target }}
     - run: TARGET=${{ matrix.target }} ./ci/run.sh
       if: matrix.os != 'ubuntu-latest'
@@ -111,7 +105,7 @@ jobs:
     name: Rustfmt
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v1
       with:
         submodules: true
     - name: Install Rust
@@ -122,13 +116,15 @@ jobs:
     name: Publish Documentation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v1
         with:
           submodules: true
       - name: Install Rust
         run: rustup update stable && rustup default stable
       - name: Install dependencies
-        run: sudo apt install libkrb5-dev
+        run: |
+          sudo apt update
+          sudo apt install libkrb5-dev
       - name: Build documentation
         run: cargo doc --no-deps --all-features
       - name: Publish documentation

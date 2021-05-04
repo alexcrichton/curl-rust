@@ -2247,7 +2247,7 @@ impl<H> Easy2<H> {
         let key = CString::new(pubkey)?;
         self.setopt_str(curl_sys::CURLOPT_PINNEDPUBLICKEY, &key)
     }
-    
+
     /// Specify a source for random data
     ///
     /// The file will be used to read from to seed the random engine for SSL and

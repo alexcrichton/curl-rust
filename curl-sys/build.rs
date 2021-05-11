@@ -300,7 +300,6 @@ fn main() {
             .define("HAVE_NETDB_H", None)
             .define("HAVE_NETINET_IN_H", None)
             .define("HAVE_NETINET_TCP_H", None)
-            .define("HAVE_POLL_FINE", None)
             .define("HAVE_POLL_H", None)
             .define("HAVE_FCNTL_O_NONBLOCK", None)
             .define("HAVE_SYS_SELECT_H", None)
@@ -336,7 +335,11 @@ fn main() {
                 .define("HAVE_MACH_ABSOLUTE_TIME", None);
         } else {
             cfg.define("HAVE_CLOCK_GETTIME_MONOTONIC", None)
-                .define("HAVE_GETTIMEOFDAY", None);
+                .define("HAVE_GETTIMEOFDAY", None)
+                // poll() on various versions of macOS are janky, so only use it
+                // on non-macOS unix-likes. This matches the official default
+                // build configuration as well.
+                .define("HAVE_POLL_FINE", None);
         }
 
         if cfg!(feature = "spnego") {

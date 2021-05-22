@@ -11,5 +11,5 @@ curl-sys = { path = "../curl-sys" }
 libc = "0.2"
 
 [build-dependencies]
-ctest = { git = 'https://github.com/alexcrichton/ctest', branch = 'use-maybe-unini' }
+ctest2 = "0.4"
 cc = "1.0"

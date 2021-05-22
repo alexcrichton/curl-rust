@@ -2,7 +2,7 @@ use std::env;
 use std::str;
 
 fn main() {
-    let mut cfg = ctest::TestGenerator::new();
+    let mut cfg = ctest2::TestGenerator::new();
 
     let mut build = cc::Build::new();
     build.file("version_detect.c");

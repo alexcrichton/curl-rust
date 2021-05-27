@@ -128,6 +128,8 @@ fn main() {
         .define("OS", "\"unknown\"") // TODO
         .define("HAVE_ZLIB_H", None)
         .define("HAVE_LIBZ", None)
+        .define("HAVE_BOOL_T", None)
+        .define("HAVE_STDBOOL_H", None)
         .file("curl/lib/asyn-thread.c")
         .file("curl/lib/altsvc.c")
         .file("curl/lib/base64.c")

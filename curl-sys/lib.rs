@@ -830,7 +830,8 @@ pub const CURLVERSION_SIXTH: CURLversion = 5;
 pub const CURLVERSION_SEVENTH: CURLversion = 6;
 pub const CURLVERSION_EIGHTH: CURLversion = 7;
 pub const CURLVERSION_NINTH: CURLversion = 8;
-pub const CURLVERSION_NOW: CURLversion = CURLVERSION_NINTH;
+pub const CURLVERSION_TENTH: CURLversion = 9;
+pub const CURLVERSION_NOW: CURLversion = CURLVERSION_TENTH;
 
 #[repr(C)]
 pub struct curl_version_info_data {
@@ -858,6 +859,7 @@ pub struct curl_version_info_data {
     pub zstd_ver_num: c_uint,
     pub zstd_version: *const c_char,
     pub hyper_version: *const c_char,
+    pub gsasl_version: *const c_char,
 }
 
 pub const CURL_VERSION_IPV6: c_int = 1 << 0;
@@ -879,7 +881,12 @@ pub const CURL_VERSION_NTLM_WB: c_int = 1 << 15;
 pub const CURL_VERSION_HTTP2: c_int = 1 << 16;
 pub const CURL_VERSION_UNIX_SOCKETS: c_int = 1 << 19;
 pub const CURL_VERSION_BROTLI: c_int = 1 << 23;
+pub const CURL_VERSION_ALTSVC: c_int = 1 << 24;
 pub const CURL_VERSION_HTTP3: c_int = 1 << 25;
+pub const CURL_VERSION_ZSTD: c_int = 1 << 26;
+pub const CURL_VERSION_UNICODE: c_int = 1 << 27;
+pub const CURL_VERSION_HSTS: c_int = 1 << 28;
+pub const CURL_VERSION_GSASL: c_int = 1 << 29;
 
 pub const CURLPAUSE_RECV: c_int = 1 << 0;
 pub const CURLPAUSE_RECV_CONT: c_int = 0;

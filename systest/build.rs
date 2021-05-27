@@ -64,9 +64,21 @@ fn main() {
     });
 
     cfg.skip_const(move |s| {
+        if version < 77 {
+            match s {
+                "CURLVERSION_TENTH"
+                | "CURLVERSION_NOW"
+                | "CURL_VERSION_ALTSVC"
+                | "CURL_VERSION_ZSTD"
+                | "CURL_VERSION_UNICODE"
+                | "CURL_VERSION_HSTS"
+                | "CURL_VERSION_GSASL" => return true,
+                _ => {}
+            }
+        }
         if version < 75 {
             match s {
-                "CURLVERSION_NINTH" | "CURLVERSION_NOW" => return true,
+                "CURLVERSION_NINTH" => return true,
                 _ => {}
             }
         }

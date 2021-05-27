@@ -1,0 +1,189 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="A trait for the various callbacks used by libcurl to invoke user code."><meta name="keywords" content="rust, rustlang, rust-lang, Handler"><title>curl::easy::Handler - Rust</title><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled ><script id="default-settings"></script><script src="../../storage.js"></script><script src="../../crates.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+<link rel="alternate icon" type="image/png" href="../../favicon-16x16.png">
+<link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc trait"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../curl/index.html'><div class='logo-container rust-logo'><img src='../../rust-logo.png' alt='logo'></div></a><p class="location">Trait Handler</p><div class="sidebar-elems"><div class="block items"><a class="sidebar-title" href="#provided-methods">Provided Methods</a><div class="sidebar-links"><a href="#method.debug">debug</a><a href="#method.write">write</a><a href="#method.read">read</a><a href="#method.seek">seek</a><a href="#method.header">header</a><a href="#method.progress">progress</a><a href="#method.ssl_ctx">ssl_ctx</a><a href="#method.open_socket">open_socket</a></div><a class="sidebar-title" href="#implementors">Implementors</a></div><p class="location"><a href="../index.html">curl</a>::<wbr><a href="index.html">easy</a></p><div id="sidebar-vars" data-name="Handler" data-ty="trait" data-relpath=""></div><script defer src="sidebar-items.js"></script></div></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu"><img src="../../brush.svg" width="18" height="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><script src="../../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" class="help-button">?</button>
+                <a id="settings-menu" href="../../settings.html"><img src="../../wheel.svg" width="18" height="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><h1 class="fqn"><span class="in-band">Trait <a href="../index.html">curl</a>::<wbr><a href="index.html">easy</a>::<wbr><a class="trait" href="">Handler</a></span><span class="out-of-band"><span id="render-detail"><a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class="inner">&#x2212;</span>]</a></span><a class="srclink" href="../../src/curl/easy/handler.rs.html#53-300" title="goto source code">[src]</a></span></h1><div class="docblock type-decl hidden-by-usual-hider"><pre class="rust trait">pub trait Handler {
+    fn <a href="#method.write" class="fnname">write</a>(&amp;mut self, data: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">&amp;[</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>, <a class="enum" href="../../curl/easy/enum.WriteError.html" title="enum curl::easy::WriteError">WriteError</a>&gt; { ... }
+<div class="item-spacer"></div>    fn <a href="#method.read" class="fnname">read</a>(&amp;mut self, data: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">&amp;mut [</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>, <a class="enum" href="../../curl/easy/enum.ReadError.html" title="enum curl::easy::ReadError">ReadError</a>&gt; { ... }
+<div class="item-spacer"></div>    fn <a href="#method.seek" class="fnname">seek</a>(&amp;mut self, whence: <a class="enum" href="https://doc.rust-lang.org/nightly/std/io/enum.SeekFrom.html" title="enum std::io::SeekFrom">SeekFrom</a>) -&gt; <a class="enum" href="../../curl/easy/enum.SeekResult.html" title="enum curl::easy::SeekResult">SeekResult</a> { ... }
+<div class="item-spacer"></div>    fn <a href="#method.debug" class="fnname">debug</a>(&amp;mut self, kind: <a class="enum" href="../../curl/easy/enum.InfoType.html" title="enum curl::easy::InfoType">InfoType</a>, data: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">&amp;[</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>) { ... }
+<div class="item-spacer"></div>    fn <a href="#method.header" class="fnname">header</a>(&amp;mut self, data: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">&amp;[</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a> { ... }
+<div class="item-spacer"></div>    fn <a href="#method.progress" class="fnname">progress</a>(<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&amp;mut self, <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dltotal: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dlnow: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ultotal: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ulnow: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a><br>&nbsp;&nbsp;&nbsp;&nbsp;) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a> { ... }
+<div class="item-spacer"></div>    fn <a href="#method.ssl_ctx" class="fnname">ssl_ctx</a>(&amp;mut self, cx: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.pointer.html">*mut </a><a class="enum" href="https://doc.rust-lang.org/nightly/core/ffi/enum.c_void.html" title="enum core::ffi::c_void">c_void</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>, <a class="struct" href="../../curl/struct.Error.html" title="struct curl::Error">Error</a>&gt; { ... }
+<div class="item-spacer"></div>    fn <a href="#method.open_socket" class="fnname">open_socket</a>(<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&amp;mut self, <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;family: c_int, <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;socktype: c_int, <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;protocol: c_int<br>&nbsp;&nbsp;&nbsp;&nbsp;) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="type" href="https://docs.rs/curl-sys/0.3/curl_sys/type.curl_socket_t.html" title="type curl_sys::curl_socket_t">curl_socket_t</a>&gt; { ... }
+}</pre></div><div class="docblock"><p>A trait for the various callbacks used by libcurl to invoke user code.</p>
+<p>This trait represents all operations that libcurl can possibly invoke a
+client for code during an HTTP transaction. Each callback has a default
+“noop” implementation, the same as in libcurl. Types implementing this trait
+may simply override the relevant functions to learn about the callbacks
+they’re interested in.</p>
+<h1 id="examples" class="section-header"><a href="#examples">Examples</a></h1>
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">curl</span>::<span class="ident">easy</span>::{<span class="ident">Easy2</span>, <span class="ident">Handler</span>, <span class="ident">WriteError</span>};
+
+<span class="kw">struct</span> <span class="ident">Collector</span>(<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>);
+
+<span class="kw">impl</span> <span class="ident">Handler</span> <span class="kw">for</span> <span class="ident">Collector</span> {
+    <span class="kw">fn</span> <span class="ident">write</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">data</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">usize</span>, <span class="ident">WriteError</span><span class="op">&gt;</span> {
+        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">extend_from_slice</span>(<span class="ident">data</span>);
+        <span class="prelude-val">Ok</span>(<span class="ident">data</span>.<span class="ident">len</span>())
+    }
+}
+
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">easy</span> <span class="op">=</span> <span class="ident">Easy2</span>::<span class="ident">new</span>(<span class="ident">Collector</span>(<span class="ident">Vec</span>::<span class="ident">new</span>()));
+<span class="ident">easy</span>.<span class="ident">get</span>(<span class="bool-val">true</span>).<span class="ident">unwrap</span>();
+<span class="ident">easy</span>.<span class="ident">url</span>(<span class="string">&quot;https://www.rust-lang.org/&quot;</span>).<span class="ident">unwrap</span>();
+<span class="ident">easy</span>.<span class="ident">perform</span>().<span class="ident">unwrap</span>();
+
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">easy</span>.<span class="ident">response_code</span>().<span class="ident">unwrap</span>(), <span class="number">200</span>);
+<span class="kw">let</span> <span class="ident">contents</span> <span class="op">=</span> <span class="ident">easy</span>.<span class="ident">get_ref</span>();
+<span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">String</span>::<span class="ident">from_utf8_lossy</span>(<span class="kw-2">&amp;</span><span class="ident">contents</span>.<span class="number">0</span>));</pre></div>
+</div><h2 id="provided-methods" class="small-section-header">Provided methods<a href="#provided-methods" class="anchor"></a></h2><div class="methods"><h3 id="method.write" class="method"><code>fn <a href="#method.write" class="fnname">write</a>(&amp;mut self, data: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">&amp;[</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>, <a class="enum" href="../../curl/easy/enum.WriteError.html" title="enum curl::easy::WriteError">WriteError</a>&gt;</code><a class="srclink" href="../../src/curl/easy/handler.rs.html#80-82" title="goto source code">[src]</a></h3><div class="docblock"><p>Callback invoked whenever curl has downloaded data for the application.</p>
+<p>This callback function gets called by libcurl as soon as there is data
+received that needs to be saved.</p>
+<p>The callback function will be passed as much data as possible in all
+invokes, but you must not make any assumptions. It may be one byte, it
+may be thousands. If <code>show_header</code> is enabled, which makes header data
+get passed to the write callback, you can get up to
+<code>CURL_MAX_HTTP_HEADER</code> bytes of header data passed into it.  This
+usually means 100K.</p>
+<p>This function may be called with zero bytes data if the transferred file
+is empty.</p>
+<p>The callback should return the number of bytes actually taken care of.
+If that amount differs from the amount passed to your callback function,
+it’ll signal an error condition to the library. This will cause the
+transfer to get aborted and the libcurl function used will return
+an error with <code>is_write_error</code>.</p>
+<p>If your callback function returns <code>Err(WriteError::Pause)</code> it will cause
+this transfer to become paused. See <code>unpause_write</code> for further details.</p>
+<p>By default data is sent into the void, and this corresponds to the
+<code>CURLOPT_WRITEFUNCTION</code> and <code>CURLOPT_WRITEDATA</code> options.</p>
+</div><h3 id="method.read" class="method"><code>fn <a href="#method.read" class="fnname">read</a>(&amp;mut self, data: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">&amp;mut [</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>, <a class="enum" href="../../curl/easy/enum.ReadError.html" title="enum curl::easy::ReadError">ReadError</a>&gt;</code><a class="srclink" href="../../src/curl/easy/handler.rs.html#113-116" title="goto source code">[src]</a></h3><div class="docblock"><p>Read callback for data uploads.</p>
+<p>This callback function gets called by libcurl as soon as it needs to
+read data in order to send it to the peer - like if you ask it to upload
+or post data to the server.</p>
+<p>Your function must then return the actual number of bytes that it stored
+in that memory area. Returning 0 will signal end-of-file to the library
+and cause it to stop the current transfer.</p>
+<p>If you stop the current transfer by returning 0 “pre-maturely” (i.e
+before the server expected it, like when you’ve said you will upload N
+bytes and you upload less than N bytes), you may experience that the
+server “hangs” waiting for the rest of the data that won’t come.</p>
+<p>The read callback may return <code>Err(ReadError::Abort)</code> to stop the
+current operation immediately, resulting in a <code>is_aborted_by_callback</code>
+error code from the transfer.</p>
+<p>The callback can return <code>Err(ReadError::Pause)</code> to cause reading from
+this connection to pause. See <code>unpause_read</code> for further details.</p>
+<p>By default data not input, and this corresponds to the
+<code>CURLOPT_READFUNCTION</code> and <code>CURLOPT_READDATA</code> options.</p>
+<p>Note that the lifetime bound on this function is <code>'static</code>, but that
+is often too restrictive. To use stack data consider calling the
+<code>transfer</code> method and then using <code>read_function</code> to configure a
+callback that can reference stack-local data.</p>
+</div><h3 id="method.seek" class="method"><code>fn <a href="#method.seek" class="fnname">seek</a>(&amp;mut self, whence: <a class="enum" href="https://doc.rust-lang.org/nightly/std/io/enum.SeekFrom.html" title="enum std::io::SeekFrom">SeekFrom</a>) -&gt; <a class="enum" href="../../curl/easy/enum.SeekResult.html" title="enum curl::easy::SeekResult">SeekResult</a></code><a class="srclink" href="../../src/curl/easy/handler.rs.html#137-140" title="goto source code">[src]</a></h3><div class="docblock"><p>User callback for seeking in input stream.</p>
+<p>This function gets called by libcurl to seek to a certain position in
+the input stream and can be used to fast forward a file in a resumed
+upload (instead of reading all uploaded bytes with the normal read
+function/callback). It is also called to rewind a stream when data has
+already been sent to the server and needs to be sent again. This may
+happen when doing a HTTP PUT or POST with a multi-pass authentication
+method, or when an existing HTTP connection is reused too late and the
+server closes the connection.</p>
+<p>The callback function must return <code>SeekResult::Ok</code> on success,
+<code>SeekResult::Fail</code> to cause the upload operation to fail or
+<code>SeekResult::CantSeek</code> to indicate that while the seek failed, libcurl
+is free to work around the problem if possible. The latter can sometimes
+be done by instead reading from the input or similar.</p>
+<p>By default data this option is not set, and this corresponds to the
+<code>CURLOPT_SEEKFUNCTION</code> and <code>CURLOPT_SEEKDATA</code> options.</p>
+</div><h3 id="method.debug" class="method"><code>fn <a href="#method.debug" class="fnname">debug</a>(&amp;mut self, kind: <a class="enum" href="../../curl/easy/enum.InfoType.html" title="enum curl::easy::InfoType">InfoType</a>, data: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">&amp;[</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>)</code><a class="srclink" href="../../src/curl/easy/handler.rs.html#150-152" title="goto source code">[src]</a></h3><div class="docblock"><p>Specify a debug callback</p>
+<p><code>debug_function</code> replaces the standard debug function used when
+<code>verbose</code> is in effect. This callback receives debug information,
+as specified in the type argument.</p>
+<p>By default this option is not set and corresponds to the
+<code>CURLOPT_DEBUGFUNCTION</code> and <code>CURLOPT_DEBUGDATA</code> options.</p>
+</div><h3 id="method.header" class="method"><code>fn <a href="#method.header" class="fnname">header</a>(&amp;mut self, data: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">&amp;[</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a></code><a class="srclink" href="../../src/curl/easy/handler.rs.html#187-190" title="goto source code">[src]</a></h3><div class="docblock"><p>Callback that receives header data</p>
+<p>This function gets called by libcurl as soon as it has received header
+data. The header callback will be called once for each header and only
+complete header lines are passed on to the callback. Parsing headers is
+very easy using this. If this callback returns <code>false</code> it’ll signal an
+error to the library. This will cause the transfer to get aborted and
+the libcurl function in progress will return <code>is_write_error</code>.</p>
+<p>A complete HTTP header that is passed to this function can be up to
+CURL_MAX_HTTP_HEADER (100K) bytes.</p>
+<p>It’s important to note that the callback will be invoked for the headers
+of all responses received after initiating a request and not just the
+final response. This includes all responses which occur during
+authentication negotiation. If you need to operate on only the headers
+from the final response, you will need to collect headers in the
+callback yourself and use HTTP status lines, for example, to delimit
+response boundaries.</p>
+<p>When a server sends a chunked encoded transfer, it may contain a
+trailer. That trailer is identical to a HTTP header and if such a
+trailer is received it is passed to the application using this callback
+as well. There are several ways to detect it being a trailer and not an
+ordinary header: 1) it comes after the response-body. 2) it comes after
+the final header line (CR LF) 3) a Trailer: header among the regular
+response-headers mention what header(s) to expect in the trailer.</p>
+<p>For non-HTTP protocols like FTP, POP3, IMAP and SMTP this function will
+get called with the server responses to the commands that libcurl sends.</p>
+<p>By default this option is not set and corresponds to the
+<code>CURLOPT_HEADERFUNCTION</code> and <code>CURLOPT_HEADERDATA</code> options.</p>
+</div><h3 id="method.progress" class="method"><code>fn <a href="#method.progress" class="fnname">progress</a>(<br>&nbsp;&nbsp;&nbsp;&nbsp;&amp;mut self, <br>&nbsp;&nbsp;&nbsp;&nbsp;dltotal: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;dlnow: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;ultotal: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;ulnow: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a><br>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a></code><a class="srclink" href="../../src/curl/easy/handler.rs.html#223-226" title="goto source code">[src]</a></h3><div class="docblock"><p>Callback to progress meter function</p>
+<p>This function gets called by libcurl instead of its internal equivalent
+with a frequent interval. While data is being transferred it will be
+called very frequently, and during slow periods like when nothing is
+being transferred it can slow down to about one call per second.</p>
+<p>The callback gets told how much data libcurl will transfer and has
+transferred, in number of bytes. The first argument is the total number
+of bytes libcurl expects to download in this transfer. The second
+argument is the number of bytes downloaded so far. The third argument is
+the total number of bytes libcurl expects to upload in this transfer.
+The fourth argument is the number of bytes uploaded so far.</p>
+<p>Unknown/unused argument values passed to the callback will be set to
+zero (like if you only download data, the upload size will remain 0).
+Many times the callback will be called one or more times first, before
+it knows the data sizes so a program must be made to handle that.</p>
+<p>Returning <code>false</code> from this callback will cause libcurl to abort the
+transfer and return <code>is_aborted_by_callback</code>.</p>
+<p>If you transfer data with the multi interface, this function will not be
+called during periods of idleness unless you call the appropriate
+libcurl function that performs transfers.</p>
+<p><code>progress</code> must be set to <code>true</code> to make this function actually get
+called.</p>
+<p>By default this function calls an internal method and corresponds to
+<code>CURLOPT_PROGRESSFUNCTION</code> and <code>CURLOPT_PROGRESSDATA</code>.</p>
+</div><h3 id="method.ssl_ctx" class="method"><code>fn <a href="#method.ssl_ctx" class="fnname">ssl_ctx</a>(&amp;mut self, cx: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.pointer.html">*mut </a><a class="enum" href="https://doc.rust-lang.org/nightly/core/ffi/enum.c_void.html" title="enum core::ffi::c_void">c_void</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>, <a class="struct" href="../../curl/struct.Error.html" title="struct curl::Error">Error</a>&gt;</code><a class="srclink" href="../../src/curl/easy/handler.rs.html#255-260" title="goto source code">[src]</a></h3><div class="docblock"><p>Callback to SSL context</p>
+<p>This callback function gets called by libcurl just before the
+initialization of an SSL connection after having processed all
+other SSL related options to give a last chance to an
+application to modify the behaviour of the SSL
+initialization. The <code>ssl_ctx</code> parameter is actually a pointer
+to the SSL library’s SSL_CTX. If an error is returned from the
+callback no attempt to establish a connection is made and the
+perform operation will return the callback’s error code.</p>
+<p>This function will get called on all new connections made to a
+server, during the SSL negotiation. The SSL_CTX pointer will
+be a new one every time.</p>
+<p>To use this properly, a non-trivial amount of knowledge of
+your SSL library is necessary. For example, you can use this
+function to call library-specific callbacks to add additional
+validation code for certificates, and even to change the
+actual URI of a HTTPS request.</p>
+<p>By default this function calls an internal method and
+corresponds to <code>CURLOPT_SSL_CTX_FUNCTION</code> and
+<code>CURLOPT_SSL_CTX_DATA</code>.</p>
+<p>Note that this callback is not guaranteed to be called, not all versions
+of libcurl support calling this callback.</p>
+</div><h3 id="method.open_socket" class="method"><code>fn <a href="#method.open_socket" class="fnname">open_socket</a>(<br>&nbsp;&nbsp;&nbsp;&nbsp;&amp;mut self, <br>&nbsp;&nbsp;&nbsp;&nbsp;family: c_int, <br>&nbsp;&nbsp;&nbsp;&nbsp;socktype: c_int, <br>&nbsp;&nbsp;&nbsp;&nbsp;protocol: c_int<br>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="type" href="https://docs.rs/curl-sys/0.3/curl_sys/type.curl_socket_t.html" title="type curl_sys::curl_socket_t">curl_socket_t</a>&gt;</code><a class="srclink" href="../../src/curl/easy/handler.rs.html#275-299" title="goto source code">[src]</a></h3><div class="docblock"><p>Callback to open sockets for libcurl.</p>
+<p>This callback function gets called by libcurl instead of the socket(2)
+call. The callback function should return the newly created socket
+or <code>None</code> in case no connection could be established or another
+error was detected. Any additional <code>setsockopt(2)</code> calls can of course
+be done on the socket at the user’s discretion. A <code>None</code> return
+value from the callback function will signal an unrecoverable error to
+libcurl and it will return <code>is_couldnt_connect</code> from the function that
+triggered this callback.</p>
+<p>By default this function opens a standard socket and
+corresponds to <code>CURLOPT_OPENSOCKETFUNCTION </code>.</p>
+</div></div><span class="loading-content">Loading content...</span><h2 id="implementors" class="small-section-header">Implementors<a href="#implementors" class="anchor"></a></h2><div class="item-list" id="implementors-list"></div><span class="loading-content">Loading content...</span><script type="text/javascript" src="../../implementors/curl/easy/trait.Handler.js" async></script></section><section id="search" class="content hidden"></section><section class="footer"></section><div id="rustdoc-vars" data-root-path="../../" data-current-crate="curl" data-search-js="../../search-index.js"></div>
+    <script src="../../main.js"></script></body></html>

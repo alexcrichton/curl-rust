@@ -1,0 +1,58 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Rust bindings to the libcurl C library"><meta name="keywords" content="rust, rustlang, rust-lang, curl"><title>curl - Rust</title><link rel="stylesheet" type="text/css" href="../normalize.css"><link rel="stylesheet" type="text/css" href="../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../ayu.css" disabled ><script id="default-settings"></script><script src="../storage.js"></script><script src="../crates.js"></script><noscript><link rel="stylesheet" href="../noscript.css"></noscript><link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="alternate icon" type="image/png" href="../favicon-16x16.png">
+<link rel="alternate icon" type="image/png" href="../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../down-arrow.svg");}</style></head><body class="rustdoc mod"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../curl/index.html'><div class='logo-container rust-logo'><img src='../rust-logo.png' alt='logo'></div></a><p class="location">Crate curl</p><div class="block version"><p>Version 0.4.38</p></div><div class="sidebar-elems"><a id="all-types" href="all.html"><p>See all curl's items</p></a><div class="block items"><ul><li><a href="#modules">Modules</a></li><li><a href="#structs">Structs</a></li><li><a href="#functions">Functions</a></li></ul></div><p class="location"></p><div id="sidebar-vars" data-name="curl" data-ty="mod" data-relpath="../"></div></div></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu"><img src="../brush.svg" width="18" height="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><script src="../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" class="help-button">?</button>
+                <a id="settings-menu" href="../settings.html"><img src="../wheel.svg" width="18" height="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><h1 class="fqn"><span class="in-band">Crate <a class="mod" href="">curl</a></span><span class="out-of-band"><span id="render-detail"><a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class="inner">&#x2212;</span>]</a></span><a class="srclink" href="../src/curl/lib.rs.html#1-148" title="goto source code">[src]</a></span></h1><div class="docblock"><p>Rust bindings to the libcurl C library</p>
+<p>This crate contains bindings for an HTTP/HTTPS client which is powered by
+<a href="https://curl.haxx.se/libcurl/">libcurl</a>, the same library behind the <code>curl</code> command line tool. The API
+currently closely matches that of libcurl itself, except that a Rustic layer
+of safety is applied on top.</p>
+<h1 id="the-easy-api" class="section-header"><a href="#the-easy-api">The “Easy” API</a></h1>
+<p>The easiest way to send a request is to use the <code>Easy</code> api which corresponds
+to <code>CURL</code> in libcurl. This handle supports a wide variety of options and can
+be used to make a single blocking request in a thread. Callbacks can be
+specified to deal with data as it arrives and a handle can be reused to
+cache connections and such.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">io</span>::{<span class="ident">stdout</span>, <span class="ident">Write</span>};
+
+<span class="kw">use</span> <span class="ident">curl</span>::<span class="ident">easy</span>::<span class="ident">Easy</span>;
+
+<span class="comment">// Write the contents of rust-lang.org to stdout</span>
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">easy</span> <span class="op">=</span> <span class="ident">Easy</span>::<span class="ident">new</span>();
+<span class="ident">easy</span>.<span class="ident">url</span>(<span class="string">&quot;https://www.rust-lang.org/&quot;</span>).<span class="ident">unwrap</span>();
+<span class="ident">easy</span>.<span class="ident">write_function</span>(<span class="op">|</span><span class="ident">data</span><span class="op">|</span> {
+    <span class="ident">stdout</span>().<span class="ident">write_all</span>(<span class="ident">data</span>).<span class="ident">unwrap</span>();
+    <span class="prelude-val">Ok</span>(<span class="ident">data</span>.<span class="ident">len</span>())
+}).<span class="ident">unwrap</span>();
+<span class="ident">easy</span>.<span class="ident">perform</span>().<span class="ident">unwrap</span>();</pre></div>
+<h1 id="what-about-multiple-concurrent-http-requests" class="section-header"><a href="#what-about-multiple-concurrent-http-requests">What about multiple concurrent HTTP requests?</a></h1>
+<p>One option you have currently is to send multiple requests in multiple
+threads, but otherwise libcurl has a “multi” interface for doing this
+operation. Initial bindings of this interface can be found in the <code>multi</code>
+module, but feedback is welcome!</p>
+<h1 id="where-does-libcurl-come-from" class="section-header"><a href="#where-does-libcurl-come-from">Where does libcurl come from?</a></h1>
+<p>This crate links to the <code>curl-sys</code> crate which is in turn responsible for
+acquiring and linking to the libcurl library. Currently this crate will
+build libcurl from source if one is not already detected on the system.</p>
+<p>There is a large number of releases for libcurl, all with different sets of
+capabilities. Robust programs may wish to inspect <code>Version::get()</code> to test
+what features are implemented in the linked build of libcurl at runtime.</p>
+<h1 id="initialization" class="section-header"><a href="#initialization">Initialization</a></h1>
+<p>The underlying libcurl library must be initialized before use and has
+certain requirements on how this is done. Check the documentation for
+<a href="../curl/fn.init.html" title="init"><code>init</code></a> for more details.</p>
+</div><h2 id="modules" class="section-header"><a href="#modules">Modules</a></h2>
+<table><tr class="module-item"><td><a class="mod" href="easy/index.html" title="curl::easy mod">easy</a></td><td class="docblock-short"><p>Bindings to the “easy” libcurl API.</p>
+</td></tr><tr class="module-item"><td><a class="mod" href="multi/index.html" title="curl::multi mod">multi</a></td><td class="docblock-short"><p>Multi - initiating multiple requests simultaneously</p>
+</td></tr></table><h2 id="structs" class="section-header"><a href="#structs">Structs</a></h2>
+<table><tr class="module-item"><td><a class="struct" href="struct.Error.html" title="curl::Error struct">Error</a></td><td class="docblock-short"><p>An error returned from various “easy” operations.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.FormError.html" title="curl::FormError struct">FormError</a></td><td class="docblock-short"><p>An error from “form add” operations.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.MultiError.html" title="curl::MultiError struct">MultiError</a></td><td class="docblock-short"><p>An error from “multi” operations.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.Protocols.html" title="curl::Protocols struct">Protocols</a></td><td class="docblock-short"><p>An iterator over the list of protocols a version supports.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.ShareError.html" title="curl::ShareError struct">ShareError</a></td><td class="docblock-short"><p>An error returned from “share” operations.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.Version.html" title="curl::Version struct">Version</a></td><td class="docblock-short"><p>Version information about libcurl and the capabilities that it supports.</p>
+</td></tr></table><h2 id="functions" class="section-header"><a href="#functions">Functions</a></h2>
+<table><tr class="module-item"><td><a class="fn" href="fn.init.html" title="curl::init fn">init</a></td><td class="docblock-short"><p>Initializes the underlying libcurl library.</p>
+</td></tr></table></section><section id="search" class="content hidden"></section><section class="footer"></section><div id="rustdoc-vars" data-root-path="../" data-current-crate="curl" data-search-js="../search-index.js"></div>
+    <script src="../main.js"></script></body></html>

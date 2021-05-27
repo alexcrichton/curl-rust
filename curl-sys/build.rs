@@ -156,6 +156,7 @@ fn main() {
         .file("curl/lib/hostcheck.c")
         .file("curl/lib/hostip.c")
         .file("curl/lib/hostip6.c")
+        .file("curl/lib/hsts.c")
         .file("curl/lib/http.c")
         .file("curl/lib/http2.c")
         .file("curl/lib/http_chunks.c")

@@ -128,6 +128,8 @@ fn main() {
         .define("OS", "\"unknown\"") // TODO
         .define("HAVE_ZLIB_H", None)
         .define("HAVE_LIBZ", None)
+        .define("HAVE_BOOL_T", None)
+        .define("HAVE_STDBOOL_H", None)
         .file("curl/lib/asyn-thread.c")
         .file("curl/lib/altsvc.c")
         .file("curl/lib/base64.c")
@@ -156,6 +158,7 @@ fn main() {
         .file("curl/lib/hostcheck.c")
         .file("curl/lib/hostip.c")
         .file("curl/lib/hostip6.c")
+        .file("curl/lib/hsts.c")
         .file("curl/lib/http.c")
         .file("curl/lib/http2.c")
         .file("curl/lib/http_chunks.c")
@@ -383,6 +386,7 @@ fn main() {
     if target.contains("-apple-") {
         println!("cargo:rustc-link-lib=framework=Security");
         println!("cargo:rustc-link-lib=framework=CoreFoundation");
+        println!("cargo:rustc-link-lib=framework=SystemConfiguration");
     }
 }
 

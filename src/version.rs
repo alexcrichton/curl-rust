@@ -151,6 +151,31 @@ impl Version {
         self.flag(curl_sys::CURL_VERSION_BROTLI)
     }
 
+    /// Returns whether libcurl was built with support for Alt-Svc.
+    pub fn feature_altsvc(&self) -> bool {
+        self.flag(curl_sys::CURL_VERSION_ALTSVC)
+    }
+
+    /// Returns whether libcurl was built with support for zstd
+    pub fn feature_zstd(&self) -> bool {
+        self.flag(curl_sys::CURL_VERSION_ZSTD)
+    }
+
+    /// Returns whether libcurl was built with support for unicode
+    pub fn feature_unicode(&self) -> bool {
+        self.flag(curl_sys::CURL_VERSION_UNICODE)
+    }
+
+    /// Returns whether libcurl was built with support for hsts
+    pub fn feature_hsts(&self) -> bool {
+        self.flag(curl_sys::CURL_VERSION_HSTS)
+    }
+
+    /// Returns whether libcurl was built with support for gsasl
+    pub fn feature_gsasl(&self) -> bool {
+        self.flag(curl_sys::CURL_VERSION_GSASL)
+    }
+
     fn flag(&self, flag: c_int) -> bool {
         unsafe { (*self.inner).features & flag != 0 }
     }
@@ -345,6 +370,17 @@ impl Version {
             }
         }
     }
+
+    /// If available, the human readable version of hyper
+    pub fn gsasl_version(&self) -> Option<&str> {
+        unsafe {
+            if (*self.inner).age >= curl_sys::CURLVERSION_TENTH {
+                crate::opt_str((*self.inner).gsasl_version)
+            } else {
+                None
+            }
+        }
+    }
 }
 
 impl fmt::Debug for Version {
@@ -371,7 +407,14 @@ impl fmt::Debug for Version {
             .field(
                 "feature_unix_domain_socket",
                 &self.feature_unix_domain_socket(),
-            );
+            )
+            .field("feature_altsvc", &self.feature_altsvc())
+            .field("feature_zstd", &self.feature_zstd())
+            .field("feature_unicode", &self.feature_unicode())
+            .field("feature_http3", &self.feature_http3())
+            .field("feature_http2", &self.feature_http2())
+            .field("feature_gsasl", &self.feature_gsasl())
+            .field("feature_brotli", &self.feature_brotli());
 
         if let Some(s) = self.ssl_version() {
             f.field("ssl_version", &s);
@@ -420,6 +463,9 @@ impl fmt::Debug for Version {
         }
         if let Some(s) = self.hyper_version() {
             f.field("hyper_version", &s);
+        }
+        if let Some(s) = self.gsasl_version() {
+            f.field("gsasl_version", &s);
         }
 
         f.field("protocols", &self.protocols().collect::<Vec<_>>());

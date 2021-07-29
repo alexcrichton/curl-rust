@@ -64,3 +64,8 @@ required-features = ["ssl"]
 name = "ssl_cert_blob"
 path = "examples/ssl_cert_blob.rs"
 required-features = ["ssl"]
+
+[[example]]
+name = "aws_sigv4"
+path = "examples/aws_sigv4.rs"
+required-features = ["static-curl", "ssl"]

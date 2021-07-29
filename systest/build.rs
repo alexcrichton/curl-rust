@@ -78,6 +78,8 @@ fn main() {
         }
         if version < 75 {
             match s {
+                "CURLAUTH_AWS_SIGV4" => return true,
+                "CURLOPT_AWS_SIGV4" => return true,
                 "CURLVERSION_NINTH" => return true,
                 _ => {}
             }

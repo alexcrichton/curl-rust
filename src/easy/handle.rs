@@ -696,6 +696,11 @@ impl Easy {
         self.inner.http_auth(auth)
     }
 
+    /// Same as [`Easy2::aws_sigv4`](struct.Easy2.html#method.aws_sigv4)
+    pub fn aws_sigv4(&mut self, param: &str) -> Result<(), Error> {
+        self.inner.aws_sigv4(param)
+    }
+
     /// Same as [`Easy2::proxy_username`](struct.Easy2.html#method.proxy_username)
     pub fn proxy_username(&mut self, user: &str) -> Result<(), Error> {
         self.inner.proxy_username(user)

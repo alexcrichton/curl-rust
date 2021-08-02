@@ -310,6 +310,7 @@ pub const CURLAUTH_GSSNEGOTIATE: c_ulong = 1 << 2;
 pub const CURLAUTH_NTLM: c_ulong = 1 << 3;
 pub const CURLAUTH_DIGEST_IE: c_ulong = 1 << 4;
 pub const CURLAUTH_NTLM_WB: c_ulong = 1 << 5;
+pub const CURLAUTH_AWS_SIGV4: c_ulong = 1 << 7;
 // pub const CURLAUTH_ONLY: c_ulong = 1 << 31;
 pub const CURLAUTH_ANY: c_ulong = !CURLAUTH_DIGEST_IE;
 pub const CURLAUTH_ANYSAFE: c_ulong = !(CURLAUTH_BASIC | CURLAUTH_DIGEST_IE);
@@ -601,6 +602,8 @@ pub const CURLOPT_SSLKEY_BLOB: CURLoption = CURLOPTTYPE_BLOB + 292;
 pub const CURLOPT_PROXY_SSLCERT_BLOB: CURLoption = CURLOPTTYPE_BLOB + 293;
 pub const CURLOPT_PROXY_SSLKEY_BLOB: CURLoption = CURLOPTTYPE_BLOB + 294;
 pub const CURLOPT_ISSUERCERT_BLOB: CURLoption = CURLOPTTYPE_BLOB + 295;
+
+pub const CURLOPT_AWS_SIGV4: CURLoption = CURLOPTTYPE_OBJECTPOINT + 305;
 
 pub const CURL_IPRESOLVE_WHATEVER: c_int = 0;
 pub const CURL_IPRESOLVE_V4: c_int = 1;

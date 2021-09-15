@@ -273,6 +273,7 @@ fn main() {
                 .file("curl/lib/vtls/schannel_verify.c");
         } else if target.contains("-apple-") {
             cfg.define("USE_SECTRANSP", None)
+                .file("curl/lib/x509asn1.c")
                 .file("curl/lib/vtls/sectransp.c");
             if xcode_major_version().map_or(true, |v| v >= 9) {
                 // On earlier Xcode versions (<9), defining HAVE_BUILTIN_AVAILABLE

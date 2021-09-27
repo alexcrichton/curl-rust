@@ -64,6 +64,7 @@ fn main() {
     println!("cargo:root={}", dst.display());
     println!("cargo:include={}", include.display());
     println!("cargo:static=1");
+    println!("cargo:rustc-cfg=libcurl_vendored");
     fs::create_dir_all(include.join("curl")).unwrap();
 
     for header in [

@@ -51,6 +51,11 @@ impl Version {
         unsafe { (*self.inner).version_num as u32 }
     }
 
+    /// Returns true if this was built with the vendored version of libcurl.
+    pub fn vendored(&self) -> bool {
+        curl_sys::vendored()
+    }
+
     /// Returns a human readable string of the host libcurl is built for.
     ///
     /// This is discovered as part of the build environment.
@@ -389,6 +394,7 @@ impl fmt::Debug for Version {
         f.field("version", &self.version())
             .field("rust_crate_version", &env!("CARGO_PKG_VERSION"))
             .field("rust_sys_crate_version", &curl_sys::rust_crate_version())
+            .field("vendored", &self.vendored())
             .field("host", &self.host())
             .field("feature_ipv6", &self.feature_ipv6())
             .field("feature_ssl", &self.feature_ssl())

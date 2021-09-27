@@ -1111,3 +1111,8 @@ extern "C" {
 pub fn rust_crate_version() -> &'static str {
     env!("CARGO_PKG_VERSION")
 }
+
+#[doc(hidden)]
+pub fn vendored() -> bool {
+    cfg!(libcurl_vendored)
+}

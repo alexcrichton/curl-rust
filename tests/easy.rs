@@ -303,6 +303,7 @@ fn misc() {
     t!(h.buffer_size(10));
 
     if Version::get().version_num() >= 0x073e00 {
+        // only available on curl 7.62.0 or later:
         t!(h.upload_buffer_size(10));
     }
 

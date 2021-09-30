@@ -1061,7 +1061,7 @@ impl<H> Easy2<H> {
         self.setopt_long(curl_sys::CURLOPT_BUFFERSIZE, size as c_long)
     }
 
-    /// Specifie the preferred send buffer size, in bytes.
+    /// Specify the preferred send buffer size, in bytes.
     ///
     /// This is treated as a request, not an order, and the main point of this
     /// is that the read callback may get called more often with smaller

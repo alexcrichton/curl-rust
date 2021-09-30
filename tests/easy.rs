@@ -300,6 +300,7 @@ fn misc() {
     // t!(h.tcp_keepidle(Duration::new(3, 0)));
     // t!(h.tcp_keepintvl(Duration::new(3, 0)));
     t!(h.buffer_size(10));
+    t!(h.upload_buffer_size(10));
     t!(h.dns_cache_timeout(Duration::new(1, 0)));
 }
 

@@ -653,6 +653,11 @@ impl Easy {
         self.inner.buffer_size(size)
     }
 
+    /// Same as [`Easy2::upload_buffer_size`](struct.Easy2.html#method.upload_buffer_size)
+    pub fn upload_buffer_size(&mut self, size: usize) -> Result<(), Error> {
+        self.inner.upload_buffer_size(size)
+    }
+
     /// Same as [`Easy2::tcp_nodelay`](struct.Easy2.html#method.tcp_nodelay)
     pub fn tcp_nodelay(&mut self, enable: bool) -> Result<(), Error> {
         self.inner.tcp_nodelay(enable)

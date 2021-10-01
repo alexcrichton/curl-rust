@@ -14,6 +14,7 @@ macro_rules! t {
 }
 
 use curl::easy::{Easy, List, ReadError, Transfer, WriteError};
+use curl::Version;
 
 use crate::server::Server;
 mod server;
@@ -300,6 +301,12 @@ fn misc() {
     // t!(h.tcp_keepidle(Duration::new(3, 0)));
     // t!(h.tcp_keepintvl(Duration::new(3, 0)));
     t!(h.buffer_size(10));
+
+    if Version::get().version_num() >= 0x073e00 {
+        // only available on curl 7.62.0 or later:
+        t!(h.upload_buffer_size(10));
+    }
+
     t!(h.dns_cache_timeout(Duration::new(1, 0)));
 }
 

@@ -1061,6 +1061,17 @@ impl<H> Easy2<H> {
         self.setopt_long(curl_sys::CURLOPT_BUFFERSIZE, size as c_long)
     }
 
+    /// Specify the preferred send buffer size, in bytes.
+    ///
+    /// This is treated as a request, not an order, and the main point of this
+    /// is that the read callback may get called more often with smaller
+    /// chunks.
+    ///
+    /// The upload buffer size is by default 64 kilobytes.
+    pub fn upload_buffer_size(&mut self, size: usize) -> Result<(), Error> {
+        self.setopt_long(curl_sys::CURLOPT_UPLOAD_BUFFERSIZE, size as c_long)
+    }
+
     // /// Enable or disable TCP Fast Open
     // ///
     // /// By default this options defaults to `false` and corresponds to

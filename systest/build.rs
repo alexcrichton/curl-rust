@@ -136,6 +136,12 @@ fn main() {
                 _ => {}
             }
         }
+        if version < 62 {
+            match s {
+                "CURLOPT_UPLOAD_BUFFERSIZE" => return true,
+                _ => {}
+            }
+        }
         if version < 61 {
             match s {
                 "CURLOPT_PIPEWAIT" => return true,

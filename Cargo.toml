@@ -50,6 +50,7 @@ force-system-lib-on-osx = ['curl-sys/force-system-lib-on-osx']
 protocol-ftp = ["curl-sys/protocol-ftp"]
 zlib-ng-compat = ["curl-sys/zlib-ng-compat", "static-curl"]
 upkeep_7_62_0 = ["curl-sys/upkeep_7_62_0"]
+poll_7_66_0 = ["curl-sys/poll_7_66_0"]
 
 [[test]]
 name = "atexit"

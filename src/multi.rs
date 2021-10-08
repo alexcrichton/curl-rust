@@ -571,18 +571,71 @@ impl Multi {
     /// }
     /// ```
     pub fn wait(&self, waitfds: &mut [WaitFd], timeout: Duration) -> Result<u32, MultiError> {
-        let timeout_ms = {
-            let secs = timeout.as_secs();
-            if secs > (i32::max_value() / 1000) as u64 {
-                // Duration too large, clamp at maximum value.
-                i32::max_value()
-            } else {
-                secs as i32 * 1000 + timeout.subsec_nanos() as i32 / 1_000_000
-            }
-        };
+        let timeout_ms = Multi::_timeout_i32(timeout);
         unsafe {
             let mut ret = 0;
             cvt(curl_sys::curl_multi_wait(
+                self.raw,
+                waitfds.as_mut_ptr() as *mut _,
+                waitfds.len() as u32,
+                timeout_ms,
+                &mut ret,
+            ))?;
+            Ok(ret as u32)
+        }
+    }
+
+    fn _timeout_i32(timeout: Duration) -> i32 {
+        let secs = timeout.as_secs();
+        if secs > (i32::MAX / 1000) as u64 {
+            // Duration too large, clamp at maximum value.
+            i32::MAX
+        } else {
+            secs as i32 * 1000 + timeout.subsec_nanos() as i32 / 1_000_000
+        }
+    }
+
+    /// Block until activity is detected or a timeout passes.
+    ///
+    /// The timeout is used in millisecond-precision. Large durations are
+    /// clamped at the maximum value curl accepts.
+    ///
+    /// The returned integer will contain the number of internal file
+    /// descriptors on which interesting events occurred.
+    ///
+    /// This function is a simpler alternative to using `fdset()` and `select()`
+    /// and does not suffer from file descriptor limits.
+    ///
+    /// While this method is similar to [Multi::wait], with the following
+    /// distinctions:
+    /// * If there are no handles added to the multi, poll will honor the
+    /// provided timeout, while [Multi::wait] returns immediately.
+    /// * If poll has blocked due to there being no activity on the handles in
+    /// the Multi, it can be woken up from any thread and at any time before
+    /// the timeout expires.
+    ///
+    /// Requires libcurl 7.66.0 or later.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use curl::multi::Multi;
+    /// use std::time::Duration;
+    ///
+    /// let m = Multi::new();
+    ///
+    /// // Add some Easy handles...
+    ///
+    /// while m.perform().unwrap() > 0 {
+    ///     m.poll(&mut [], Duration::from_secs(1)).unwrap();
+    /// }
+    /// ```
+    #[cfg(feature = "poll_7_66_0")]
+    pub fn poll(&self, waitfds: &mut [WaitFd], timeout: Duration) -> Result<u32, MultiError> {
+        let timeout_ms = Multi::_timeout_i32(timeout);
+        unsafe {
+            let mut ret = 0;
+            cvt(curl_sys::curl_multi_poll(
                 self.raw,
                 waitfds.as_mut_ptr() as *mut _,
                 waitfds.len() as u32,

@@ -31,6 +31,10 @@ use crate::{Error, MultiError};
 pub struct Multi {
     raw: *mut curl_sys::CURLM,
     data: Box<MultiData>,
+
+    // Add extra field so that all MultiWakers can track the dropped state of this Multi.
+    #[cfg(feature = "poll_7_66_0")]
+    dropped: std::sync::Arc<std::sync::Mutex<bool>>,
 }
 
 struct MultiData {
@@ -92,6 +96,21 @@ pub struct WaitFd {
     inner: curl_sys::curl_waitfd,
 }
 
+/// A handle that can be used to wake up a thread that's blocked in [Multi::poll].
+/// The handle can be passed to and used from any thread.
+#[cfg(feature = "poll_7_66_0")]
+#[derive(Debug, Clone)]
+pub struct MultiWaker {
+    raw: *mut curl_sys::CURLM,
+    dropped: std::sync::Arc<std::sync::Mutex<bool>>,
+}
+
+#[cfg(feature = "poll_7_66_0")]
+unsafe impl Send for MultiWaker {}
+
+#[cfg(feature = "poll_7_66_0")]
+unsafe impl Sync for MultiWaker {}
+
 impl Multi {
     /// Creates a new multi session through which multiple HTTP transfers can be
     /// initiated.
@@ -106,6 +125,9 @@ impl Multi {
                     socket: Box::new(|_, _, _| ()),
                     timer: Box::new(|_| true),
                 }),
+
+                #[cfg(feature = "poll_7_66_0")]
+                dropped: std::sync::Arc::new(std::sync::Mutex::new(false)),
             }
         }
     }
@@ -646,6 +668,13 @@ impl Multi {
         }
     }
 
+    /// Returns a new [MultiWaker] that can be used to wake up a thread that's
+    /// currently blocked in [Multi::poll].
+    #[cfg(feature = "poll_7_66_0")]
+    pub fn waker(&self) -> MultiWaker {
+        MultiWaker::new(self.raw, self.dropped.clone())
+    }
+
     /// Reads/writes available data from each easy handle.
     ///
     /// This function handles transfers on all the added handles that need
@@ -766,8 +795,50 @@ impl Multi {
         self.raw
     }
 
+    #[cfg(not(feature = "poll_7_66_0"))]
     unsafe fn close_impl(&self) -> Result<(), MultiError> {
         cvt(curl_sys::curl_multi_cleanup(self.raw))
+    }
+
+    #[cfg(feature = "poll_7_66_0")]
+    unsafe fn close_impl(&self) -> Result<(), MultiError> {
+        let dropped = self.dropped.lock();
+        if let Ok(mut dropped) = dropped {
+            *dropped = true;
+        }
+
+        cvt(curl_sys::curl_multi_cleanup(self.raw))
+    }
+}
+
+#[cfg(feature = "poll_7_66_0")]
+impl MultiWaker {
+
+    /// Creates a new MultiWaker handle.
+    pub fn new(raw: *mut curl_sys::CURLM, dropped: std::sync::Arc<std::sync::Mutex<bool>>) -> Self {
+        Self { raw, dropped }
+    }
+
+    /// Wakes up a thread that is blocked in [Multi::poll]. This method can be
+    /// invoked from any thread.
+    ///
+    /// Will return an error if the Multi has already been dropped.
+    pub fn wakeup(&self) -> Result<(), MultiError> {
+        let dropped = self.dropped.lock();
+        if let Ok(dropped) = dropped {
+            if *dropped {
+                // The Multi has already been dropped.
+                Err(MultiError::new(curl_sys::CURLM_BAD_HANDLE))
+            } else {
+                unsafe {
+                    cvt(curl_sys::curl_multi_wakeup(self.raw))
+                }
+            }
+        } else {
+            // This happens if another thread panicked while holding the Mutex
+            // Not sure if we want a better message here or not.
+            Err(MultiError::new(curl_sys::CURLM_BAD_HANDLE))
+        }
     }
 }
 

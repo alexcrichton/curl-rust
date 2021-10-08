@@ -813,7 +813,6 @@ impl Multi {
 
 #[cfg(feature = "poll_7_66_0")]
 impl MultiWaker {
-
     /// Creates a new MultiWaker handle.
     pub fn new(raw: *mut curl_sys::CURLM, dropped: std::sync::Arc<std::sync::Mutex<bool>>) -> Self {
         Self { raw, dropped }
@@ -830,9 +829,7 @@ impl MultiWaker {
                 // The Multi has already been dropped.
                 Err(MultiError::new(curl_sys::CURLM_BAD_HANDLE))
             } else {
-                unsafe {
-                    cvt(curl_sys::curl_multi_wakeup(self.raw))
-                }
+                unsafe { cvt(curl_sys::curl_multi_wakeup(self.raw)) }
             }
         } else {
             // This happens if another thread panicked while holding the Mutex

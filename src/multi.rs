@@ -593,7 +593,7 @@ impl Multi {
     /// }
     /// ```
     pub fn wait(&self, waitfds: &mut [WaitFd], timeout: Duration) -> Result<u32, MultiError> {
-        let timeout_ms = Multi::_timeout_i32(timeout);
+        let timeout_ms = Multi::timeout_i32(timeout);
         unsafe {
             let mut ret = 0;
             cvt(curl_sys::curl_multi_wait(
@@ -607,7 +607,7 @@ impl Multi {
         }
     }
 
-    fn _timeout_i32(timeout: Duration) -> i32 {
+    fn timeout_i32(timeout: Duration) -> i32 {
         let secs = timeout.as_secs();
         if secs > (i32::MAX / 1000) as u64 {
             // Duration too large, clamp at maximum value.
@@ -654,7 +654,7 @@ impl Multi {
     /// ```
     #[cfg(feature = "poll_7_66_0")]
     pub fn poll(&self, waitfds: &mut [WaitFd], timeout: Duration) -> Result<u32, MultiError> {
-        let timeout_ms = Multi::_timeout_i32(timeout);
+        let timeout_ms = Multi::timeout_i32(timeout);
         unsafe {
             let mut ret = 0;
             cvt(curl_sys::curl_multi_poll(

@@ -1080,7 +1080,6 @@ extern "C" {
         ret: *mut c_int,
     ) -> CURLMcode;
 
-    #[cfg(feature = "poll_7_66_0")]
     pub fn curl_multi_poll(
         multi_handle: *mut CURLM,
         extra_fds: *mut curl_waitfd,
@@ -1089,7 +1088,6 @@ extern "C" {
         ret: *mut c_int,
     ) -> CURLMcode;
 
-    #[cfg(feature = "poll_7_66_0")]
     pub fn curl_multi_wakeup(multi_handle: *mut CURLM) -> CURLMcode;
 
     pub fn curl_multi_perform(multi_handle: *mut CURLM, running_handles: *mut c_int) -> CURLMcode;

@@ -3,7 +3,7 @@
 use std::fmt;
 use std::marker;
 use std::ptr;
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
 use std::time::Duration;
 
 use curl_sys;
@@ -100,16 +100,13 @@ pub struct WaitFd {
 
 /// A handle that can be used to wake up a thread that's blocked in [Multi::poll].
 /// The handle can be passed to and used from any thread.
-#[cfg(feature = "poll_7_66_0")]
 #[derive(Debug, Clone)]
 pub struct MultiWaker {
-    raw: std::sync::Weak<RawMulti>,
+    raw: Weak<RawMulti>,
 }
 
-#[cfg(feature = "poll_7_66_0")]
 unsafe impl Send for MultiWaker {}
 
-#[cfg(feature = "poll_7_66_0")]
 unsafe impl Sync for MultiWaker {}
 
 impl Multi {
@@ -650,7 +647,6 @@ impl Multi {
     ///     m.poll(&mut [], Duration::from_secs(1)).unwrap();
     /// }
     /// ```
-    #[cfg(feature = "poll_7_66_0")]
     pub fn poll(&self, waitfds: &mut [WaitFd], timeout: Duration) -> Result<u32, MultiError> {
         let timeout_ms = Multi::timeout_i32(timeout);
         unsafe {
@@ -668,7 +664,6 @@ impl Multi {
 
     /// Returns a new [MultiWaker] that can be used to wake up a thread that's
     /// currently blocked in [Multi::poll].
-    #[cfg(feature = "poll_7_66_0")]
     pub fn waker(&self) -> MultiWaker {
         MultiWaker::new(Arc::downgrade(&self.raw))
     }
@@ -764,7 +759,11 @@ impl Multi {
             let write = write.map(|r| r as *mut _).unwrap_or(ptr::null_mut());
             let except = except.map(|r| r as *mut _).unwrap_or(ptr::null_mut());
             cvt(curl_sys::curl_multi_fdset(
-                self.raw.handle, read, write, except, &mut ret,
+                self.raw.handle,
+                read,
+                write,
+                except,
+                &mut ret,
             ))?;
             if ret == -1 {
                 Ok(None)
@@ -792,7 +791,6 @@ impl Multi {
     pub fn raw(&self) -> *mut curl_sys::CURLM {
         self.raw.handle
     }
-
 }
 
 impl Drop for RawMulti {
@@ -803,10 +801,9 @@ impl Drop for RawMulti {
     }
 }
 
-#[cfg(feature = "poll_7_66_0")]
 impl MultiWaker {
     /// Creates a new MultiWaker handle.
-    fn new(raw: std::sync::Weak<RawMulti>) -> Self {
+    fn new(raw: Weak<RawMulti>) -> Self {
         Self { raw }
     }
 

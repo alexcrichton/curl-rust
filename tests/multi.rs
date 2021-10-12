@@ -267,6 +267,7 @@ fn waitfds() {
 // Tests passing raw file descriptors to Multi::wait. The test is limited to Linux only as the
 // semantics of the underlying poll(2) system call used by curl apparently differ on other
 // platforms, making the test fail.
+#[cfg(feature = "poll_7_68_0")]
 #[cfg(target_os = "linux")]
 #[test]
 fn pollfds() {

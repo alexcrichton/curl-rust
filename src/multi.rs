@@ -811,6 +811,8 @@ impl MultiWaker {
     /// invoked from any thread.
     ///
     /// Will return an error if the RawMulti has already been dropped.
+    ///
+    /// Requires libcurl 7.68.0 or later.
     pub fn wakeup(&self) -> Result<(), MultiError> {
         if let Some(raw) = self.raw.upgrade() {
             unsafe { cvt(curl_sys::curl_multi_wakeup(raw.handle)) }

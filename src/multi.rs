@@ -764,7 +764,11 @@ impl Multi {
             let write = write.map(|r| r as *mut _).unwrap_or(ptr::null_mut());
             let except = except.map(|r| r as *mut _).unwrap_or(ptr::null_mut());
             cvt(curl_sys::curl_multi_fdset(
-                self.raw.handle, read, write, except, &mut ret,
+                self.raw.handle,
+                read,
+                write,
+                except,
+                &mut ret,
             ))?;
             if ret == -1 {
                 Ok(None)
@@ -792,7 +796,6 @@ impl Multi {
     pub fn raw(&self) -> *mut curl_sys::CURLM {
         self.raw.handle
     }
-
 }
 
 impl Drop for RawMulti {

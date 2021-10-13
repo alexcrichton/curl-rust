@@ -3,6 +3,7 @@
 use std::fmt;
 use std::marker;
 use std::ptr;
+use std::sync::Arc;
 use std::time::Duration;
 
 use curl_sys;
@@ -29,8 +30,13 @@ use crate::{Error, MultiError};
 ///
 /// [multi tutorial]: https://curl.haxx.se/libcurl/c/libcurl-multi.html
 pub struct Multi {
-    raw: *mut curl_sys::CURLM,
+    raw: Arc<RawMulti>,
     data: Box<MultiData>,
+}
+
+#[derive(Debug)]
+struct RawMulti {
+    handle: *mut curl_sys::CURLM,
 }
 
 struct MultiData {
@@ -92,6 +98,20 @@ pub struct WaitFd {
     inner: curl_sys::curl_waitfd,
 }
 
+/// A handle that can be used to wake up a thread that's blocked in [Multi::poll].
+/// The handle can be passed to and used from any thread.
+#[cfg(feature = "poll_7_68_0")]
+#[derive(Debug, Clone)]
+pub struct MultiWaker {
+    raw: std::sync::Weak<RawMulti>,
+}
+
+#[cfg(feature = "poll_7_68_0")]
+unsafe impl Send for MultiWaker {}
+
+#[cfg(feature = "poll_7_68_0")]
+unsafe impl Sync for MultiWaker {}
+
 impl Multi {
     /// Creates a new multi session through which multiple HTTP transfers can be
     /// initiated.
@@ -101,7 +121,7 @@ impl Multi {
             let ptr = curl_sys::curl_multi_init();
             assert!(!ptr.is_null());
             Multi {
-                raw: ptr,
+                raw: Arc::new(RawMulti { handle: ptr }),
                 data: Box::new(MultiData {
                     socket: Box::new(|_, _, _| ()),
                     timer: Box::new(|_| true),
@@ -196,7 +216,7 @@ impl Multi {
     pub fn assign(&self, socket: Socket, token: usize) -> Result<(), MultiError> {
         unsafe {
             cvt(curl_sys::curl_multi_assign(
-                self.raw,
+                self.raw.handle,
                 socket,
                 token as *mut _,
             ))?;
@@ -341,7 +361,7 @@ impl Multi {
     }
 
     fn setopt_long(&mut self, opt: curl_sys::CURLMoption, val: c_long) -> Result<(), MultiError> {
-        unsafe { cvt(curl_sys::curl_multi_setopt(self.raw, opt, val)) }
+        unsafe { cvt(curl_sys::curl_multi_setopt(self.raw.handle, opt, val)) }
     }
 
     fn setopt_ptr(
@@ -349,7 +369,7 @@ impl Multi {
         opt: curl_sys::CURLMoption,
         val: *const c_char,
     ) -> Result<(), MultiError> {
-        unsafe { cvt(curl_sys::curl_multi_setopt(self.raw, opt, val)) }
+        unsafe { cvt(curl_sys::curl_multi_setopt(self.raw.handle, opt, val)) }
     }
 
     /// Add an easy handle to a multi session
@@ -377,7 +397,7 @@ impl Multi {
         easy.transfer();
 
         unsafe {
-            cvt(curl_sys::curl_multi_add_handle(self.raw, easy.raw()))?;
+            cvt(curl_sys::curl_multi_add_handle(self.raw.handle, easy.raw()))?;
         }
         Ok(EasyHandle {
             easy,
@@ -388,7 +408,7 @@ impl Multi {
     /// Same as `add`, but works with the `Easy2` type.
     pub fn add2<H>(&self, easy: Easy2<H>) -> Result<Easy2Handle<H>, MultiError> {
         unsafe {
-            cvt(curl_sys::curl_multi_add_handle(self.raw, easy.raw()))?;
+            cvt(curl_sys::curl_multi_add_handle(self.raw.handle, easy.raw()))?;
         }
         Ok(Easy2Handle {
             easy,
@@ -410,7 +430,7 @@ impl Multi {
     pub fn remove(&self, easy: EasyHandle) -> Result<Easy, MultiError> {
         unsafe {
             cvt(curl_sys::curl_multi_remove_handle(
-                self.raw,
+                self.raw.handle,
                 easy.easy.raw(),
             ))?;
         }
@@ -421,7 +441,7 @@ impl Multi {
     pub fn remove2<H>(&self, easy: Easy2Handle<H>) -> Result<Easy2<H>, MultiError> {
         unsafe {
             cvt(curl_sys::curl_multi_remove_handle(
-                self.raw,
+                self.raw.handle,
                 easy.easy.raw(),
             ))?;
         }
@@ -445,7 +465,7 @@ impl Multi {
         let mut queue = 0;
         unsafe {
             loop {
-                let ptr = curl_sys::curl_multi_info_read(self.raw, &mut queue);
+                let ptr = curl_sys::curl_multi_info_read(self.raw.handle, &mut queue);
                 if ptr.is_null() {
                     break;
                 }
@@ -479,7 +499,7 @@ impl Multi {
         let mut remaining = 0;
         unsafe {
             cvt(curl_sys::curl_multi_socket_action(
-                self.raw,
+                self.raw.handle,
                 socket,
                 events.bits,
                 &mut remaining,
@@ -507,7 +527,7 @@ impl Multi {
         let mut remaining = 0;
         unsafe {
             cvt(curl_sys::curl_multi_socket_action(
-                self.raw,
+                self.raw.handle,
                 curl_sys::CURL_SOCKET_BAD,
                 0,
                 &mut remaining,
@@ -536,7 +556,7 @@ impl Multi {
     pub fn get_timeout(&self) -> Result<Option<Duration>, MultiError> {
         let mut ms = 0;
         unsafe {
-            cvt(curl_sys::curl_multi_timeout(self.raw, &mut ms))?;
+            cvt(curl_sys::curl_multi_timeout(self.raw.handle, &mut ms))?;
             if ms == -1 {
                 Ok(None)
             } else {
@@ -571,19 +591,11 @@ impl Multi {
     /// }
     /// ```
     pub fn wait(&self, waitfds: &mut [WaitFd], timeout: Duration) -> Result<u32, MultiError> {
-        let timeout_ms = {
-            let secs = timeout.as_secs();
-            if secs > (i32::max_value() / 1000) as u64 {
-                // Duration too large, clamp at maximum value.
-                i32::max_value()
-            } else {
-                secs as i32 * 1000 + timeout.subsec_nanos() as i32 / 1_000_000
-            }
-        };
+        let timeout_ms = Multi::timeout_i32(timeout);
         unsafe {
             let mut ret = 0;
             cvt(curl_sys::curl_multi_wait(
-                self.raw,
+                self.raw.handle,
                 waitfds.as_mut_ptr() as *mut _,
                 waitfds.len() as u32,
                 timeout_ms,
@@ -591,6 +603,74 @@ impl Multi {
             ))?;
             Ok(ret as u32)
         }
+    }
+
+    fn timeout_i32(timeout: Duration) -> i32 {
+        let secs = timeout.as_secs();
+        if secs > (i32::MAX / 1000) as u64 {
+            // Duration too large, clamp at maximum value.
+            i32::MAX
+        } else {
+            secs as i32 * 1000 + timeout.subsec_nanos() as i32 / 1_000_000
+        }
+    }
+
+    /// Block until activity is detected or a timeout passes.
+    ///
+    /// The timeout is used in millisecond-precision. Large durations are
+    /// clamped at the maximum value curl accepts.
+    ///
+    /// The returned integer will contain the number of internal file
+    /// descriptors on which interesting events occurred.
+    ///
+    /// This function is a simpler alternative to using `fdset()` and `select()`
+    /// and does not suffer from file descriptor limits.
+    ///
+    /// While this method is similar to [Multi::wait], with the following
+    /// distinctions:
+    /// * If there are no handles added to the multi, poll will honor the
+    /// provided timeout, while [Multi::wait] returns immediately.
+    /// * If poll has blocked due to there being no activity on the handles in
+    /// the Multi, it can be woken up from any thread and at any time before
+    /// the timeout expires.
+    ///
+    /// Requires libcurl 7.66.0 or later.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use curl::multi::Multi;
+    /// use std::time::Duration;
+    ///
+    /// let m = Multi::new();
+    ///
+    /// // Add some Easy handles...
+    ///
+    /// while m.perform().unwrap() > 0 {
+    ///     m.poll(&mut [], Duration::from_secs(1)).unwrap();
+    /// }
+    /// ```
+    #[cfg(feature = "poll_7_68_0")]
+    pub fn poll(&self, waitfds: &mut [WaitFd], timeout: Duration) -> Result<u32, MultiError> {
+        let timeout_ms = Multi::timeout_i32(timeout);
+        unsafe {
+            let mut ret = 0;
+            cvt(curl_sys::curl_multi_poll(
+                self.raw.handle,
+                waitfds.as_mut_ptr() as *mut _,
+                waitfds.len() as u32,
+                timeout_ms,
+                &mut ret,
+            ))?;
+            Ok(ret as u32)
+        }
+    }
+
+    /// Returns a new [MultiWaker] that can be used to wake up a thread that's
+    /// currently blocked in [Multi::poll].
+    #[cfg(feature = "poll_7_68_0")]
+    pub fn waker(&self) -> MultiWaker {
+        MultiWaker::new(Arc::downgrade(&self.raw))
     }
 
     /// Reads/writes available data from each easy handle.
@@ -636,7 +716,7 @@ impl Multi {
     pub fn perform(&self) -> Result<u32, MultiError> {
         unsafe {
             let mut ret = 0;
-            cvt(curl_sys::curl_multi_perform(self.raw, &mut ret))?;
+            cvt(curl_sys::curl_multi_perform(self.raw.handle, &mut ret))?;
             Ok(ret as u32)
         }
     }
@@ -684,7 +764,11 @@ impl Multi {
             let write = write.map(|r| r as *mut _).unwrap_or(ptr::null_mut());
             let except = except.map(|r| r as *mut _).unwrap_or(ptr::null_mut());
             cvt(curl_sys::curl_multi_fdset(
-                self.raw, read, write, except, &mut ret,
+                self.raw.handle,
+                read,
+                write,
+                except,
+                &mut ret,
             ))?;
             if ret == -1 {
                 Ok(None)
@@ -710,11 +794,38 @@ impl Multi {
 
     /// Get a pointer to the raw underlying CURLM handle.
     pub fn raw(&self) -> *mut curl_sys::CURLM {
-        self.raw
+        self.raw.handle
+    }
+}
+
+impl Drop for RawMulti {
+    fn drop(&mut self) {
+        unsafe {
+            let _ = cvt(curl_sys::curl_multi_cleanup(self.handle));
+        }
+    }
+}
+
+#[cfg(feature = "poll_7_68_0")]
+impl MultiWaker {
+    /// Creates a new MultiWaker handle.
+    fn new(raw: std::sync::Weak<RawMulti>) -> Self {
+        Self { raw }
     }
 
-    unsafe fn close_impl(&self) -> Result<(), MultiError> {
-        cvt(curl_sys::curl_multi_cleanup(self.raw))
+    /// Wakes up a thread that is blocked in [Multi::poll]. This method can be
+    /// invoked from any thread.
+    ///
+    /// Will return an error if the RawMulti has already been dropped.
+    ///
+    /// Requires libcurl 7.68.0 or later.
+    pub fn wakeup(&self) -> Result<(), MultiError> {
+        if let Some(raw) = self.raw.upgrade() {
+            unsafe { cvt(curl_sys::curl_multi_wakeup(raw.handle)) }
+        } else {
+            // This happens if the RawMulti has already been dropped:
+            Err(MultiError::new(curl_sys::CURLM_BAD_HANDLE))
+        }
     }
 }
 
@@ -729,12 +840,6 @@ fn cvt(code: curl_sys::CURLMcode) -> Result<(), MultiError> {
 impl fmt::Debug for Multi {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("Multi").field("raw", &self.raw).finish()
-    }
-}
-
-impl Drop for Multi {
-    fn drop(&mut self) {
-        let _ = unsafe { self.close_impl() };
     }
 }
 

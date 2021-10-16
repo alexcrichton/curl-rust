@@ -20,7 +20,7 @@ fn handle() -> Easy {
     let mut list = List::new();
     t!(list.append("Expect:"));
     t!(e.http_headers(list));
-    return e;
+    e
 }
 
 #[test]

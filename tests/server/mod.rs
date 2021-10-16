@@ -31,7 +31,7 @@ fn run(stream: impl Read + Write, rx: &Receiver<Message>) {
             Message::Read(ref expected) => {
                 let mut expected = &expected[..];
                 let mut expected_headers = HashSet::new();
-                while let Some(i) = expected.find("\n") {
+                while let Some(i) = expected.find('\n') {
                     let line = &expected[..i + 1];
                     expected = &expected[i + 1..];
                     expected_headers.insert(line);
@@ -41,11 +41,11 @@ fn run(stream: impl Read + Write, rx: &Receiver<Message>) {
                 }
 
                 let mut expected_len = None;
-                while expected_headers.len() > 0 {
+                while !expected_headers.is_empty() {
                     let mut actual = String::new();
                     t!(socket.read_line(&mut actual));
                     if actual.starts_with("Content-Length") {
-                        let len = actual.split(": ").skip(1).next().unwrap();
+                        let len = actual.split(": ").nth(1).unwrap();
                         expected_len = len.trim().parse().ok();
                     }
                     // various versions of libcurl do different things here
@@ -84,13 +84,13 @@ fn run(stream: impl Read + Write, rx: &Receiver<Message>) {
                 while socket.limit() > 0 {
                     line.truncate(0);
                     t!(socket.read_line(&mut line));
-                    if line.len() == 0 {
+                    if line.is_empty() {
                         break;
                     }
-                    if expected.len() == 0 {
+                    if expected.is_empty() {
                         panic!("unexpected line: {:?}", line);
                     }
-                    let i = expected.find("\n").unwrap_or(expected.len() - 1);
+                    let i = expected.find('\n').unwrap_or(expected.len() - 1);
                     let expected_line = &expected[..i + 1];
                     expected = &expected[i + 1..];
                     if lines_match(expected_line, &line) {
@@ -103,7 +103,7 @@ fn run(stream: impl Read + Write, rx: &Receiver<Message>) {
                         expected_line, line
                     )
                 }
-                if expected.len() != 0 {
+                if !expected.is_empty() {
                     println!("didn't get expected data: {:?}", expected);
                 }
             }

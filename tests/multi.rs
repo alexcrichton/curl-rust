@@ -150,10 +150,8 @@ fn upload_lots() {
     while running {
         let n = t!(poll.poll(&mut events, cur_timeout));
 
-        if n == 0 {
-            if t!(m.timeout()) == 0 {
-                running = false;
-            }
+        if n == 0 && t!(m.timeout()) == 0 {
+            running = false;
         }
 
         for event in events.iter() {
@@ -167,10 +165,10 @@ fn upload_lots() {
                         } else {
                             let mut e = mio::Ready::empty();
                             if events.input() {
-                                e = e | mio::Ready::readable();
+                                e |= mio::Ready::readable();
                             }
                             if events.output() {
-                                e = e | mio::Ready::writable();
+                                e |= mio::Ready::writable();
                             }
                             if token == 0 {
                                 let token = next_token;

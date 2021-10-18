@@ -497,14 +497,17 @@ fn try_pkg_config() -> bool {
 }
 
 fn xcode_major_version() -> Option<u8> {
-    let output = Command::new("xcodebuild").arg("-version").output().ok()?;
-    if output.status.success() {
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        println!("xcode version: {}", stdout);
-        let mut words = stdout.split_whitespace();
-        if words.next()? == "Xcode" {
-            let version = words.next()?;
-            return version[..version.find('.')?].parse().ok();
+    let status = Command::new("xcode-select").arg("-p").status().ok()?;
+    if status.success() {
+        let output = Command::new("xcodebuild").arg("-version").output().ok()?;
+        if output.status.success() {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            println!("xcode version: {}", stdout);
+            let mut words = stdout.split_whitespace();
+            if words.next()? == "Xcode" {
+                let version = words.next()?;
+                return version[..version.find('.')?].parse().ok();
+            }
         }
     }
     println!("unable to determine Xcode version, assuming >= 9");
@@ -551,7 +554,7 @@ fn macos_link_search_path() -> Option<String> {
     let stdout = String::from_utf8_lossy(&output.stdout);
     for line in stdout.lines() {
         if line.contains("libraries: =") {
-            let path = line.split('=').skip(1).next()?;
+            let path = line.split('=').nth(1)?;
             return Some(format!("{}/lib/darwin", path));
         }
     }

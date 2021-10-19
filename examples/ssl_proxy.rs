@@ -16,9 +16,9 @@ fn main() -> Result<()> {
 
     handle.proxy(proxy_url)?;
     handle.proxy_port(proxy_port)?;
-    handle.proxy_cainfo(&cainfo)?;
-    handle.proxy_sslcert(&sslcert)?;
-    handle.proxy_sslkey(&sslkey)?;
+    handle.proxy_cainfo(cainfo)?;
+    handle.proxy_sslcert(sslcert)?;
+    handle.proxy_sslkey(sslkey)?;
     println!("ssl proxy setup done");
 
     handle.perform()?;

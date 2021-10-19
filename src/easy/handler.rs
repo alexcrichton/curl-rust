@@ -1343,7 +1343,7 @@ impl<H> Easy2<H> {
     /// `CURLOPT_POSTFIELDSIZE_LARGE`.
     pub fn post_field_size(&mut self, size: u64) -> Result<(), Error> {
         // Clear anything previous to ensure we don't read past a buffer
-        self.setopt_ptr(curl_sys::CURLOPT_POSTFIELDS, 0 as *const _)?;
+        self.setopt_ptr(curl_sys::CURLOPT_POSTFIELDS, ptr::null())?;
         self.setopt_off_t(
             curl_sys::CURLOPT_POSTFIELDSIZE_LARGE,
             size as curl_sys::curl_off_t,
@@ -1738,7 +1738,7 @@ impl<H> Easy2<H> {
     pub fn timeout(&mut self, timeout: Duration) -> Result<(), Error> {
         // TODO: checked arithmetic and casts
         // TODO: use CURLOPT_TIMEOUT if the timeout is too great
-        let ms = timeout.as_secs() * 1000 + (timeout.subsec_nanos() / 1_000_000) as u64;
+        let ms = timeout.as_secs() * 1000 + timeout.subsec_millis() as u64;
         self.setopt_long(curl_sys::CURLOPT_TIMEOUT_MS, ms as c_long)
     }
 
@@ -1860,7 +1860,7 @@ impl<H> Easy2<H> {
     /// By default this value is 300 seconds and corresponds to
     /// `CURLOPT_CONNECTTIMEOUT_MS`.
     pub fn connect_timeout(&mut self, timeout: Duration) -> Result<(), Error> {
-        let ms = timeout.as_secs() * 1000 + (timeout.subsec_nanos() / 1_000_000) as u64;
+        let ms = timeout.as_secs() * 1000 + timeout.subsec_millis() as u64;
         self.setopt_long(curl_sys::CURLOPT_CONNECTTIMEOUT_MS, ms as c_long)
     }
 
@@ -2411,7 +2411,7 @@ impl<H> Easy2<H> {
     /// By default this option is not set and corresponds to
     /// `CURLOPT_EXPECT_100_TIMEOUT_MS`.
     pub fn expect_100_timeout(&mut self, timeout: Duration) -> Result<(), Error> {
-        let ms = timeout.as_secs() * 1000 + (timeout.subsec_nanos() / 1_000_000) as u64;
+        let ms = timeout.as_secs() * 1000 + timeout.subsec_millis() as u64;
         self.setopt_long(curl_sys::CURLOPT_EXPECT_100_TIMEOUT_MS, ms as c_long)
     }
 
@@ -2422,15 +2422,8 @@ impl<H> Easy2<H> {
     //// This corresponds to `CURLINFO_CONDITION_UNMET` and may return an error if the
     /// option is not supported
     pub fn time_condition_unmet(&mut self) -> Result<bool, Error> {
-        self.getopt_long(curl_sys::CURLINFO_CONDITION_UNMET).map(
-            |r| {
-                if r == 0 {
-                    false
-                } else {
-                    true
-                }
-            },
-        )
+        self.getopt_long(curl_sys::CURLINFO_CONDITION_UNMET)
+            .map(|r| r != 0)
     }
 
     /// Get the last used URL
@@ -2894,7 +2887,7 @@ impl<H> Easy2<H> {
 
     /// URL encodes a string `s`
     pub fn url_encode(&mut self, s: &[u8]) -> String {
-        if s.len() == 0 {
+        if s.is_empty() {
             return String::new();
         }
         unsafe {
@@ -2913,7 +2906,7 @@ impl<H> Easy2<H> {
 
     /// URL decodes a string `s`, returning `None` if it fails
     pub fn url_decode(&mut self, s: &str) -> Vec<u8> {
-        if s.len() == 0 {
+        if s.is_empty() {
             return Vec::new();
         }
 
@@ -3078,7 +3071,7 @@ impl<H> Easy2<H> {
 
     fn getopt_ptr(&mut self, opt: curl_sys::CURLINFO) -> Result<*const c_char, Error> {
         unsafe {
-            let mut p = 0 as *const c_char;
+            let mut p = ptr::null();
             let rc = curl_sys::curl_easy_getinfo(self.inner.handle, opt, &mut p);
             self.cvt(rc)?;
             Ok(p)

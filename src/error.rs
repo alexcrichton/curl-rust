@@ -4,8 +4,6 @@ use std::fmt;
 use std::io;
 use std::str;
 
-use curl_sys;
-
 /// An error returned from various "easy" operations.
 ///
 /// This structure wraps a `CURLcode`.

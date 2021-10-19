@@ -14,8 +14,7 @@ fn main() {
     let version = str::from_utf8(&version).unwrap();
     let version = version
         .lines()
-        .filter(|l| !l.is_empty() && !l.starts_with("#"))
-        .next()
+        .find(|l| !l.is_empty() && !l.starts_with('#'))
         .and_then(|s| s.parse::<u32>().ok())
         .unwrap_or(10000);
     println!("got version: {}", version);
@@ -39,7 +38,7 @@ fn main() {
         "CURL" | "CURLM" | "CURLSH" | "curl_version_info_data" => s.to_string(),
         "curl_khtype" | "curl_khstat" | "curl_khmatch" => format!("enum {}", s),
         s if is_struct => format!("struct {}", s),
-        "sockaddr" => format!("struct sockaddr"),
+        "sockaddr" => "struct sockaddr".to_string(),
         s => s.to_string(),
     });
     // cfg.fn_cname(|s, l| l.unwrap_or(s).to_string());

@@ -22,7 +22,7 @@ mod server;
 fn handle() -> Easy {
     let mut e = Easy::new();
     t!(e.timeout(Duration::new(20, 0)));
-    return e;
+    e
 }
 
 fn sink(data: &[u8]) -> Result<usize, WriteError> {

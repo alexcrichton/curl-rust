@@ -2,7 +2,6 @@ use std::ffi::CStr;
 use std::fmt;
 use std::str;
 
-use curl_sys;
 use libc::{c_char, c_int};
 
 /// Version information about libcurl and the capabilities that it supports.

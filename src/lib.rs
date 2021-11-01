@@ -108,6 +108,8 @@ pub fn init() {
     extern "C" fn init_inner() {
         INIT.call_once(|| {
             #[cfg(need_openssl_init)]
+            openssl_probe::init_ssl_cert_env_vars();
+            #[cfg(need_openssl_init)]
             openssl_sys::init();
 
             unsafe {

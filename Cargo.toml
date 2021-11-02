@@ -1,6 +1,6 @@
 [package]
 name = "curl"
-version = "0.4.39"
+version = "0.4.40"
 authors = ["Alex Crichton <alex@alexcrichton.com>"]
 license = "MIT"
 repository = "https://github.com/alexcrichton/curl-rust"
@@ -18,7 +18,7 @@ appveyor = { repository = "alexcrichton/curl-rust" }
 
 [dependencies]
 libc = "0.2.42"
-curl-sys = { path = "curl-sys", version = "0.4.49", default-features = false }
+curl-sys = { path = "curl-sys", version = "0.4.50", default-features = false }
 socket2 = "0.4.0"
 
 # Unix platforms use OpenSSL for now to provide SSL functionality

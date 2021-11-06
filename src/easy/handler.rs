@@ -2073,6 +2073,18 @@ impl<H> Easy2<H> {
         self.setopt_str(curl_sys::CURLOPT_KEYPASSWD, &password)
     }
 
+    /// Set the SSL Certificate Authorities using an in-memory blob.
+    ///
+    /// The specified byte buffer should contain the binary content of one
+    /// or more PEM-encoded CA certificates, which will be copied into
+    /// the handle.
+    ///
+    /// By default this option is not set and corresponds to
+    /// `CURLOPT_CAINFO_BLOB`.
+    pub fn ssl_cainfo_blob(&mut self, blob: &[u8]) -> Result<(), Error> {
+        self.setopt_blob(curl_sys::CURLOPT_CAINFO_BLOB, blob)
+    }
+
     /// Set the SSL engine identifier.
     ///
     /// This will be used as the identifier for the crypto engine you want to

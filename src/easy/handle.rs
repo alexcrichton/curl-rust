@@ -1003,6 +1003,11 @@ impl Easy {
         self.inner.key_password(password)
     }
 
+    /// Same as [`Easy2::ssl_cainfo_blob`](struct.Easy2.html#method.ssl_cainfo_blob)
+    pub fn ssl_cainfo_blob(&mut self, blob: &[u8]) -> Result<(), Error> {
+        self.inner.ssl_cainfo_blob(blob)
+    }
+
     /// Same as [`Easy2::ssl_engine`](struct.Easy2.html#method.ssl_engine)
     pub fn ssl_engine(&mut self, engine: &str) -> Result<(), Error> {
         self.inner.ssl_engine(engine)

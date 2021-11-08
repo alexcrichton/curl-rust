@@ -66,6 +66,7 @@ fn main() {
         if version < 77 {
             match s {
                 "CURLVERSION_TENTH"
+                | "CURLOPT_CAINFO_BLOB"
                 | "CURLVERSION_NOW"
                 | "CURL_VERSION_ALTSVC"
                 | "CURL_VERSION_ZSTD"

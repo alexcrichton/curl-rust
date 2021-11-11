@@ -58,6 +58,8 @@ pub struct Message<'multi> {
 /// be used via `perform`. This handle is also used to remove the easy handle
 /// from the multi handle when desired.
 pub struct EasyHandle {
+    // Safety: This *must* be before `easy` as it must be dropped first.
+    guard: DetachGuard,
     easy: Easy,
     // This is now effectively bound to a `Multi`, so it is no longer sendable.
     _marker: marker::PhantomData<&'static Multi>,
@@ -69,9 +71,18 @@ pub struct EasyHandle {
 /// be used via `perform`. This handle is also used to remove the easy handle
 /// from the multi handle when desired.
 pub struct Easy2Handle<H> {
+    // Safety: This *must* be before `easy` as it must be dropped first.
+    guard: DetachGuard,
     easy: Easy2<H>,
     // This is now effectively bound to a `Multi`, so it is no longer sendable.
     _marker: marker::PhantomData<&'static Multi>,
+}
+
+/// A guard struct which guarantees that `curl_multi_remove_handle` will be
+/// called on an easy handle, either manually or on drop.
+struct DetachGuard {
+    multi: Arc<RawMulti>,
+    easy: *mut curl_sys::CURL,
 }
 
 /// Notification of the events that have happened on a socket.
@@ -400,6 +411,10 @@ impl Multi {
             cvt(curl_sys::curl_multi_add_handle(self.raw.handle, easy.raw()))?;
         }
         Ok(EasyHandle {
+            guard: DetachGuard {
+                multi: self.raw.clone(),
+                easy: easy.raw(),
+            },
             easy,
             _marker: marker::PhantomData,
         })
@@ -411,6 +426,10 @@ impl Multi {
             cvt(curl_sys::curl_multi_add_handle(self.raw.handle, easy.raw()))?;
         }
         Ok(Easy2Handle {
+            guard: DetachGuard {
+                multi: self.raw.clone(),
+                easy: easy.raw(),
+            },
             easy,
             _marker: marker::PhantomData,
         })
@@ -427,24 +446,14 @@ impl Multi {
     /// Removing an easy handle while being used is perfectly legal and will
     /// effectively halt the transfer in progress involving that easy handle.
     /// All other easy handles and transfers will remain unaffected.
-    pub fn remove(&self, easy: EasyHandle) -> Result<Easy, MultiError> {
-        unsafe {
-            cvt(curl_sys::curl_multi_remove_handle(
-                self.raw.handle,
-                easy.easy.raw(),
-            ))?;
-        }
+    pub fn remove(&self, mut easy: EasyHandle) -> Result<Easy, MultiError> {
+        easy.guard.detach()?;
         Ok(easy.easy)
     }
 
     /// Same as `remove`, but for `Easy2Handle`.
-    pub fn remove2<H>(&self, easy: Easy2Handle<H>) -> Result<Easy2<H>, MultiError> {
-        unsafe {
-            cvt(curl_sys::curl_multi_remove_handle(
-                self.raw.handle,
-                easy.easy.raw(),
-            ))?;
-        }
+    pub fn remove2<H>(&self, mut easy: Easy2Handle<H>) -> Result<Easy2<H>, MultiError> {
+        easy.guard.detach()?;
         Ok(easy.easy)
     }
 
@@ -1015,6 +1024,32 @@ impl<H> Easy2Handle<H> {
 impl<H: fmt::Debug> fmt::Debug for Easy2Handle<H> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.easy.fmt(f)
+    }
+}
+
+/// Guard that ensures that an easy handle is removed from a multi handle before
+/// the easy handle is dropped.
+impl DetachGuard {
+    fn detach(&mut self) -> Result<(), MultiError> {
+        if !self.easy.is_null() {
+            unsafe {
+                cvt(curl_sys::curl_multi_remove_handle(
+                    self.multi.handle,
+                    self.easy,
+                ))?
+            }
+
+            // Set easy to null to signify that the handle was removed.
+            self.easy = ptr::null_mut();
+        }
+
+        Ok(())
+    }
+}
+
+impl Drop for DetachGuard {
+    fn drop(&mut self) {
+        let _ = self.detach();
     }
 }
 

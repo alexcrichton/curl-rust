@@ -1027,9 +1027,9 @@ impl<H: fmt::Debug> fmt::Debug for Easy2Handle<H> {
     }
 }
 
-/// Guard that ensures that an easy handle is removed from a multi handle before
-/// the easy handle is dropped.
 impl DetachGuard {
+    /// Detach the referenced easy handle from its multi handle manually.
+    /// Subsequent calls to this method will have no effect.
     fn detach(&mut self) -> Result<(), MultiError> {
         if !self.easy.is_null() {
             unsafe {

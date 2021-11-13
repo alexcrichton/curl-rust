@@ -24,9 +24,9 @@ libz-sys = { version = "1.0.18", default-features = false, features = ["libc"] }
 libc = "0.2.2"
 libnghttp2-sys = { optional = true, version = "0.1.3" }
 
-[dependencies.crustls]
-git = "https://github.com/abetterinternet/crustls"
-rev = "31237742e77498b1dbf18c11035abc06839070dd"
+[dependencies.rustls-ffi]
+git = "https://github.com/rustls/rustls-ffi"
+tag = "v0.8.1"
 optional = true
 
 [dependencies.mesalink]
@@ -52,6 +52,7 @@ cc = "1.0"
 default = ["ssl"]
 ssl = ["openssl-sys"]
 http2 = ["libnghttp2-sys"]
+rustls = ["rustls-ffi"]
 static-curl = []
 static-ssl = ["openssl-sys/vendored"]
 spnego = []

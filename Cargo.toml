@@ -58,6 +58,10 @@ name = "atexit"
 harness = false
 
 [[example]]
+name = "https"
+path = "examples/https.rs"
+
+[[example]]
 name = "ssl_proxy"
 path = "examples/ssl_proxy.rs"
 required-features = ["ssl"]

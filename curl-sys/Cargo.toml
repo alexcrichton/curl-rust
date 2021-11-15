@@ -31,8 +31,7 @@ default-features = false
 features = ["client_apis", "error_strings", "tls13", "aesgcm", "chachapoly", "x25519", "ecdh", "ecdsa", "verifier"]
 
 [dependencies.rustls-ffi]
-git = "https://github.com/rustls/rustls-ffi"
-tag = "v0.8.2"
+version = "0.8"
 optional = true
 features = ["no_log_capture"]
 

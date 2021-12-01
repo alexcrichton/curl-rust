@@ -141,13 +141,8 @@ fn main() {
         .file("curl/lib/cookie.c")
         .file("curl/lib/curl_addrinfo.c")
         .file("curl/lib/curl_ctype.c")
-        .file("curl/lib/curl_des.c")
         .file("curl/lib/curl_get_line.c")
-        .file("curl/lib/curl_endian.c")
-        .file("curl/lib/curl_gethostname.c")
         .file("curl/lib/curl_memrchr.c")
-        .file("curl/lib/curl_ntlm_core.c")
-        .file("curl/lib/curl_ntlm_wb.c")
         .file("curl/lib/curl_range.c")
         .file("curl/lib/curl_threads.c")
         .file("curl/lib/dotdot.c")
@@ -172,13 +167,11 @@ fn main() {
         .file("curl/lib/http_aws_sigv4.c")
         .file("curl/lib/http_chunks.c")
         .file("curl/lib/http_digest.c")
-        .file("curl/lib/http_ntlm.c")
         .file("curl/lib/http_proxy.c")
         .file("curl/lib/if2ip.c")
         .file("curl/lib/inet_ntop.c")
         .file("curl/lib/inet_pton.c")
         .file("curl/lib/llist.c")
-        .file("curl/lib/md4.c")
         .file("curl/lib/md5.c")
         .file("curl/lib/mime.c")
         .file("curl/lib/mprintf.c")
@@ -212,8 +205,6 @@ fn main() {
         .file("curl/lib/version.c")
         .file("curl/lib/vauth/digest.c")
         .file("curl/lib/vauth/vauth.c")
-        .file("curl/lib/vauth/ntlm.c")
-        .file("curl/lib/vauth/ntlm_sspi.c")
         .file("curl/lib/vtls/keylog.c")
         .file("curl/lib/vtls/vtls.c")
         .file("curl/lib/warnless.c")
@@ -222,6 +213,20 @@ fn main() {
         .define("HAVE_GETPEERNAME", None)
         .define("HAVE_GETSOCKNAME", None)
         .warnings(false);
+
+    if cfg!(feature = "ntlm") {
+        cfg.file("curl/lib/curl_des.c")
+            .file("curl/lib/curl_endian.c")
+            .file("curl/lib/curl_gethostname.c")
+            .file("curl/lib/curl_ntlm_core.c")
+            .file("curl/lib/curl_ntlm_wb.c")
+            .file("curl/lib/http_ntlm.c")
+            .file("curl/lib/md4.c")
+            .file("curl/lib/vauth/ntlm.c")
+            .file("curl/lib/vauth/ntlm_sspi.c");
+    } else {
+        cfg.define("CURL_DISABLE_NTLM", None);
+    }
 
     if cfg!(feature = "protocol-ftp") {
         cfg.file("curl/lib/curl_fnmatch.c")

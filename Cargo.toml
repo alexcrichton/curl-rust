@@ -51,6 +51,7 @@ protocol-ftp = ["curl-sys/protocol-ftp"]
 zlib-ng-compat = ["curl-sys/zlib-ng-compat", "static-curl"]
 upkeep_7_62_0 = ["curl-sys/upkeep_7_62_0"]
 poll_7_68_0 = ["curl-sys/poll_7_68_0"]
+ntlm = ["curl-sys/ntlm"]
 
 [[test]]
 name = "atexit"

@@ -71,3 +71,8 @@ required-features = ["ssl"]
 name = "aws_sigv4"
 path = "examples/aws_sigv4.rs"
 required-features = ["static-curl", "ssl"]
+
+[[example]]
+name = "multi-dl"
+path = "examples/multi-dl.rs"
+required-features = ["ssl"]

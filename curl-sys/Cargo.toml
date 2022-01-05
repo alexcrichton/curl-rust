@@ -1,6 +1,6 @@
 [package]
 name = "curl-sys"
-version = "0.4.50+curl-7.80.0"
+version = "0.4.51+curl-7.81.0"
 authors = ["Alex Crichton <alex@alexcrichton.com>"]
 links = "curl"
 build = "build.rs"
@@ -61,3 +61,4 @@ protocol-ftp = []
 zlib-ng-compat = ["libz-sys/zlib-ng", "static-curl"]
 upkeep_7_62_0 = []
 poll_7_68_0 = []
+ntlm = []

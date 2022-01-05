@@ -11,7 +11,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        build: [x86_64, i686, x86_64-musl, mingw, system-curl, openssl-110, x86_64-beta, x86_64-nightly, macos, win64, win32, win2016]
+        build: [x86_64, i686, x86_64-musl, mingw, system-curl, openssl-110, x86_64-beta, x86_64-nightly, macos, win64, win32]
         include:
           - build: x86_64
             os: ubuntu-latest
@@ -64,10 +64,6 @@ jobs:
             target: i686-pc-windows-msvc
           - build: win64
             os: windows-latest
-            rust: stable
-            target: x86_64-pc-windows-msvc
-          - build: win2016
-            os: windows-2016
             rust: stable
             target: x86_64-pc-windows-msvc
     steps:

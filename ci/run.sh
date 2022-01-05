@@ -8,7 +8,7 @@ cargo test --target $TARGET --no-run --features static-curl
 # Then with rustls TLS backend.
 cargo test --target $TARGET --no-run --features rustls,static-curl
 # Then with all extra protocols enabled.
-cargo test --target $TARGET --no-run --features static-curl,protocol-ftp
+cargo test --target $TARGET --no-run --features static-curl,protocol-ftp,ntlm
 if [ -z "$NO_RUN" ]; then
     cargo test --target $TARGET
     cargo test --target $TARGET --features static-curl

@@ -116,7 +116,6 @@ fn main() {
         .define("CURL_DISABLE_IMAP", None)
         .define("CURL_DISABLE_LDAP", None)
         .define("CURL_DISABLE_LDAPS", None)
-        .define("CURL_DISABLE_NTLM", None)
         .define("CURL_DISABLE_POP3", None)
         .define("CURL_DISABLE_RTSP", None)
         .define("CURL_DISABLE_SMB", None)
@@ -214,6 +213,20 @@ fn main() {
         .define("HAVE_GETPEERNAME", None)
         .define("HAVE_GETSOCKNAME", None)
         .warnings(false);
+
+    if cfg!(feature = "ntlm") {
+        cfg.file("curl/lib/curl_des.c")
+            .file("curl/lib/curl_endian.c")
+            .file("curl/lib/curl_gethostname.c")
+            .file("curl/lib/curl_ntlm_core.c")
+            .file("curl/lib/curl_ntlm_wb.c")
+            .file("curl/lib/http_ntlm.c")
+            .file("curl/lib/md4.c")
+            .file("curl/lib/vauth/ntlm.c")
+            .file("curl/lib/vauth/ntlm_sspi.c");
+    } else {
+        cfg.define("CURL_DISABLE_NTLM", None);
+    }
 
     if cfg!(feature = "protocol-ftp") {
         cfg.file("curl/lib/curl_fnmatch.c")

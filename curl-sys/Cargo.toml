@@ -30,6 +30,11 @@ optional = true
 default-features = false
 features = ["client_apis", "error_strings", "tls13", "aesgcm", "chachapoly", "x25519", "ecdh", "ecdsa", "verifier"]
 
+[dependencies.rustls-ffi]
+version = "0.8"
+optional = true
+features = ["no_log_capture"]
+
 [target.'cfg(all(unix, not(target_os = "macos")))'.dependencies]
 openssl-sys = { version = "0.9", optional = true }
 
@@ -47,6 +52,7 @@ cc = "1.0"
 default = ["ssl"]
 ssl = ["openssl-sys"]
 http2 = ["libnghttp2-sys"]
+rustls = ["rustls-ffi"]
 static-curl = []
 static-ssl = ["openssl-sys/vendored"]
 spnego = []

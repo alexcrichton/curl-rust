@@ -10,6 +10,8 @@ extern crate libz_sys;
 extern crate mesalink;
 #[cfg(link_openssl)]
 extern crate openssl_sys;
+#[cfg(feature = "rustls")]
+extern crate rustls_ffi;
 
 use libc::c_ulong;
 use libc::{c_char, c_double, c_int, c_long, c_short, c_uint, c_void, size_t, time_t};

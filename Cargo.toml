@@ -43,6 +43,7 @@ default = ["ssl"]
 ssl = ["openssl-sys", "openssl-probe", "curl-sys/ssl"] # OpenSSL/system TLS backend
 mesalink = ["curl-sys/mesalink"] # MesaLink TLS backend
 http2 = ["curl-sys/http2"]
+http3-quiche = ["curl-sys/http3-quiche"]
 spnego = ["curl-sys/spnego"]
 rustls = ["curl-sys/rustls"]
 static-curl = ["curl-sys/static-curl"]

@@ -1142,11 +1142,10 @@ impl<H> Easy2<H> {
     /// By default this option is set to `true` and corresponds to
     /// `CURLOPT_DOH_SSL_VERIFYHOST`.
     pub fn doh_ssl_verify_host(&mut self, verify: bool) -> Result<(), Error> {
-        self.setopt_long(curl_sys::CURLOPT_DOH_SSL_VERIFYHOST, if verify {
-            2
-        } else {
-            0
-        })
+        self.setopt_long(
+            curl_sys::CURLOPT_DOH_SSL_VERIFYHOST,
+            if verify { 2 } else { 0 },
+        )
     }
 
     /// Pass a long as parameter set to 1 to enable or 0 to disable.

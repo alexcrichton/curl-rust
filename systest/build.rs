@@ -76,6 +76,14 @@ fn main() {
                 _ => {}
             }
         }
+        if version < 76 {
+            match s {
+                "CURLOPT_DOH_SSL_VERIFYHOST" => return true,
+                "CURLOPT_DOH_SSL_VERIFYPEER" => return true,
+                "CURLOPT_DOH_SSL_VERIFYSTATUS" => return true,
+                _ => {}
+            }
+        }
         if version < 75 {
             match s {
                 "CURLAUTH_AWS_SIGV4" => return true,
@@ -138,6 +146,7 @@ fn main() {
         }
         if version < 62 {
             match s {
+                "CURLOPT_DOH_URL" => return true,
                 "CURLOPT_UPLOAD_BUFFERSIZE" => return true,
                 _ => {}
             }

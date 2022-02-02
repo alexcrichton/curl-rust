@@ -648,6 +648,26 @@ impl Easy {
         self.inner.dns_cache_timeout(dur)
     }
 
+    /// Same as [`Easy2::doh_url`](struct.Easy2.html#method.doh_url)
+    pub fn doh_url(&mut self, url: Option<&str>) -> Result<(), Error> {
+        self.inner.doh_url(url)
+    }
+
+    /// Same as [`Easy2::doh_ssl_verify_peer`](struct.Easy2.html#method.doh_ssl_verify_peer)
+    pub fn doh_ssl_verify_peer(&mut self, verify: bool) -> Result<(), Error> {
+        self.inner.doh_ssl_verify_peer(verify)
+    }
+
+    /// Same as [`Easy2::doh_ssl_verify_host`](struct.Easy2.html#method.doh_ssl_verify_host)
+    pub fn doh_ssl_verify_host(&mut self, verify: bool) -> Result<(), Error> {
+        self.inner.doh_ssl_verify_host(verify)
+    }
+
+    /// Same as [`Easy2::doh_ssl_verify_status`](struct.Easy2.html#method.doh_ssl_verify_status)
+    pub fn doh_ssl_verify_status(&mut self, verify: bool) -> Result<(), Error> {
+        self.inner.doh_ssl_verify_status(verify)
+    }
+
     /// Same as [`Easy2::buffer_size`](struct.Easy2.html#method.buffer_size)
     pub fn buffer_size(&mut self, size: usize) -> Result<(), Error> {
         self.inner.buffer_size(size)

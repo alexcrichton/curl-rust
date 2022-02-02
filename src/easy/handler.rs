@@ -1049,6 +1049,123 @@ impl<H> Easy2<H> {
         self.setopt_long(curl_sys::CURLOPT_DNS_CACHE_TIMEOUT, dur.as_secs() as c_long)
     }
 
+    /// Provide the DNS-over-HTTPS URL.
+    ///
+    /// The parameter must be URL-encoded in the following format:
+    /// `https://host:port/path`. It **must** specify a HTTPS URL.
+    ///
+    /// libcurl does not validate the syntax or use this variable until the
+    /// transfer is issued. Even if you set a crazy value here, this method will
+    /// still return [`Ok`].
+    ///
+    /// curl sends `POST` requests to the given DNS-over-HTTPS URL.
+    ///
+    /// To find the DoH server itself, which might be specified using a name,
+    /// libcurl will use the default name lookup function. You can bootstrap
+    /// that by providing the address for the DoH server with
+    /// [`Easy2::resolve`].
+    ///
+    /// Disable DoH use again by setting this option to [`None`].
+    ///
+    /// By default this option is not set and corresponds to `CURLOPT_DOH_URL`.
+    pub fn doh_url(&mut self, url: Option<&str>) -> Result<(), Error> {
+        if let Some(url) = url {
+            let url = CString::new(url)?;
+            self.setopt_str(curl_sys::CURLOPT_DOH_URL, &url)
+        } else {
+            self.setopt_ptr(curl_sys::CURLOPT_DOH_URL, ptr::null())
+        }
+    }
+
+    /// This option tells curl to verify the authenticity of the DoH
+    /// (DNS-over-HTTPS) server's certificate. A value of `true` means curl
+    /// verifies; `false` means it does not.
+    ///
+    /// This option is the DoH equivalent of [`Easy2::ssl_verify_peer`] and only
+    /// affects requests to the DoH server.
+    ///
+    /// When negotiating a TLS or SSL connection, the server sends a certificate
+    /// indicating its identity. Curl verifies whether the certificate is
+    /// authentic, i.e. that you can trust that the server is who the
+    /// certificate says it is. This trust is based on a chain of digital
+    /// signatures, rooted in certification authority (CA) certificates you
+    /// supply. curl uses a default bundle of CA certificates (the path for that
+    /// is determined at build time) and you can specify alternate certificates
+    /// with the [`Easy2::cainfo`] option or the [`Easy2::capath`] option.
+    ///
+    /// When `doh_ssl_verify_peer` is enabled, and the verification fails to
+    /// prove that the certificate is authentic, the connection fails. When the
+    /// option is zero, the peer certificate verification succeeds regardless.
+    ///
+    /// Authenticating the certificate is not enough to be sure about the
+    /// server. You typically also want to ensure that the server is the server
+    /// you mean to be talking to. Use [`Easy2::doh_ssl_verify_host`] for that.
+    /// The check that the host name in the certificate is valid for the host
+    /// name you are connecting to is done independently of the
+    /// `doh_ssl_verify_peer` option.
+    ///
+    /// **WARNING:** disabling verification of the certificate allows bad guys
+    /// to man-in-the-middle the communication without you knowing it. Disabling
+    /// verification makes the communication insecure. Just having encryption on
+    /// a transfer is not enough as you cannot be sure that you are
+    /// communicating with the correct end-point.
+    ///
+    /// By default this option is set to `true` and corresponds to
+    /// `CURLOPT_DOH_SSL_VERIFYPEER`.
+    pub fn doh_ssl_verify_peer(&mut self, verify: bool) -> Result<(), Error> {
+        self.setopt_long(curl_sys::CURLOPT_DOH_SSL_VERIFYPEER, verify.into())
+    }
+
+    /// Tells curl to verify the DoH (DNS-over-HTTPS) server's certificate name
+    /// fields against the host name.
+    ///
+    /// This option is the DoH equivalent of [`Easy2::ssl_verify_host`] and only
+    /// affects requests to the DoH server.
+    ///
+    /// When `doh_ssl_verify_host` is `true`, the SSL certificate provided by
+    /// the DoH server must indicate that the server name is the same as the
+    /// server name to which you meant to connect to, or the connection fails.
+    ///
+    /// Curl considers the DoH server the intended one when the Common Name
+    /// field or a Subject Alternate Name field in the certificate matches the
+    /// host name in the DoH URL to which you told Curl to connect.
+    ///
+    /// When the verify value is set to `false`, the connection succeeds
+    /// regardless of the names used in the certificate. Use that ability with
+    /// caution!
+    ///
+    /// See also [`Easy2::doh_ssl_verify_peer`] to verify the digital signature
+    /// of the DoH server certificate. If libcurl is built against NSS and
+    /// [`Easy2::doh_ssl_verify_peer`] is `false`, `doh_ssl_verify_host` is also
+    /// set to `false` and cannot be overridden.
+    ///
+    /// By default this option is set to `true` and corresponds to
+    /// `CURLOPT_DOH_SSL_VERIFYHOST`.
+    pub fn doh_ssl_verify_host(&mut self, verify: bool) -> Result<(), Error> {
+        self.setopt_long(
+            curl_sys::CURLOPT_DOH_SSL_VERIFYHOST,
+            if verify { 2 } else { 0 },
+        )
+    }
+
+    /// Pass a long as parameter set to 1 to enable or 0 to disable.
+    ///
+    /// This option determines whether libcurl verifies the status of the DoH
+    /// (DNS-over-HTTPS) server cert using the "Certificate Status Request" TLS
+    /// extension (aka. OCSP stapling).
+    ///
+    /// This option is the DoH equivalent of CURLOPT_SSL_VERIFYSTATUS and only
+    /// affects requests to the DoH server.
+    ///
+    /// Note that if this option is enabled but the server does not support the
+    /// TLS extension, the verification will fail.
+    ///
+    /// By default this option is set to `false` and corresponds to
+    /// `CURLOPT_DOH_SSL_VERIFYSTATUS`.
+    pub fn doh_ssl_verify_status(&mut self, verify: bool) -> Result<(), Error> {
+        self.setopt_long(curl_sys::CURLOPT_DOH_SSL_VERIFYSTATUS, verify.into())
+    }
+
     /// Specify the preferred receive buffer size, in bytes.
     ///
     /// This is treated as a request, not an order, and the main point of this

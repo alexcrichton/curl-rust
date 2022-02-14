@@ -2944,6 +2944,17 @@ impl<H> Easy2<H> {
         self.setopt_long(curl_sys::CURLOPT_PIPEWAIT, wait as c_long)
     }
 
+    /// Allow HTTP/0.9 compliant responses
+    ///
+    /// Set allow to `true` to tell libcurl to allow HTTP/0.9 responses. A HTTP/0.9
+    /// response is a server response entirely without headers and only a body.
+    ///
+    /// By default this option is not set and corresponds to
+    /// `CURLOPT_HTTP09_ALLOWED`.
+    pub fn http_09_allowed(&mut self, allow: bool) -> Result<(), Error> {
+        self.setopt_long(curl_sys::CURLOPT_HTTP09_ALLOWED, allow as c_long)
+    }
+
     // =========================================================================
     // Other methods
 

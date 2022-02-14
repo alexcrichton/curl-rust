@@ -141,6 +141,7 @@ fn main() {
                 "CURLE_SSL_INVALIDCERTSTATUS" => return true,
                 "CURLE_HTTP2_STREAM" => return true,
                 "CURLE_RECURSIVE_API_CALL" => return true,
+                "CURLOPT_HTTP09_ALLOWED" => return true,
                 _ => {}
             }
         }

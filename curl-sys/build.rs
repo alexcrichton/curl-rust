@@ -248,6 +248,14 @@ fn main() {
         }
     }
 
+    if cfg!(feature = "http3-quiche") {
+        cfg.define("USE_QUICHE", None)
+            .file("curl/lib/vquic/vquic.c")
+            .file("curl/lib/vquic/quiche.c");
+
+        cfg.include(env::var_os("DEP_QUICHE_INCLUDE").unwrap());
+    }
+
     println!("cargo:rustc-cfg=link_libz");
     if let Some(path) = env::var_os("DEP_Z_INCLUDE") {
         cfg.include(path);

@@ -128,6 +128,7 @@ with various Cargo features:
   Note that Rustls support is experimental within Curl itself and may have significant bugs, so we don't offer any sort of stability guarantee with this feature.
 - `mesalink`: Enable SSL/TLS support via [MesaLink], an alternative TLS backend written in Rust based on [Rustls]. MesaLink is always statically linked. Disabled by default.
 - `http2`: Enable HTTP/2 support via libnghttp2. Disabled by default.
+- `http3-quiche`: Enable experimental HTTP/3 support via [Quiche](https://github.com/cloudflare/quiche). Disabled by default.
 - `static-curl`: Use a bundled libcurl version and statically link to it. Disabled by default.
 - `static-ssl`: Use a bundled OpenSSL version and statically link to it. Only applies on platforms that use OpenSSL. Disabled by default.
 - `spnego`: Enable SPNEGO support. Disabled by default.

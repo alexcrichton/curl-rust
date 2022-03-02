@@ -30,6 +30,13 @@ optional = true
 default-features = false
 features = ["client_apis", "error_strings", "tls13", "aesgcm", "chachapoly", "x25519", "ecdh", "ecdsa", "verifier"]
 
+[dependencies.quiche]
+git = "https://github.com/sagebind/quiche"
+branch = "include-metadata"
+optional = true
+default-features = false
+features = ["ffi"]
+
 [dependencies.rustls-ffi]
 version = "0.8"
 optional = true
@@ -52,6 +59,8 @@ cc = "1.0"
 default = ["ssl"]
 ssl = ["openssl-sys"]
 http2 = ["libnghttp2-sys"]
+http3-quiche = ["quiche"]
+http3-quiche-boringssl-vendored = ["quiche/boringssl-vendored"]
 rustls = ["rustls-ffi"]
 static-curl = []
 static-ssl = ["openssl-sys/vendored"]

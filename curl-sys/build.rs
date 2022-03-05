@@ -9,6 +9,10 @@ fn main() {
     let target = env::var("TARGET").unwrap();
     let windows = target.contains("windows");
 
+    if cfg!(feature = "mesalink") {
+        println!("cargo:warning=MesaLink support has been removed as of curl 7.82.0, will use default TLS backend instead.");
+    }
+
     // This feature trumps all others, and is largely set by rustbuild to force
     // usage of the system library to ensure that we're always building an
     // ABI-compatible Cargo.
@@ -261,20 +265,7 @@ fn main() {
 
     // Configure TLS backend. Since Cargo does not support mutually exclusive
     // features, make sure we only compile one vtls.
-    if cfg!(feature = "mesalink") {
-        cfg.define("USE_MESALINK", None)
-            .file("curl/lib/vtls/mesalink.c");
-
-        if let Some(path) = env::var_os("DEP_MESALINK_INCLUDE") {
-            cfg.include(path);
-        }
-
-        if windows {
-            cfg.define("HAVE_WINDOWS", None);
-        } else {
-            cfg.define("HAVE_UNIX", None);
-        }
-    } else if cfg!(feature = "rustls") {
+    if cfg!(feature = "rustls") {
         cfg.define("USE_RUSTLS", None)
             .file("curl/lib/vtls/rustls.c")
             .include(env::var_os("DEP_RUSTLS_FFI_INCLUDE").unwrap());

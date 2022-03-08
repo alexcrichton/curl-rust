@@ -166,7 +166,6 @@ fn main() {
         .file("curl/lib/hostip6.c")
         .file("curl/lib/hsts.c")
         .file("curl/lib/http.c")
-        .file("curl/lib/http2.c")
         .file("curl/lib/http_aws_sigv4.c")
         .file("curl/lib/http_chunks.c")
         .file("curl/lib/http_digest.c")
@@ -243,7 +242,9 @@ fn main() {
 
     if cfg!(feature = "http2") {
         cfg.define("USE_NGHTTP2", None)
-            .define("NGHTTP2_STATICLIB", None);
+            .define("NGHTTP2_STATICLIB", None)
+            .file("curl/lib/h2h3.c")
+            .file("curl/lib/http2.c");
 
         println!("cargo:rustc-cfg=link_libnghttp2");
         if let Some(path) = env::var_os("DEP_NGHTTP2_ROOT") {
@@ -276,13 +277,13 @@ fn main() {
             cfg.define("USE_WINDOWS_SSPI", None)
                 .define("USE_SCHANNEL", None)
                 .file("curl/lib/http_negotiate.c")
-                .file("curl/lib/x509asn1.c")
                 .file("curl/lib/curl_sspi.c")
                 .file("curl/lib/socks_sspi.c")
                 .file("curl/lib/vauth/spnego_sspi.c")
                 .file("curl/lib/vauth/vauth.c")
                 .file("curl/lib/vtls/schannel.c")
-                .file("curl/lib/vtls/schannel_verify.c");
+                .file("curl/lib/vtls/schannel_verify.c")
+                .file("curl/lib/vtls/x509asn1.c");
         } else if target.contains("-apple-") {
             cfg.define("USE_SECTRANSP", None)
                 .file("curl/lib/x509asn1.c")

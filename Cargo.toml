@@ -12,10 +12,6 @@ readme = "README.md"
 autotests = true
 edition = "2018"
 
-[badges]
-travis-ci = { repository = "alexcrichton/curl-rust" }
-appveyor = { repository = "alexcrichton/curl-rust" }
-
 [dependencies]
 libc = "0.2.42"
 curl-sys = { path = "curl-sys", version = "0.4.53", default-features = false }

@@ -499,7 +499,10 @@ fn try_pkg_config() -> bool {
 
     // Re-find the library to print cargo's metadata, then print some extra
     // metadata as well.
-    cfg.print_system_libs(false).cargo_metadata(true).probe("libcurl").unwrap();
+    cfg.print_system_libs(false)
+        .cargo_metadata(true)
+        .probe("libcurl")
+        .unwrap();
     for path in lib.include_paths.iter() {
         println!("cargo:include={}", path.display());
     }

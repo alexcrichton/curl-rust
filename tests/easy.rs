@@ -47,6 +47,42 @@ fn get_smoke() {
 }
 
 #[test]
+fn download_zero_size() {
+    let s = Server::new();
+    s.receive(
+        "\
+         GET / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         \r\n",
+    );
+    s.send("HTTP/1.1 200 OK\r\n\r\n");
+
+    let mut handle = handle();
+    t!(handle.url(&s.url("/")));
+    t!(handle.perform());
+    assert_eq!(handle.download_size().unwrap(), 0_f64);
+}
+
+#[test]
+fn download_nonzero_size() {
+    let s = Server::new();
+    s.receive(
+        "\
+         GET / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         \r\n",
+    );
+    s.send("HTTP/1.1 200 OK\r\n\r\nHello!");
+
+    let mut handle = handle();
+    t!(handle.url(&s.url("/")));
+    t!(handle.perform());
+    assert_eq!(handle.download_size().unwrap(), 6_f64);
+}
+
+#[test]
 fn get_path() {
     let s = Server::new();
     s.receive(

@@ -2644,6 +2644,17 @@ impl<H> Easy2<H> {
             .map(|r| r as f64)
     }
 
+    /// Get the number of uploaded bytes
+    ///
+    /// Returns the total amount of bytes that were uploaded.
+    ///
+    /// This corresponds to `CURLINFO_SIZE_UPLOAD` and may return an error if the
+    /// option is not supported
+    pub fn upload_size(&mut self) -> Result<f64, Error> {
+        self.getopt_double(curl_sys::CURLINFO_SIZE_UPLOAD)
+            .map(|r| r as f64)
+    }
+
     /// Get the content-length of the download
     ///
     /// Returns the content-length of the download.

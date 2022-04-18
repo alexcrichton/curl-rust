@@ -1164,6 +1164,12 @@ impl Easy {
     pub fn download_size(&mut self) -> Result<f64, Error> {
         self.inner.download_size()
     }
+
+    /// Same as [`Easy2::upload_size`](struct.Easy2.html#method.upload_size)
+    pub fn upload_size(&mut self) -> Result<f64, Error> {
+        self.inner.upload_size()
+    }
+
     /// Same as [`Easy2::content_length_download`](struct.Easy2.html#method.content_length_download)
     pub fn content_length_download(&mut self) -> Result<f64, Error> {
         self.inner.content_length_download()

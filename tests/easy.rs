@@ -47,6 +47,96 @@ fn get_smoke() {
 }
 
 #[test]
+fn download_zero_size() {
+    let s = Server::new();
+    s.receive(
+        "\
+         GET / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         \r\n",
+    );
+    s.send("HTTP/1.1 200 OK\r\n\r\n");
+
+    let mut handle = handle();
+    t!(handle.url(&s.url("/")));
+    t!(handle.perform());
+    assert_eq!(handle.download_size().unwrap(), 0_f64);
+}
+
+#[test]
+fn download_nonzero_size() {
+    let s = Server::new();
+    s.receive(
+        "\
+         GET / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         \r\n",
+    );
+    s.send("HTTP/1.1 200 OK\r\n\r\nHello!");
+
+    let mut handle = handle();
+    t!(handle.url(&s.url("/")));
+    t!(handle.perform());
+    assert_eq!(handle.download_size().unwrap(), 6_f64);
+}
+
+#[test]
+fn upload_zero_size() {
+    let s = Server::new();
+    s.receive(
+        "\
+         GET / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         \r\n",
+    );
+    s.send("HTTP/1.1 200 OK\r\n\r\n");
+
+    let mut handle = handle();
+    t!(handle.url(&s.url("/")));
+    t!(handle.perform());
+    assert_eq!(handle.upload_size().unwrap(), 0_f64);
+}
+
+#[test]
+fn upload_nonzero_size() {
+    let s = Server::new();
+    s.receive(
+        "\
+         PUT / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         Content-Length: 5\r\n\
+         \r\n\
+         data\n",
+    );
+    s.send(
+        "\
+         HTTP/1.1 200 OK\r\n\
+         \r\n",
+    );
+
+    let mut data = "data\n".as_bytes();
+    let mut list = List::new();
+    t!(list.append("Expect:"));
+    let mut h = handle();
+    t!(h.url(&s.url("/")));
+    t!(h.put(true));
+    t!(h.in_filesize(5));
+    t!(h.upload(true));
+    t!(h.http_headers(list));
+    {
+        let mut h = h.transfer();
+        t!(h.read_function(|buf| Ok(data.read(buf).unwrap())));
+        t!(h.perform());
+    }
+
+    assert_eq!(h.upload_size().unwrap(), 5_f64);
+}
+
+#[test]
 fn get_path() {
     let s = Server::new();
     s.receive(

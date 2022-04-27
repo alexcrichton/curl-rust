@@ -212,6 +212,7 @@ fn main() {
         .file("curl/lib/vtls/vtls.c")
         .file("curl/lib/warnless.c")
         .file("curl/lib/wildcard.c")
+        .file("curl/lib/timediff.c")
         .define("HAVE_GETADDRINFO", None)
         .define("HAVE_GETPEERNAME", None)
         .define("HAVE_GETSOCKNAME", None)

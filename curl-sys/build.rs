@@ -311,12 +311,14 @@ fn main() {
             // Inserting default certification bundle file for Unix(-like) systems
             // curl's generated configure file inspired
             let path = "\"path\"";
-            let default_ca_bundles = "/etc/ssl/certs/ca-certificates.crt\r\n
-            /etc/pki/tls/certs/ca-bundle.crt\r\n
-            /usr/share/ssl/certs/ca-bundle.crt\r\n
-            /usr/local/share/certs/ca-root-nss.crt\r\n
-            /etc/ssl/cert.pem"
-            .lines();
+            let default_ca_bundles = [
+                "/etc/ssl/certs/ca-certificates.crt",
+                "/etc/pki/tls/certs/ca-bundle.crt",
+                "/usr/share/ssl/certs/ca-bundle.crt",
+                "/usr/local/share/certs/ca-root-nss.crt",
+                "/etc/ssl/cert.pem"
+            ]
+            .iter();
 
             for iter_bundle in default_ca_bundles {
                 let m_bundle = std::path::Path::new(iter_bundle);

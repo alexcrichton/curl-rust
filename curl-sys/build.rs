@@ -300,10 +300,30 @@ fn main() {
         } else {
             cfg.define("USE_OPENSSL", None)
                 .file("curl/lib/vtls/openssl.c");
-
+            
             println!("cargo:rustc-cfg=link_openssl");
             if let Some(path) = env::var_os("DEP_OPENSSL_INCLUDE") {
                 cfg.include(path);
+            }
+        }
+        
+        if !windows {
+            // Inserting default certification bundle file for Unix(-like) systems
+            // curl's generated configure file inspired
+            let path = "\"path\"";
+            let default_ca_bundles = "/etc/ssl/certs/ca-certificates.crt\r\n
+            /etc/pki/tls/certs/ca-bundle.crt\r\n
+            /usr/share/ssl/certs/ca-bundle.crt\r\n
+            /usr/local/share/certs/ca-root-nss.crt\r\n
+            /etc/ssl/cert.pem".lines();
+             
+            for iter_bundle in default_ca_bundles {
+                let m_bundle = std::path::Path::new(iter_bundle);
+                if m_bundle.exists() {
+                    let ca_bundle = path.replace("path",m_bundle.to_str().unwrap());
+                    cfg.define("CURL_CA_BUNDLE", ca_bundle.as_str());
+                    break;
+                }
             }
         }
     }

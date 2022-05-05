@@ -1280,6 +1280,11 @@ impl Easy {
         self.inner.pipewait(wait)
     }
 
+    /// Same as [`Easy2::http_09_allowed`](struct.Easy2.html#method.http_09_allowed)
+    pub fn http_09_allowed(&mut self, allow: bool) -> Result<(), Error> {
+        self.inner.http_09_allowed(allow)
+    }
+
     // =========================================================================
     // Other methods
 

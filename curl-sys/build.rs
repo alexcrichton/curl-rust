@@ -551,7 +551,9 @@ fn curl_config_reports_http2() -> bool {
 }
 
 fn macos_link_search_path() -> Option<String> {
-    let output = Command::new("clang")
+    let output = cc::Build::new()
+        .get_compiler()
+        .to_command()
         .arg("--print-search-dirs")
         .output()
         .ok()?;

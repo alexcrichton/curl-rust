@@ -49,20 +49,20 @@ pub const CURL_SOCKET_BAD: curl_socket_t = !0;
 
 pub enum curl_httppost {
     // Note that this changed in some versions of libcurl, so we currently don't
-// bind the fields as they're apparently not stable.
-// pub next: *mut curl_httppost,
-// pub name: *mut c_char,
-// pub namelength: c_long,
-// pub contents: *mut c_char,
-// pub contentslength: c_long,
-// pub buffer: *mut c_char,
-// pub bufferlength: c_long,
-// pub contenttype: *mut c_char,
-// pub contentheader: *mut curl_slist,
-// pub more: *mut curl_httppost,
-// pub flags: c_long,
-// pub showfilename: *mut c_char,
-// pub userp: *mut c_void,
+    // bind the fields as they're apparently not stable.
+    // pub next: *mut curl_httppost,
+    // pub name: *mut c_char,
+    // pub namelength: c_long,
+    // pub contents: *mut c_char,
+    // pub contentslength: c_long,
+    // pub buffer: *mut c_char,
+    // pub bufferlength: c_long,
+    // pub contenttype: *mut c_char,
+    // pub contentheader: *mut curl_slist,
+    // pub more: *mut curl_httppost,
+    // pub flags: c_long,
+    // pub showfilename: *mut c_char,
+    // pub userp: *mut c_void,
 }
 
 // pub const HTTPPOST_FILENAME: c_long = 1 << 0;

@@ -20,6 +20,13 @@ fn main() {
         return println!("cargo:rustc-flags=-l curl");
     }
 
+    // This feature trumps all others, and is largely set by rustbuild to force
+    // usage of a prebuilt windows dll to ensure that we're always building an
+    // ABI-compatible Cargo. This is for curl built with vcpkg.
+    if cfg!(feature = "force-lib-on-windows") && target.contains("windows") {
+        return println!("cargo:rustc-flags=-l libcurl");
+    }
+
     // When cross-compiling for Haiku, use the system's default supplied
     // libcurl (it supports http2). This is in the case where rustc and
     // cargo are built for Haiku, which is done from a Linux host.

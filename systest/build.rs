@@ -67,6 +67,7 @@ fn main() {
             match s {
                 "CURLVERSION_TENTH"
                 | "CURLOPT_CAINFO_BLOB"
+                | "CURLOPT_PROXY_CAINFO_BLOB"
                 | "CURLVERSION_NOW"
                 | "CURL_VERSION_ALTSVC"
                 | "CURL_VERSION_ZSTD"
@@ -102,6 +103,8 @@ fn main() {
             match s {
                 "CURLOPT_SSLCERT_BLOB"
                 | "CURLOPT_SSLKEY_BLOB"
+                | "CURLOPT_PROXY_ISSUERCERT_BLOB"
+                | "CURLOPT_PROXY_ISSUERCERT"
                 | "CURLOPT_PROXY_SSLCERT_BLOB"
                 | "CURLOPT_PROXY_SSLKEY_BLOB"
                 | "CURLOPT_ISSUERCERT_BLOB"
@@ -168,7 +171,6 @@ fn main() {
         if version < 54 {
             match s {
                 "CURL_SSLVERSION_TLSv1_3"
-                | "CURLOPT_PROXY_CAINFO"
                 | "CURLOPT_PROXY_SSLCERT"
                 | "CURLOPT_PROXY_SSLKEY" => return true,
                 _ => {}
@@ -176,7 +178,19 @@ fn main() {
         }
         if version < 52 {
             match s {
-                "CURLOPT_PROXY_CAPATH" => return true,
+                "CURLOPT_PROXY_CAINFO"
+                | "CURLOPT_PROXY_CAPATH"
+                | "CURLOPT_PROXY_CRLFILE"
+                | "CURLOPT_PROXY_KEYPASSWD"
+                | "CURLOPT_PROXY_SSL_CIPHER_LIST"
+                | "CURLOPT_PROXY_SSL_OPTIONS"
+                | "CURLOPT_PROXY_SSL_VERIFYHOST"
+                | "CURLOPT_PROXY_SSL_VERIFYPEER"
+                | "CURLOPT_PROXY_SSLCERT"
+                | "CURLOPT_PROXY_SSLCERTTYPE"
+                | "CURLOPT_PROXY_SSLKEY"
+                | "CURLOPT_PROXY_SSLKEYTYPE"
+                | "CURLOPT_PROXY_SSLVERSION" => return true,
                 _ => {}
             }
         }

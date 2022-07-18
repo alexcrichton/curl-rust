@@ -593,6 +593,11 @@ impl Easy {
         self.inner.proxy_sslcert(sslcert)
     }
 
+    /// Same as [`Easy2::proxy_sslcert_type`](struct.Easy2.html#method.proxy_sslcert_type)
+    pub fn proxy_sslcert_type(&mut self, kind: &str) -> Result<(), Error> {
+        self.inner.proxy_sslcert_type(kind)
+    }
+
     /// Same as [`Easy2::proxy_sslcert_blob`](struct.Easy2.html#method.proxy_sslcert_blob)
     pub fn proxy_sslcert_blob(&mut self, blob: &[u8]) -> Result<(), Error> {
         self.inner.proxy_sslcert_blob(blob)
@@ -603,9 +608,19 @@ impl Easy {
         self.inner.proxy_sslkey(sslkey)
     }
 
+    /// Same as [`Easy2::proxy_sslkey_type`](struct.Easy2.html#method.proxy_sslkey_type)
+    pub fn proxy_sslkey_type(&mut self, kind: &str) -> Result<(), Error> {
+        self.inner.proxy_sslkey_type(kind)
+    }
+
     /// Same as [`Easy2::proxy_sslkey_blob`](struct.Easy2.html#method.proxy_sslkey_blob)
     pub fn proxy_sslkey_blob(&mut self, blob: &[u8]) -> Result<(), Error> {
         self.inner.proxy_sslkey_blob(blob)
+    }
+
+    /// Same as [`Easy2::proxy_key_password`](struct.Easy2.html#method.proxy_key_password)
+    pub fn proxy_key_password(&mut self, password: &str) -> Result<(), Error> {
+        self.inner.proxy_key_password(password)
     }
 
     /// Same as [`Easy2::proxy_type`](struct.Easy2.html#method.proxy_type)
@@ -1028,6 +1043,11 @@ impl Easy {
         self.inner.ssl_cainfo_blob(blob)
     }
 
+    /// Same as [`Easy2::proxy_ssl_cainfo_blob`](struct.Easy2.html#method.proxy_ssl_cainfo_blob)
+    pub fn proxy_ssl_cainfo_blob(&mut self, blob: &[u8]) -> Result<(), Error> {
+        self.inner.proxy_ssl_cainfo_blob(blob)
+    }
+
     /// Same as [`Easy2::ssl_engine`](struct.Easy2.html#method.ssl_engine)
     pub fn ssl_engine(&mut self, engine: &str) -> Result<(), Error> {
         self.inner.ssl_engine(engine)
@@ -1048,6 +1068,11 @@ impl Easy {
         self.inner.ssl_version(version)
     }
 
+    /// Same as [`Easy2::proxy_ssl_version`](struct.Easy2.html#method.proxy_ssl_version)
+    pub fn proxy_ssl_version(&mut self, version: SslVersion) -> Result<(), Error> {
+        self.inner.proxy_ssl_version(version)
+    }
+
     /// Same as [`Easy2::ssl_min_max_version`](struct.Easy2.html#method.ssl_min_max_version)
     pub fn ssl_min_max_version(
         &mut self,
@@ -1057,14 +1082,33 @@ impl Easy {
         self.inner.ssl_min_max_version(min_version, max_version)
     }
 
+    /// Same as [`Easy2::proxy_ssl_min_max_version`](struct.Easy2.html#method.proxy_ssl_min_max_version)
+    pub fn proxy_ssl_min_max_version(
+        &mut self,
+        min_version: SslVersion,
+        max_version: SslVersion,
+    ) -> Result<(), Error> {
+        self.inner.proxy_ssl_min_max_version(min_version, max_version)
+    }
+
     /// Same as [`Easy2::ssl_verify_host`](struct.Easy2.html#method.ssl_verify_host)
     pub fn ssl_verify_host(&mut self, verify: bool) -> Result<(), Error> {
         self.inner.ssl_verify_host(verify)
     }
 
+    /// Same as [`Easy2::proxy_ssl_verify_host`](struct.Easy2.html#method.proxy_ssl_verify_host)
+    pub fn proxy_ssl_verify_host(&mut self, verify: bool) -> Result<(), Error> {
+        self.inner.proxy_ssl_verify_host(verify)
+    }
+
     /// Same as [`Easy2::ssl_verify_peer`](struct.Easy2.html#method.ssl_verify_peer)
     pub fn ssl_verify_peer(&mut self, verify: bool) -> Result<(), Error> {
         self.inner.ssl_verify_peer(verify)
+    }
+
+    /// Same as [`Easy2::proxy_ssl_verify_peer`](struct.Easy2.html#method.proxy_ssl_verify_peer)
+    pub fn proxy_ssl_verify_peer(&mut self, verify: bool) -> Result<(), Error> {
+        self.inner.proxy_ssl_verify_peer(verify)
     }
 
     /// Same as [`Easy2::cainfo`](struct.Easy2.html#method.cainfo)
@@ -1077,9 +1121,19 @@ impl Easy {
         self.inner.issuer_cert(path)
     }
 
+    /// Same as [`Easy2::proxy_issuer_cert`](struct.Easy2.html#method.proxy_issuer_cert)
+    pub fn proxy_issuer_cert<P: AsRef<Path>>(&mut self, path: P) -> Result<(), Error> {
+        self.inner.proxy_issuer_cert(path)
+    }
+
     /// Same as [`Easy2::issuer_cert_blob`](struct.Easy2.html#method.issuer_cert_blob)
     pub fn issuer_cert_blob(&mut self, blob: &[u8]) -> Result<(), Error> {
         self.inner.issuer_cert_blob(blob)
+    }
+
+    /// Same as [`Easy2::proxy_issuer_cert_blob`](struct.Easy2.html#method.proxy_issuer_cert_blob)
+    pub fn proxy_issuer_cert_blob(&mut self, blob: &[u8]) -> Result<(), Error> {
+        self.inner.proxy_issuer_cert_blob(blob)
     }
 
     /// Same as [`Easy2::capath`](struct.Easy2.html#method.capath)
@@ -1090,6 +1144,11 @@ impl Easy {
     /// Same as [`Easy2::crlfile`](struct.Easy2.html#method.crlfile)
     pub fn crlfile<P: AsRef<Path>>(&mut self, path: P) -> Result<(), Error> {
         self.inner.crlfile(path)
+    }
+
+    /// Same as [`Easy2::proxy_crlfile`](struct.Easy2.html#method.proxy_crlfile)
+    pub fn proxy_crlfile<P: AsRef<Path>>(&mut self, path: P) -> Result<(), Error> {
+        self.inner.proxy_crlfile(path)
     }
 
     /// Same as [`Easy2::certinfo`](struct.Easy2.html#method.certinfo)
@@ -1112,6 +1171,11 @@ impl Easy {
         self.inner.ssl_cipher_list(ciphers)
     }
 
+    /// Same as [`Easy2::proxy_ssl_cipher_list`](struct.Easy2.html#method.proxy_ssl_cipher_list)
+    pub fn proxy_ssl_cipher_list(&mut self, ciphers: &str) -> Result<(), Error> {
+        self.inner.proxy_ssl_cipher_list(ciphers)
+    }
+
     /// Same as [`Easy2::ssl_sessionid_cache`](struct.Easy2.html#method.ssl_sessionid_cache)
     pub fn ssl_sessionid_cache(&mut self, enable: bool) -> Result<(), Error> {
         self.inner.ssl_sessionid_cache(enable)
@@ -1120,6 +1184,11 @@ impl Easy {
     /// Same as [`Easy2::ssl_options`](struct.Easy2.html#method.ssl_options)
     pub fn ssl_options(&mut self, bits: &SslOpt) -> Result<(), Error> {
         self.inner.ssl_options(bits)
+    }
+
+    /// Same as [`Easy2::proxy_ssl_options`](struct.Easy2.html#method.proxy_ssl_options)
+    pub fn proxy_ssl_options(&mut self, bits: &SslOpt) -> Result<(), Error> {
+        self.inner.proxy_ssl_options(bits)
     }
 
     /// Same as [`Easy2::pinned_public_key`](struct.Easy2.html#method.pinned_public_key)

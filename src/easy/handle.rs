@@ -1088,7 +1088,8 @@ impl Easy {
         min_version: SslVersion,
         max_version: SslVersion,
     ) -> Result<(), Error> {
-        self.inner.proxy_ssl_min_max_version(min_version, max_version)
+        self.inner
+            .proxy_ssl_min_max_version(min_version, max_version)
     }
 
     /// Same as [`Easy2::ssl_verify_host`](struct.Easy2.html#method.ssl_verify_host)

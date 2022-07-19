@@ -172,7 +172,7 @@ fn main() {
             match s {
                 "CURL_SSLVERSION_TLSv1_3" | "CURLOPT_PROXY_SSLCERT" | "CURLOPT_PROXY_SSLKEY" => {
                     return true
-                },
+                }
                 _ => {}
             }
         }

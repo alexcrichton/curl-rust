@@ -157,6 +157,7 @@ fn main() {
         .file("curl/lib/escape.c")
         .file("curl/lib/file.c")
         .file("curl/lib/fileinfo.c")
+        .file("curl/lib/fopen.c")
         .file("curl/lib/formdata.c")
         .file("curl/lib/getenv.c")
         .file("curl/lib/getinfo.c")

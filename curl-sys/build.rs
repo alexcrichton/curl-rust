@@ -161,6 +161,7 @@ fn main() {
         .file("curl/lib/getenv.c")
         .file("curl/lib/getinfo.c")
         .file("curl/lib/hash.c")
+        .file("curl/lib/headers.c")
         .file("curl/lib/hmac.c")
         .file("curl/lib/hostasyn.c")
         .file("curl/lib/hostip.c")

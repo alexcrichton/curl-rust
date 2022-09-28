@@ -274,6 +274,26 @@ fn main() {
         cfg.define("USE_RUSTLS", None)
             .file("curl/lib/vtls/rustls.c")
             .include(env::var_os("DEP_RUSTLS_FFI_INCLUDE").unwrap());
+    } else if cfg!(feature = "windows-static-ssl") {
+        if windows {
+            cfg.define("USE_OPENSSL", None)
+                .file("curl/lib/vtls/openssl.c");
+            // We need both openssl and zlib
+            // Those can be installed with
+            // ```shell
+            // git clone https://github.com/microsoft/vcpkg
+            // cd vcpkg
+            // ./bootstrap-vcpkg.bat -disableMetrics
+            // ./vcpkg.exe integrate install
+            // ./vcpkg.exe install openssl:x64-windows-static-md
+            // ```
+            #[cfg(target_env = "msvc")]
+            vcpkg::Config::new().find_package("openssl").ok();
+            #[cfg(target_env = "msvc")]
+            vcpkg::Config::new().find_package("zlib").ok();
+        } else {
+            panic!("Not available on non windows platform")
+        }
     } else if cfg!(feature = "ssl") {
         if windows {
             // For windows, spnego feature is auto on in case ssl feature is on.
@@ -307,26 +327,6 @@ fn main() {
             if let Some(path) = env::var_os("DEP_OPENSSL_INCLUDE") {
                 cfg.include(path);
             }
-        }
-    } else if cfg!(feature = "windows-static-ssl") {
-        if windows {
-            cfg.define("USE_OPENSSL", None)
-                .file("curl/lib/vtls/openssl.c");
-            // We need both openssl and zlib
-            // Those can be installed with
-            // ```shell
-            // git clone https://github.com/microsoft/vcpkg
-            // cd vcpkg
-            // ./bootstrap-vcpkg.bat -disableMetrics
-            // ./vcpkg.exe integrate install
-            // ./vcpkg.exe install openssl:x64-windows-static-md
-            // ```
-            #[cfg(target_env = "msvc")]
-            vcpkg::Config::new().find_package("openssl").ok();
-            #[cfg(target_env = "msvc")]
-            vcpkg::Config::new().find_package("zlib").ok();
-        } else {
-            panic!("Not available on non windows platform")
         }
     }
 

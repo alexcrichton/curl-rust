@@ -1,22 +1,13 @@
 use std::env;
-use std::fs::File;
-use std::io::{stdout, Read, Write};
-use std::path::Path;
+use std::io::{stdout, Write};
 
 use anyhow::{bail, Result};
 use curl::easy::Easy;
 
-fn read_file(path: impl AsRef<Path>) -> Result<Vec<u8>> {
-    let mut f = File::open(path)?;
-    let mut buf = Vec::new();
-    f.read_to_end(&mut buf)?;
-    Ok(buf)
-}
-
 fn main() -> Result<()> {
     let argv = env::args().collect::<Vec<_>>();
     if argv.len() < 4 {
-        bail!("usage: ssl_cert_blob URL CERT KEY CAINFO? PASSWORD?");
+        bail!("usage: ssl_client_auth URL CERT KEY CAINFO? PASSWORD?");
     }
     let url = &argv[1];
     let cert_path = &argv[2];
@@ -41,21 +32,13 @@ fn main() -> Result<()> {
         Ok(data.len())
     })?;
 
-    let cert_blob = read_file(cert_path)?;
-    let key_blob = read_file(key_path)?;
-    let ca_blob = if let Some(cainfo) = cainfo {
-        Some(read_file(cainfo)?)
-    } else {
-        None
-    };
-
-    handle.ssl_cert_blob(&cert_blob)?;
-    handle.ssl_key_blob(&key_blob)?;
+    handle.ssl_cert(&cert_path)?;
+    handle.ssl_key(&key_path)?;
     if let Some(password) = password {
         handle.key_password(password)?;
     }
-    if let Some(ca_blob) = ca_blob {
-        handle.ssl_cainfo_blob(&ca_blob)?;
+    if let Some(cainfo) = cainfo {
+        handle.cainfo(cainfo)?;
     }
 
     handle.perform()?;

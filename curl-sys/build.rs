@@ -308,6 +308,26 @@ fn main() {
                 cfg.include(path);
             }
         }
+    } else if cfg!(feature = "windows-static-ssl") {
+        if windows {
+            cfg.define("USE_OPENSSL", None)
+                .file("curl/lib/vtls/openssl.c");
+            // We need both openssl and zlib
+            // Those can be installed with
+            // ```shell
+            // git clone https://github.com/microsoft/vcpkg
+            // cd vcpkg
+            // ./bootstrap-vcpkg.bat -disableMetrics
+            // ./vcpkg.exe integrate install
+            // ./vcpkg.exe install openssl:x64-windows-static-md
+            // ```
+            #[cfg(target_env = "msvc")]
+            vcpkg::Config::new().find_package("openssl").ok();
+            #[cfg(target_env = "msvc")]
+            vcpkg::Config::new().find_package("zlib").ok();
+        } else {
+            panic!("Not available on non windows platform")
+        }
     }
 
     // Configure platform-specific details.

@@ -47,6 +47,7 @@ spnego = ["curl-sys/spnego"]
 rustls = ["curl-sys/rustls"]
 static-curl = ["curl-sys/static-curl"]
 static-ssl = ["curl-sys/static-ssl"]
+windows-static-ssl = ["static-curl", "curl-sys/windows-static-ssl"]
 force-system-lib-on-osx = ['curl-sys/force-system-lib-on-osx']
 protocol-ftp = ["curl-sys/protocol-ftp"]
 zlib-ng-compat = ["curl-sys/zlib-ng-compat", "static-curl"]
@@ -71,6 +72,11 @@ required-features = ["ssl"]
 name = "ssl_cert_blob"
 path = "examples/ssl_cert_blob.rs"
 required-features = ["ssl"]
+
+[[example]]
+name = "ssl_client_auth"
+path = "examples/ssl_client_auth.rs"
+required-features = []
 
 [[example]]
 name = "aws_sigv4"

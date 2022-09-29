@@ -190,7 +190,8 @@ fn main() {
                 | "CURLOPT_PROXY_SSLCERTTYPE"
                 | "CURLOPT_PROXY_SSLKEY"
                 | "CURLOPT_PROXY_SSLKEYTYPE"
-                | "CURLOPT_PROXY_SSLVERSION" => return true,
+                | "CURLOPT_PROXY_SSLVERSION"
+                | "CURL_VERSION_HTTPS_PROXY" => return true,
                 _ => {}
             }
         }

@@ -140,6 +140,11 @@ impl Version {
         self.flag(curl_sys::CURL_VERSION_UNIX_SOCKETS)
     }
 
+    /// Returns whether libcurl was built with support for HTTPS proxy.
+    pub fn feature_https_proxy(&self) -> bool {
+        self.flag(curl_sys::CURL_VERSION_HTTPS_PROXY)
+    }
+
     /// Returns whether libcurl was built with support for HTTP2.
     pub fn feature_http2(&self) -> bool {
         self.flag(curl_sys::CURL_VERSION_HTTP2)
@@ -413,6 +418,7 @@ impl fmt::Debug for Version {
                 "feature_unix_domain_socket",
                 &self.feature_unix_domain_socket(),
             )
+            .field("feature_https_proxy", &self.feature_https_proxy())
             .field("feature_altsvc", &self.feature_altsvc())
             .field("feature_zstd", &self.feature_zstd())
             .field("feature_unicode", &self.feature_unicode())

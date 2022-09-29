@@ -219,7 +219,8 @@ fn main() {
         s == "CURLSSLOPT_NO_REVOKE" ||
 
         // A lot of curl versions doesn't support unix sockets
-        s == "CURLOPT_UNIX_SOCKET_PATH" || s == "CURL_VERSION_UNIX_SOCKETS"
+        s == "CURLOPT_UNIX_SOCKET_PATH" || s == "CURL_VERSION_UNIX_SOCKETS" || s ==
+            "CURLOPT_ABSTRACT_UNIX_SOCKET"
     });
 
     if cfg!(target_env = "msvc") {

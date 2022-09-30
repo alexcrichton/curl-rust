@@ -907,6 +907,7 @@ pub const CURL_VERSION_TLSAUTH_SRP: c_int = 1 << 14;
 pub const CURL_VERSION_NTLM_WB: c_int = 1 << 15;
 pub const CURL_VERSION_HTTP2: c_int = 1 << 16;
 pub const CURL_VERSION_UNIX_SOCKETS: c_int = 1 << 19;
+pub const CURL_VERSION_HTTPS_PROXY: c_int = 1 << 21;
 pub const CURL_VERSION_BROTLI: c_int = 1 << 23;
 pub const CURL_VERSION_ALTSVC: c_int = 1 << 24;
 pub const CURL_VERSION_HTTP3: c_int = 1 << 25;

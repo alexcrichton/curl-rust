@@ -133,6 +133,16 @@ with various Cargo features:
 - `upkeep_7_62_0`: Enable curl_easy_upkeep() support, introduced in curl 7.62.0. Disabled by default.
 - `poll_7_68_0`: Enable curl_multi_poll()/curl_multi_wakeup() support, requires curl 7.68.0 or later. Disabled by default.
 - `ntlm`: Enable NTLM support in curl. Disabled by default.
+- `windows-static-ssl`: Enable Openssl support on Windows via the static build provided by vcpkg. Incompatible with `ssl` (use `--no-default-features`). Disabled by default.
+
+  Note that to install openssl on windows via vcpkg the following commands needs to be ran:
+  ```shell
+  git clone https://github.com/microsoft/vcpkg
+  cd vcpkg
+  ./bootstrap-vcpkg.bat -disableMetrics
+  ./vcpkg.exe integrate install
+  ./vcpkg.exe install openssl:x64-windows-static-md
+  ```
 
 ## Version Support
 

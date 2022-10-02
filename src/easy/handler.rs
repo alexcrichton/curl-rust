@@ -816,6 +816,9 @@ impl<H> Easy2<H> {
     ///
     /// By default this option is not set and corresponds to
     /// [`CURLOPT_ABSTRACT_UNIX_SOCKET`](https://curl.haxx.se/libcurl/c/CURLOPT_ABSTRACT_UNIX_SOCKET.html).
+    ///
+    /// NOTE: this API can only be used on Linux OS.
+    #[cfg(target_os = "linux")]
     pub fn abstract_unix_socket(&mut self, addr: &[u8]) -> Result<(), Error> {
         unsafe {
             self.cvt(curl_sys::curl_easy_setopt(

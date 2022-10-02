@@ -170,6 +170,11 @@ impl Easy {
         self.inner.unix_socket_path(path)
     }
 
+    /// Same as [`Easy2::abstract_unix_socket`](struct.Easy2.html#method.abstract_unix_socket)
+    pub fn abstract_unix_socket(&mut self, addr: &[u8]) -> Result<(), Error> {
+        self.inner.abstract_unix_socket(addr)
+    }
+
     // =========================================================================
     // Callback options
 

@@ -174,7 +174,7 @@ impl Easy {
     ///
     /// NOTE: this API can only be used on Linux OS.
     #[cfg(target_os = "linux")]
-    pub fn abstract_unix_socket(&mut self, addr: &[u8]) -> Result<(), Error> {
+    pub fn abstract_unix_socket(&mut self, addr: &str) -> Result<(), Error> {
         self.inner.abstract_unix_socket(addr)
     }
 

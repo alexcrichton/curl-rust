@@ -817,7 +817,7 @@ impl<H> Easy2<H> {
     ///
     /// NOTE: this API can only be used on Linux OS.
     #[cfg(target_os = "linux")]
-    pub fn abstract_unix_socket(&mut self, addr: &str) -> Result<(), Error> {
+    pub fn abstract_unix_socket(&mut self, addr: &[u8]) -> Result<(), Error> {
         let addr = CString::new(addr)?;
         self.setopt_str(curl_sys::CURLOPT_ABSTRACT_UNIX_SOCKET, &addr)
     }

@@ -83,6 +83,7 @@ fn main() {
         "system.h",
         "urlapi.h",
         "typecheck-gcc.h",
+        "websockets.h",
     ]
     .iter()
     {
@@ -145,12 +146,10 @@ fn main() {
         .file("curl/lib/content_encoding.c")
         .file("curl/lib/cookie.c")
         .file("curl/lib/curl_addrinfo.c")
-        .file("curl/lib/curl_ctype.c")
         .file("curl/lib/curl_get_line.c")
         .file("curl/lib/curl_memrchr.c")
         .file("curl/lib/curl_range.c")
         .file("curl/lib/curl_threads.c")
-        .file("curl/lib/dotdot.c")
         .file("curl/lib/doh.c")
         .file("curl/lib/dynbuf.c")
         .file("curl/lib/easy.c")
@@ -184,6 +183,7 @@ fn main() {
         .file("curl/lib/multi.c")
         .file("curl/lib/netrc.c")
         .file("curl/lib/nonblock.c")
+        .file("curl/lib/noproxy.c")
         .file("curl/lib/parsedate.c")
         .file("curl/lib/progress.c")
         .file("curl/lib/rand.c")

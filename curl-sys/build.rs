@@ -358,6 +358,7 @@ fn main() {
             .define("HAVE_FCNTL_O_NONBLOCK", None)
             .define("HAVE_SYS_SELECT_H", None)
             .define("HAVE_SYS_STAT_H", None)
+            .define("HAVE_SYS_TIME_H", None)
             .define("HAVE_UNISTD_H", None)
             .define("HAVE_RECV", None)
             .define("HAVE_SELECT", None)

@@ -637,6 +637,10 @@ pub const CURL_IPRESOLVE_V6: c_int = 2;
 
 pub const CURLSSLOPT_ALLOW_BEAST: c_long = 1 << 0;
 pub const CURLSSLOPT_NO_REVOKE: c_long = 1 << 1;
+pub const CURLSSLOPT_NO_PARTIALCHAIN: c_long = 1 << 2;
+pub const CURLSSLOPT_REVOKE_BEST_EFFORT: c_long = 1 << 3;
+pub const CURLSSLOPT_NATIVE_CA: c_long = 1 << 4;
+pub const CURLSSLOPT_AUTO_CLIENT_CERT: c_long = 1 << 5;
 
 /// These enums are for use with the CURLOPT_HTTP_VERSION option.
 ///

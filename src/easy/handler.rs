@@ -3813,6 +3813,46 @@ impl SslOpt {
         SslOpt { bits: 0 }
     }
 
+    /// Tell libcurl to automatically locate and use a client certificate for authentication,
+    /// when requested by the server.
+    ///
+    /// This option is only supported for Schannel (the native Windows SSL library).
+    /// Prior to 7.77.0 this was the default behavior in libcurl with Schannel.
+    ///
+    /// Since the server can request any certificate that supports client authentication in
+    /// the OS certificate store it could be a privacy violation and unexpected. (Added in 7.77.0)
+    pub fn auto_client_cert(&mut self, on: bool) -> &mut SslOpt {
+        self.flag(curl_sys::CURLSSLOPT_AUTO_CLIENT_CERT, on)
+    }
+
+    /// Tell libcurl to use the operating system's native CA store for certificate verification.
+    ///
+    /// Works only on Windows when built to use OpenSSL.
+    ///
+    /// This option is experimental and behavior is subject to change. (Added in 7.71.0)
+    pub fn native_ca(&mut self, on: bool) -> &mut SslOpt {
+        self.flag(curl_sys::CURLSSLOPT_NATIVE_CA, on)
+    }
+
+    /// Tells libcurl to ignore certificate revocation checks in case of missing or
+    /// offline distribution points for those SSL backends where such behavior is present.
+    ///
+    /// This option is only supported for Schannel (the native Windows SSL library).
+    ///
+    /// If combined with CURLSSLOPT_NO_REVOKE, the latter takes precedence. (Added in 7.70.0)
+    pub fn revoke_best_effort(&mut self, on: bool) -> &mut SslOpt {
+        self.flag(curl_sys::CURLSSLOPT_REVOKE_BEST_EFFORT, on)
+    }
+
+    /// Tells libcurl to not accept "partial" certificate chains, which it otherwise does by default.
+    ///
+    /// This option is only supported for OpenSSL and will fail the certificate verification
+    /// if the chain ends with an intermediate certificate and not with a root cert.
+    /// (Added in 7.68.0)
+    pub fn no_partial_chain(&mut self, on: bool) -> &mut SslOpt {
+        self.flag(curl_sys::CURLSSLOPT_NO_PARTIALCHAIN, on)
+    }
+
     /// Tells libcurl to disable certificate revocation checks for those SSL
     /// backends where such behavior is present.
     ///

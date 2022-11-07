@@ -62,6 +62,7 @@ fn main() {
         false
     });
 
+    // Version symbols are extracted from https://curl.se/libcurl/c/symbols-in-versions.html
     cfg.skip_const(move |s| {
         if version < 77 {
             match s {
@@ -73,7 +74,8 @@ fn main() {
                 | "CURL_VERSION_ZSTD"
                 | "CURL_VERSION_UNICODE"
                 | "CURL_VERSION_HSTS"
-                | "CURL_VERSION_GSASL" => return true,
+                | "CURL_VERSION_GSASL"
+                | "CURLSSLOPT_AUTO_CLIENT_CERT" => return true,
                 _ => {}
             }
         }
@@ -110,15 +112,23 @@ fn main() {
                 | "CURLOPT_ISSUERCERT_BLOB"
                 | "CURLOPTTYPE_BLOB"
                 | "CURL_BLOB_NOCOPY"
-                | "CURL_BLOB_COPY" => return true,
+                | "CURL_BLOB_COPY"
+                | "CURLSSLOPT_NATIVE_CA" => return true,
                 _ => {}
             }
         }
         if version < 70 {
             match s {
-                "CURL_VERSION_HTTP3" | "CURL_VERSION_BROTLI" | "CURLVERSION_SEVENTH" => {
-                    return true
-                }
+                "CURL_VERSION_HTTP3"
+                | "CURL_VERSION_BROTLI"
+                | "CURLVERSION_SEVENTH"
+                | "CURLSSLOPT_REVOKE_BEST_EFFORT" => return true,
+                _ => {}
+            }
+        }
+        if version < 68 {
+            match s {
+                "CURLSSLOPT_NO_PARTIALCHAIN" => return true,
                 _ => {}
             }
         }
@@ -202,16 +212,20 @@ fn main() {
                 _ => {}
             }
         }
-
         if version < 47 {
             if s.starts_with("CURL_HTTP_VERSION_2") {
                 return true;
             }
         }
-
         if version < 43 {
             if s.starts_with("CURLPIPE_") {
                 return true;
+            }
+        }
+        if version < 25 {
+            match s {
+                "CURLSSLOPT_ALLOW_BEAST" => return true,
+                _ => {}
             }
         }
 

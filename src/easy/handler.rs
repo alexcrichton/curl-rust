@@ -3779,6 +3779,14 @@ impl Auth {
         self.flag(curl_sys::CURLAUTH_AWS_SIGV4, on)
     }
 
+    /// HTTP Auto authentication.
+    ///
+    /// This is a combination for CURLAUTH_BASIC | CURLAUTH_DIGEST |
+    /// CURLAUTH_GSSNEGOTIATE | CURLAUTH_NTLM
+    pub fn auto(&mut self, on: bool) -> &mut Auth {
+        self.flag(curl_sys::CURLAUTH_ANY, on)
+    }
+
     fn flag(&mut self, bit: c_ulong, on: bool) -> &mut Auth {
         if on {
             self.bits |= bit as c_long;

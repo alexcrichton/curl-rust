@@ -39,7 +39,7 @@ anyhow = "1.0.31"
 members = ["systest"]
 
 [features]
-default = ["ssl", "zlib"]
+default = ["ssl"]
 ssl = ["openssl-sys", "openssl-probe", "curl-sys/ssl"] # OpenSSL/system TLS backend
 mesalink = ["curl-sys/mesalink"] # MesaLink TLS backend
 http2 = ["curl-sys/http2"]

@@ -39,7 +39,7 @@ anyhow = "1.0.31"
 members = ["systest"]
 
 [features]
-default = ["ssl"]
+default = ["ssl", "zlib"]
 ssl = ["openssl-sys", "openssl-probe", "curl-sys/ssl"] # OpenSSL/system TLS backend
 mesalink = ["curl-sys/mesalink"] # MesaLink TLS backend
 http2 = ["curl-sys/http2"]
@@ -50,6 +50,7 @@ static-ssl = ["curl-sys/static-ssl"]
 windows-static-ssl = ["static-curl", "curl-sys/windows-static-ssl"]
 force-system-lib-on-osx = ['curl-sys/force-system-lib-on-osx']
 protocol-ftp = ["curl-sys/protocol-ftp"]
+zlib = ["curl-sys/zlib", "static-curl"]
 zlib-ng-compat = ["curl-sys/zlib-ng-compat", "static-curl"]
 upkeep_7_62_0 = ["curl-sys/upkeep_7_62_0"]
 poll_7_68_0 = ["curl-sys/poll_7_68_0"]

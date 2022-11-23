@@ -132,9 +132,7 @@ fn main() {
         .define("ENABLE_IPV6", None)
         .define("HAVE_ASSERT_H", None)
         .define("OS", "\"unknown\"") // TODO
-        .define("HAVE_ZLIB_H", None)
         .define("HAVE_LONGLONG", None)
-        .define("HAVE_LIBZ", None)
         .define("HAVE_BOOL_T", None)
         .define("HAVE_STDBOOL_H", None)
         .file("curl/lib/asyn-thread.c")
@@ -257,9 +255,14 @@ fn main() {
         }
     }
 
-    println!("cargo:rustc-cfg=link_libz");
-    if let Some(path) = env::var_os("DEP_Z_INCLUDE") {
-        cfg.include(path);
+    if cfg!(feature = "zlib") || cfg!(feature = "zlib-ng-compat") {
+        cfg.define("HAVE_ZLIB_H", None);
+        cfg.define("HAVE_LIBZ", None);
+
+        println!("cargo:rustc-cfg=link_libz");
+        if let Some(path) = env::var_os("DEP_Z_INCLUDE") {
+            cfg.include(path);
+        }
     }
 
     if cfg!(feature = "spnego") {

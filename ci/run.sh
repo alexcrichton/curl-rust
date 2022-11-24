@@ -15,6 +15,7 @@ if [ -f /.dockerenv ]; then
         DL="wget -qO-"
     else
         # trying to install wget
+        echo "curl or wget not found, trying to install wget..."
         if command -v apt-get >/dev/null 2>&1; then  # ubuntu
             apt-get update
             apt-get install -y --no-install-recommends wget

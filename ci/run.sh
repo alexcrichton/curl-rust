@@ -3,8 +3,7 @@
 set -ex
 
 # install cmake. cmake required for zlib-ng build, and old cmake may not work,
-# so we install the latest one. this step only run for ci docker environment to
-# avoid local development environment pollution.
+# so we install the latest one. this step only run for docker tests.
 if [ -f /.dockerenv ]; then
     CMAKE_URL=https://github.com/Kitware/CMake/releases/download/v3.25.0/cmake-3.25.0-linux-x86_64.tar.gz
 

@@ -14,12 +14,22 @@ if [ -f /.dockerenv ]; then
     elif command -v wget >/dev/null 2>&1; then
         DL="wget -qO-"
     else
-        echo "curl or wget is required to download cmake"
-        exit 1
+        # trying to install wget
+        if command -v apt-get >/dev/null 2>&1; then  # ubuntu
+            apt-get update
+            apt-get install -y --no-install-recommends wget
+        elif command -v yum >/dev/null 2>&1; then  # centos
+            yum install -y wget
+        else
+            echo "No package manager found, cannot install wget to download cmake"
+            exit 1
+        fi
+        DL="wget -qO-"
     fi
 
     if [ ! -f /opt/cmake/bin/cmake ]; then  # check cmake is installed (avoid multiple install)
         # download cmake and install
+        echo "installing cmake..."
         mkdir -p /opt/cmake
         $DL $CMAKE_URL | tar -C /opt/cmake -xz --strip-components=1
         export PATH=/opt/cmake/bin:$PATH

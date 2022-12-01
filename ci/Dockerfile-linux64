@@ -5,3 +5,6 @@ RUN apt-get install -y --no-install-recommends \
   gcc ca-certificates make libc6-dev \
   libssl-dev \
   pkg-config
+
+ADD ./install-cmake.sh /install-cmake.sh
+RUN /install-cmake.sh

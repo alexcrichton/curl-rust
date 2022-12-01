@@ -12,3 +12,6 @@ RUN dpkg --add-architecture i386 && \
 
 ENV PKG_CONFIG=i686-linux-gnu-pkg-config \
     PKG_CONFIG_ALLOW_CROSS=1
+
+ADD ./install-cmake.sh /install-cmake.sh
+RUN /install-cmake.sh

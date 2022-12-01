@@ -5,3 +5,6 @@ RUN yum install -y \
   gcc ca-certificates make \
   openssl-devel \
   pkgconfig
+
+ADD ./install-cmake.sh /install-cmake.sh
+RUN /install-cmake.sh

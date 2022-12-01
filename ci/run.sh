@@ -2,40 +2,6 @@
 
 set -ex
 
-# install cmake. cmake required for zlib-ng build, and old cmake may not work,
-# so we install the latest one. this step only run for docker tests.
-if [ -f /.dockerenv ]; then
-    CMAKE_URL=https://github.com/Kitware/CMake/releases/download/v3.25.0/cmake-3.25.0-linux-x86_64.tar.gz
-
-    # check curl or wget is installed for downloading cmake
-    if command -v curl >/dev/null 2>&1; then
-        DL="curl -sSL"
-    elif command -v wget >/dev/null 2>&1; then
-        DL="wget -qO-"
-    else
-        # trying to install wget
-        echo "curl or wget not found, trying to install wget..."
-        if command -v apt-get >/dev/null 2>&1; then  # ubuntu
-            apt-get update
-            apt-get install -y --no-install-recommends wget
-        elif command -v yum >/dev/null 2>&1; then  # centos
-            yum install -y wget
-        else
-            echo "No package manager found, cannot install wget to download cmake"
-            exit 1
-        fi
-        DL="wget -qO-"
-    fi
-
-    if [ ! -f /opt/cmake/bin/cmake ]; then  # check cmake is installed (avoid multiple install)
-        # download cmake and install
-        echo "installing cmake..."
-        mkdir -p /opt/cmake
-        $DL $CMAKE_URL | tar -C /opt/cmake -xz --strip-components=1
-        export PATH=/opt/cmake/bin:$PATH
-    fi
-fi
-
 cargo test --target $TARGET --no-run
 # First test with no extra protocols enabled.
 cargo test --target $TARGET --no-run --features static-curl
@@ -45,9 +11,9 @@ cargo test --target $TARGET --no-run --features rustls,static-curl
 cargo test --target $TARGET --no-run --features static-curl,protocol-ftp,ntlm
 if [ -z "$NO_RUN" ]; then
     cargo test --target $TARGET
-    cargo test --target $TARGET --features static-curl
     cargo test --target $TARGET --features static-curl,protocol-ftp
-    cargo test --target $TARGET --features static-curl,zlib
+    cargo test --target $TARGET --features static-curl
+    cargo test --target $TARGET --features static-curl-no-zlib
     cargo test --target $TARGET --features static-curl,zlib-ng-compat
 
     # Note that `-Clink-dead-code` is passed here to suppress `--gc-sections` to

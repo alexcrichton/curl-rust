@@ -1,48 +1,33 @@
-#[cfg(all(
-    feature = "static-curl",
-    not(feature = "zlib"),
-    not(feature = "zlib-ng-compat")
-))]
 #[test]
-fn static_with_zlib_disabled() {
-    assert_eq!(curl::Version::get().feature_libz(), false);
-    assert!(curl::Version::get().libz_version().is_none());
-}
+fn test_static_zlib() {
+    let version = curl::Version::get();
+    let feature_libz = version.feature_libz();
 
-#[cfg(all(
-    feature = "static-curl",
-    feature = "zlib",
-    not(feature = "zlib-ng-compat")
-))]
-#[test]
-fn static_with_zlib_enabled() {
-    assert!(curl::Version::get().feature_libz());
+    #[cfg(all(
+        feature = "static-curl",
+        not(any(feature = "zlib", feature = "zlib-ng-compat")),
+    ))]
+    assert_eq!(feature_libz, false);
+    #[cfg(all(
+        feature = "static-curl",
+        any(feature = "zlib", feature = "zlib-ng-compat")
+    ))]
+    assert_eq!(feature_libz, true);
 
-    // libz_version not contains "zlib-ng" string
-    assert_eq!(
-        curl::Version::get()
-            .libz_version()
-            .unwrap()
-            .contains("zlib-ng"),
-        false
-    );
-}
+    #[cfg(all(
+        feature = "static-curl",
+        any(feature = "zlib", feature = "zlib-ng-compat")
+    ))]
+    {
+        let libz_version = version.libz_version();
+        assert!(libz_version.is_some());
 
-#[cfg(all(
-    feature = "static-curl",
-    not(feature = "zlib"),
-    feature = "zlib-ng-compat"
-))]
-#[test]
-fn static_with_zlib_ng_enabled() {
-    assert!(curl::Version::get().feature_libz());
+        let libz_version = libz_version.unwrap();
 
-    // libz_version contains "zlib-ng" string
-    assert_eq!(
-        curl::Version::get()
-            .libz_version()
-            .unwrap()
-            .contains("zlib-ng"),
-        true
-    );
+        #[cfg(all(feature = "zlib", not(feature = "zlib-ng-compat")))]
+        assert_eq!(libz_version.contains("zlib-ng"), false);
+
+        #[cfg(all(not(feature = "zlib"), feature = "zlib-ng-compat"))]
+        assert_eq!(libz_version.contains("zlib-ng"), true);
+    }
 }

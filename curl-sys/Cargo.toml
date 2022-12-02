@@ -43,7 +43,7 @@ pkg-config = "0.3.3"
 cc = "1.0"
 
 [features]
-default = ["ssl"]
+default = ["ssl", "zlib"]
 ssl = ["openssl-sys"]
 http2 = ["libnghttp2-sys"]
 mesalink = []

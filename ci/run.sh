@@ -11,9 +11,9 @@ cargo test --target $TARGET --no-run --features rustls,static-curl
 cargo test --target $TARGET --no-run --features static-curl,protocol-ftp,ntlm
 if [ -z "$NO_RUN" ]; then
     cargo test --target $TARGET
-    cargo test --target $TARGET --features static-curl,protocol-ftp
     cargo test --target $TARGET --features static-curl
-    cargo test --target $TARGET --features static-curl-no-zlib
+    cargo test --target $TARGET --features static-curl,protocol-ftp
+    cargo test --target $TARGET --features static-curl,ssl --no-default-features  # static-curl without zlib
     cargo test --target $TARGET --features static-curl,zlib-ng-compat
 
     # Note that `-Clink-dead-code` is passed here to suppress `--gc-sections` to

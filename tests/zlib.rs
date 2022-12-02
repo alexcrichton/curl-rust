@@ -1,13 +1,12 @@
+#[cfg(feature = "static-curl")]
 #[test]
 fn test_static_zlib() {
     let version = curl::Version::get();
     let feature_libz = version.feature_libz();
 
-    if cfg!(feature = "static-curl-no-zlib") {
+    if !cfg!(feature = "zlib") {
         assert_eq!(feature_libz, false);
-    }
-
-    if cfg!(feature = "static-curl") || cfg!(feature = "zlib-ng-compat") {
+    } else {
         assert_eq!(feature_libz, true);
 
         let libz_version = version.libz_version();

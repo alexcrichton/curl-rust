@@ -127,10 +127,10 @@ with various Cargo features:
 
   Note that Rustls support is experimental within Curl itself and may have significant bugs, so we don't offer any sort of stability guarantee with this feature.
 - `http2`: Enable HTTP/2 support via libnghttp2. Disabled by default.
-- `static-curl`: Use a bundled libcurl version and statically link to it. Disabled by default. This feature will enable zlib for libcurl, if you want to disable it, use `static-curl-no-zlib` feature.
+- `static-curl`: Use a bundled libcurl version and statically link to it. Disabled by default.
 - `static-ssl`: Use a bundled OpenSSL version and statically link to it. Only applies on platforms that use OpenSSL. Disabled by default.
-- `static-curl-no-zlib`: Use a bundled libcurl version and statically link to it, but do not link to zlib. Disabled by default.
-- `zlib-ng-compat`: Use a bundled zlib-ng to enable libz support. Disabled by default. This feature also enable `static-curl`.
+- `zlib`: Enable zlib support for `static-curl`. Enabled by default. If you want to disable zlib support for `static-curl`, you should set `default-features` to `false`.
+- `zlib-ng-compat`: Enable zlib support for `static-curl` use zlib-ng. Disabled by default.
 - `spnego`: Enable SPNEGO support. Disabled by default.
 - `upkeep_7_62_0`: Enable curl_easy_upkeep() support, introduced in curl 7.62.0. Disabled by default.
 - `poll_7_68_0`: Enable curl_multi_poll()/curl_multi_wakeup() support, requires curl 7.68.0 or later. Disabled by default.

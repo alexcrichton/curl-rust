@@ -2,8 +2,14 @@ FROM ubuntu:16.04
 
 RUN apt-get update
 RUN apt-get install -y --no-install-recommends \
-  gcc ca-certificates make libc6-dev \
-  libssl-dev libcurl4-openssl-dev pkg-config
+  curl \
+  ca-certificates \
+  gcc \
+  make \
+  libc6-dev \
+  libssl-dev \
+  libcurl4-openssl-dev \
+  pkg-config
 
 ADD ./install-cmake.sh /install-cmake.sh
 RUN /install-cmake.sh

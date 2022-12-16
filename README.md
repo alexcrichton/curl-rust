@@ -134,6 +134,8 @@ with various Cargo features:
 - `poll_7_68_0`: Enable curl_multi_poll()/curl_multi_wakeup() support, requires curl 7.68.0 or later. Disabled by default.
 - `ntlm`: Enable NTLM support in curl. Disabled by default.
 - `windows-static-ssl`: Enable Openssl support on Windows via the static build provided by vcpkg. Incompatible with `ssl` (use `--no-default-features`). Disabled by default.
+- `impersonate-chrome`: Use [curl-impersonate](curl-impersonate) in chrome flavor. Incompatible with `static-curl`, enforces built-in BoringSSL as TLS backend.
+- `impersonate-ff`: Use [curl-impersonate](curl-impersonate) in firefox flavor. Incompatible with `static-curl`, enforces built-in NSS as TLS backend.
 
   Note that to install openssl on windows via vcpkg the following commands needs to be ran:
   ```shell
@@ -182,3 +184,4 @@ details.
 [Rustls]: https://github.com/ctz/rustls
 [Schannel]: https://docs.microsoft.com/en-us/windows/win32/com/schannel
 [Secure Transport]: https://developer.apple.com/documentation/security/secure_transport
+[curl-impersonate]: https://github.com/lwthiker/curl-impersonate

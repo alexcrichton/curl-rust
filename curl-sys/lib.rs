@@ -715,6 +715,12 @@ pub const CURL_FORMADD_INCOMPLETE: CURLFORMcode = 5;
 pub const CURL_FORMADD_ILLEGAL_ARRAY: CURLFORMcode = 6;
 pub const CURL_FORMADD_DISABLED: CURLFORMcode = 7;
 
+pub const CURL_REDIR_POST_301: c_ulong = 1;
+pub const CURL_REDIR_POST_302: c_ulong = 2;
+pub const CURL_REDIR_POST_303: c_ulong = 4;
+pub const CURL_REDIR_POST_ALL: c_ulong =
+    CURL_REDIR_POST_301 | CURL_REDIR_POST_302 | CURL_REDIR_POST_303;
+
 #[repr(C)]
 pub struct curl_forms {
     pub option: CURLformoption,

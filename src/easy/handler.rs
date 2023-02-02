@@ -571,6 +571,10 @@ pub struct Auth {
 pub struct SslOpt {
     bits: c_long,
 }
+/// Structure which stores possible post redirection options to pass to `post_redirections`.
+pub struct PostRedirections {
+    bits: c_ulong,
+}
 
 impl<H: Handler> Easy2<H> {
     /// Creates a new "easy" handle which is the core of almost all operations
@@ -1474,7 +1478,14 @@ impl<H> Easy2<H> {
         self.setopt_long(curl_sys::CURLOPT_MAXREDIRS, max as c_long)
     }
 
-    // TODO: post_redirections
+    /// Set the policy for handling redirects to POST requests.
+    ///
+    /// By default a POST is changed to a GET when following a redirect. Setting any
+    /// of the `PostRedirections` flags will preserve the POST method for the
+    /// selected response codes.
+    pub fn post_redirections(&mut self, redirects: &PostRedirections) -> Result<(), Error> {
+        self.setopt_long(curl_sys::CURLOPT_POSTREDIR, redirects.bits as c_long)
+    }
 
     /// Make an HTTP PUT request.
     ///
@@ -3907,6 +3918,69 @@ impl fmt::Debug for SslOpt {
             .field(
                 "allow_beast",
                 &(self.bits & curl_sys::CURLSSLOPT_ALLOW_BEAST != 0),
+            )
+            .finish()
+    }
+}
+
+impl PostRedirections {
+    /// Create an empty PostRedirection setting with no flags set.
+    pub fn new() -> PostRedirections {
+        PostRedirections { bits: 0 }
+    }
+
+    /// Configure POST method behaviour on a 301 redirect. Setting the value
+    /// to true will preserve the method when following the redirect, else
+    /// the method is changed to GET.
+    pub fn redirect_301(&mut self, on: bool) -> &mut PostRedirections {
+        self.flag(curl_sys::CURL_REDIR_POST_301, on)
+    }
+
+    /// Configure POST method behaviour on a 302 redirect. Setting the value
+    /// to true will preserve the method when following the redirect, else
+    /// the method is changed to GET.
+    pub fn redirect_302(&mut self, on: bool) -> &mut PostRedirections {
+        self.flag(curl_sys::CURL_REDIR_POST_302, on)
+    }
+
+    /// Configure POST method behaviour on a 303 redirect. Setting the value
+    /// to true will preserve the method when following the redirect, else
+    /// the method is changed to GET.
+    pub fn redirect_303(&mut self, on: bool) -> &mut PostRedirections {
+        self.flag(curl_sys::CURL_REDIR_POST_303, on)
+    }
+
+    /// Configure POST method behaviour for all redirects. Setting the value
+    /// to true will preserve the method when following the redirect, else
+    /// the method is changed to GET.
+    pub fn redirect_all(&mut self, on: bool) -> &mut PostRedirections {
+        self.flag(curl_sys::CURL_REDIR_POST_ALL, on)
+    }
+
+    fn flag(&mut self, bit: c_ulong, on: bool) -> &mut PostRedirections {
+        if on {
+            self.bits |= bit;
+        } else {
+            self.bits &= !bit;
+        }
+        self
+    }
+}
+
+impl fmt::Debug for PostRedirections {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("PostRedirections")
+            .field(
+                "redirect_301",
+                &(self.bits & curl_sys::CURL_REDIR_POST_301 != 0),
+            )
+            .field(
+                "redirect_302",
+                &(self.bits & curl_sys::CURL_REDIR_POST_302 != 0),
+            )
+            .field(
+                "redirect_303",
+                &(self.bits & curl_sys::CURL_REDIR_POST_303 != 0),
             )
             .finish()
     }

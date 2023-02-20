@@ -10,7 +10,7 @@ use curl_sys;
 use libc::c_void;
 
 use crate::easy::handler::{self, InfoType, ReadError, SeekResult, WriteError};
-use crate::easy::handler::{Auth, NetRc, ProxyType, SslOpt};
+use crate::easy::handler::{Auth, NetRc, PostRedirections, ProxyType, SslOpt};
 use crate::easy::handler::{HttpVersion, IpResolve, SslVersion, TimeCondition};
 use crate::easy::{Easy2, Handler};
 use crate::easy::{Form, List};
@@ -800,6 +800,11 @@ impl Easy {
     /// Same as [`Easy2::max_redirections`](struct.Easy2.html#method.max_redirections)
     pub fn max_redirections(&mut self, max: u32) -> Result<(), Error> {
         self.inner.max_redirections(max)
+    }
+
+    /// Same as [`Easy2::post_redirections`](struct.Easy2.html#method.post_redirections)
+    pub fn post_redirections(&mut self, redirects: &PostRedirections) -> Result<(), Error> {
+        self.inner.post_redirections(redirects)
     }
 
     /// Same as [`Easy2::put`](struct.Easy2.html#method.put)

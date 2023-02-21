@@ -52,7 +52,7 @@ fn main() {
                 _ => {}
             }
         }
-        if version < 70 {
+        if version < 87 {
             match s {
                 "curl_version_info_data" => return true,
                 _ => {}
@@ -64,12 +64,17 @@ fn main() {
 
     // Version symbols are extracted from https://curl.se/libcurl/c/symbols-in-versions.html
     cfg.skip_const(move |s| {
+        if version < 87 {
+            match s {
+                "CURLVERSION_ELEVENTH" | "CURLVERSION_NOW" => return true,
+                _ => {}
+            }
+        }
         if version < 77 {
             match s {
                 "CURLVERSION_TENTH"
                 | "CURLOPT_CAINFO_BLOB"
                 | "CURLOPT_PROXY_CAINFO_BLOB"
-                | "CURLVERSION_NOW"
                 | "CURL_VERSION_ALTSVC"
                 | "CURL_VERSION_ZSTD"
                 | "CURL_VERSION_UNICODE"

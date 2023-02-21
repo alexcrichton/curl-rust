@@ -870,7 +870,8 @@ pub const CURLVERSION_SEVENTH: CURLversion = 6;
 pub const CURLVERSION_EIGHTH: CURLversion = 7;
 pub const CURLVERSION_NINTH: CURLversion = 8;
 pub const CURLVERSION_TENTH: CURLversion = 9;
-pub const CURLVERSION_NOW: CURLversion = CURLVERSION_TENTH;
+pub const CURLVERSION_ELEVENTH: CURLversion = 10;
+pub const CURLVERSION_NOW: CURLversion = CURLVERSION_ELEVENTH;
 
 #[repr(C)]
 pub struct curl_version_info_data {
@@ -899,6 +900,7 @@ pub struct curl_version_info_data {
     pub zstd_version: *const c_char,
     pub hyper_version: *const c_char,
     pub gsasl_version: *const c_char,
+    pub feature_names: *const *const c_char,
 }
 
 pub const CURL_VERSION_IPV6: c_int = 1 << 0;

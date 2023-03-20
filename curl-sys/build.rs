@@ -108,7 +108,7 @@ fn main() {
             .replace("@LIBCURL_LIBS@", "")
             .replace("@SUPPORT_FEATURES@", "")
             .replace("@SUPPORT_PROTOCOLS@", "")
-            .replace("@CURLVERSION@", "7.88.1"),
+            .replace("@CURLVERSION@", "8.0.1"),
     )
     .unwrap();
 
@@ -142,7 +142,7 @@ fn main() {
         .file("curl/lib/base64.c")
         .file("curl/lib/bufref.c")
         .file("curl/lib/cfilters.c")
-        .file("curl/lib/cf-http.c")
+        .file("curl/lib/cf-https-connect.c")
         .file("curl/lib/cf-socket.c")
         .file("curl/lib/conncache.c")
         .file("curl/lib/connect.c")
@@ -223,7 +223,6 @@ fn main() {
         .file("curl/lib/vtls/keylog.c")
         .file("curl/lib/vtls/vtls.c")
         .file("curl/lib/warnless.c")
-        .file("curl/lib/wildcard.c")
         .file("curl/lib/timediff.c")
         .define("HAVE_GETADDRINFO", None)
         .define("HAVE_GETPEERNAME", None)

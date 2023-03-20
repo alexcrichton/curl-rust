@@ -2631,16 +2631,12 @@ impl<H> Easy2<H> {
     ///
     /// You'll find more details about cipher lists on this URL:
     ///
-    /// https://www.openssl.org/docs/apps/ciphers.html
+    /// <https://www.openssl.org/docs/apps/ciphers.html>
     ///
     /// For NSS, valid examples of cipher lists include 'rsa_rc4_128_md5',
     /// ´rsa_aes_128_sha´, etc. With NSS you don't add/remove ciphers. If one
     /// uses this option then all known ciphers are disabled and only those
     /// passed in are enabled.
-    ///
-    /// You'll find more details about the NSS cipher lists on this URL:
-    ///
-    /// http://git.fedorahosted.org/cgit/mod_nss.git/plain/docs/mod_nss.html#Directives
     ///
     /// By default this option is not set and corresponds to
     /// `CURLOPT_SSL_CIPHER_LIST`.
@@ -2662,16 +2658,12 @@ impl<H> Easy2<H> {
     ///
     /// You'll find more details about cipher lists on this URL:
     ///
-    /// https://www.openssl.org/docs/apps/ciphers.html
+    /// <https://www.openssl.org/docs/apps/ciphers.html>
     ///
     /// For NSS, valid examples of cipher lists include 'rsa_rc4_128_md5',
     /// ´rsa_aes_128_sha´, etc. With NSS you don't add/remove ciphers. If one
     /// uses this option then all known ciphers are disabled and only those
     /// passed in are enabled.
-    ///
-    /// You'll find more details about the NSS cipher lists on this URL:
-    ///
-    /// http://git.fedorahosted.org/cgit/mod_nss.git/plain/docs/mod_nss.html#Directives
     ///
     /// By default this option is not set and corresponds to
     /// `CURLOPT_PROXY_SSL_CIPHER_LIST`.
@@ -2747,7 +2739,7 @@ impl<H> Easy2<H> {
     /// total latency since in the best case, an additional server roundtrip is required
     /// and in the worst case, the request is delayed by `CURLOPT_EXPECT_100_TIMEOUT_MS`.
     ///
-    /// More info: https://curl.se/libcurl/c/CURLOPT_EXPECT_100_TIMEOUT_MS.html
+    /// More info: <https://curl.se/libcurl/c/CURLOPT_EXPECT_100_TIMEOUT_MS.html>
     ///
     /// By default this option is not set and corresponds to
     /// `CURLOPT_EXPECT_100_TIMEOUT_MS`.
@@ -3879,7 +3871,7 @@ impl SslOpt {
     /// SSL library), with an exception in the case of Windows' Untrusted
     /// Publishers blacklist which it seems can't be bypassed. This option may
     /// have broader support to accommodate other SSL backends in the future.
-    /// https://curl.haxx.se/docs/ssl-compared.html
+    /// <https://curl.haxx.se/docs/ssl-compared.html>
     pub fn no_revoke(&mut self, on: bool) -> &mut SslOpt {
         self.flag(curl_sys::CURLSSLOPT_NO_REVOKE, on)
     }

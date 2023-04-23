@@ -29,7 +29,7 @@ version = "0.8"
 optional = true
 features = ["no_log_capture"]
 
-[target.'cfg(all(unix, not(target_os = "macos")))'.dependencies]
+[target.'cfg(any(all(unix, not(target_os = "macos")),all(target_os = "windows", target_env = "gnu")))'.dependencies]
 openssl-sys = { version = "0.9", optional = true }
 
 [target.'cfg(windows)'.dependencies]

@@ -303,7 +303,10 @@ fn main() {
             panic!("Not available on non windows platform")
         }
     } else if cfg!(feature = "ssl") {
-        if windows {
+        if windows
+            && (env::var("CARGO_CFG_TARGET_ENV").as_deref() != Ok("gnu")
+                || !cfg!(feature = "static-ssl"))
+        {
             // For windows, spnego feature is auto on in case ssl feature is on.
             // Please see definition of USE_SPNEGO in curl_setup.h for more info.
             cfg.define("USE_WINDOWS_SSPI", None)

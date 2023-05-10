@@ -463,14 +463,14 @@ impl Multi {
     /// individual transfers. Messages may include informationals such as an
     /// error code from the transfer or just the fact that a transfer is
     /// completed. More details on these should be written down as well.
-    pub fn messages<F>(&self, mut f: F)
+    pub fn messages<'s, F>(&'s self, mut f: F)
     where
-        F: FnMut(Message),
+        F: FnMut(Message<'s>),
     {
         self._messages(&mut f)
     }
 
-    fn _messages(&self, f: &mut dyn FnMut(Message)) {
+    fn _messages<'s>(&'s self, f: &mut dyn FnMut(Message<'s>)) {
         let mut queue = 0;
         unsafe {
             loop {

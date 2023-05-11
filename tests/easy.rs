@@ -13,8 +13,8 @@ macro_rules! t {
     };
 }
 
-use curl::easy::{Easy, List, ReadError, Transfer, WriteError};
-use curl::Version;
+use curl::easy::{Easy, Easy2, List, ReadError, Transfer, WriteError};
+use curl::{Error, Version};
 
 use crate::server::Server;
 mod server;
@@ -969,4 +969,34 @@ fn path_as_is() {
     let addr = format!("http://{}/test/../", s.addr());
     assert_eq!(t!(h.response_code()), 200);
     assert_eq!(t!(h.effective_url()), Some(&addr[..]));
+}
+
+#[test]
+fn test_connect_timeout() {
+    use curl::easy::Handler;
+    struct Collector(Vec<u8>);
+
+    impl Handler for Collector {
+        fn write(&mut self, data: &[u8]) -> Result<usize, WriteError> {
+            self.0.extend_from_slice(data);
+            Ok(data.len())
+        }
+    }
+    let mut easy2 = Easy2::new(Collector(Vec::new()));
+
+    // Overflow value test must return an Error
+    assert_eq!(
+        Error::new(curl_sys::CURLE_BAD_FUNCTION_ARGUMENT),
+        easy2
+            .connect_timeout(Duration::from_secs(std::u64::MAX))
+            .unwrap_err()
+    );
+
+    // Valid value
+    assert_eq!(
+        (),
+        easy2
+            .connect_timeout(Duration::from_millis(i32::MAX as u64))
+            .unwrap()
+    );
 }

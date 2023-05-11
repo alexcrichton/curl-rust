@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::convert::TryFrom;
 use std::ffi::{CStr, CString};
 use std::fmt;
 use std::io::{self, SeekFrom, Write};
@@ -2048,8 +2049,15 @@ impl<H> Easy2<H> {
     /// By default this value is 300 seconds and corresponds to
     /// `CURLOPT_CONNECTTIMEOUT_MS`.
     pub fn connect_timeout(&mut self, timeout: Duration) -> Result<(), Error> {
-        let ms = timeout.as_secs() * 1000 + timeout.subsec_millis() as u64;
-        self.setopt_long(curl_sys::CURLOPT_CONNECTTIMEOUT_MS, ms as c_long)
+        let ms = timeout.as_millis();
+        match c_long::try_from(ms) {
+            Ok(amt) => self.setopt_long(curl_sys::CURLOPT_CONNECTTIMEOUT_MS, amt),
+            Err(_) => {
+                let amt = c_long::try_from(ms / 1000)
+                    .map_err(|_| Error::new(curl_sys::CURLE_BAD_FUNCTION_ARGUMENT))?;
+                self.setopt_long(curl_sys::CURLOPT_CONNECTTIMEOUT, amt)
+            }
+        }
     }
 
     /// Specify which IP protocol version to use

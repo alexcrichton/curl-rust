@@ -1925,10 +1925,15 @@ impl<H> Easy2<H> {
     /// By default this option is not set and corresponds to
     /// `CURLOPT_TIMEOUT_MS`.
     pub fn timeout(&mut self, timeout: Duration) -> Result<(), Error> {
-        // TODO: checked arithmetic and casts
-        // TODO: use CURLOPT_TIMEOUT if the timeout is too great
-        let ms = timeout.as_secs() * 1000 + timeout.subsec_millis() as u64;
-        self.setopt_long(curl_sys::CURLOPT_TIMEOUT_MS, ms as c_long)
+        let ms = timeout.as_millis();
+        match c_long::try_from(ms) {
+            Ok(amt) => self.setopt_long(curl_sys::CURLOPT_TIMEOUT_MS, amt),
+            Err(_) => {
+                let amt = c_long::try_from(ms / 1000)
+                    .map_err(|_| Error::new(curl_sys::CURLE_BAD_FUNCTION_ARGUMENT))?;
+                self.setopt_long(curl_sys::CURLOPT_TIMEOUT, amt)
+            }
+        }
     }
 
     /// Set the low speed limit in bytes per second.

@@ -30,7 +30,7 @@ optional = true
 features = ["no_log_capture"]
 
 [target.'cfg(all(unix, not(target_os = "macos")))'.dependencies]
-openssl-sys = { version = "0.9", optional = true }
+openssl-sys = { version = "0.9.64", optional = true }
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["winsock2", "ws2def"] }

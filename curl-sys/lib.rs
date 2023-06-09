@@ -1,5 +1,5 @@
 #![allow(bad_style)]
-#![doc(html_root_url = "https://docs.rs/curl-sys/0.3")]
+#![doc(html_root_url = "https://docs.rs/curl-sys/0.4")]
 
 // These `extern crate` are required for conditional linkages of curl.
 #[cfg(link_libnghttp2)]

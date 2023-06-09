@@ -2767,7 +2767,7 @@ impl<H> Easy2<H> {
     ///
     //// This corresponds to `CURLINFO_CONDITION_UNMET` and may return an error if the
     /// option is not supported
-    pub fn time_condition_unmet(&mut self) -> Result<bool, Error> {
+    pub fn time_condition_unmet(&self) -> Result<bool, Error> {
         self.getopt_long(curl_sys::CURLINFO_CONDITION_UNMET)
             .map(|r| r != 0)
     }
@@ -2781,7 +2781,7 @@ impl<H> Easy2<H> {
     ///
     /// Returns `Ok(None)` if no effective url is listed or `Err` if an error
     /// happens or the underlying bytes aren't valid utf-8.
-    pub fn effective_url(&mut self) -> Result<Option<&str>, Error> {
+    pub fn effective_url(&self) -> Result<Option<&str>, Error> {
         self.getopt_str(curl_sys::CURLINFO_EFFECTIVE_URL)
     }
 
@@ -2794,7 +2794,7 @@ impl<H> Easy2<H> {
     ///
     /// Returns `Ok(None)` if no effective url is listed or `Err` if an error
     /// happens or the underlying bytes aren't valid utf-8.
-    pub fn effective_url_bytes(&mut self) -> Result<Option<&[u8]>, Error> {
+    pub fn effective_url_bytes(&self) -> Result<Option<&[u8]>, Error> {
         self.getopt_bytes(curl_sys::CURLINFO_EFFECTIVE_URL)
     }
 
@@ -2806,7 +2806,7 @@ impl<H> Easy2<H> {
     ///
     /// Corresponds to `CURLINFO_RESPONSE_CODE` and returns an error if this
     /// option is not supported.
-    pub fn response_code(&mut self) -> Result<u32, Error> {
+    pub fn response_code(&self) -> Result<u32, Error> {
         self.getopt_long(curl_sys::CURLINFO_RESPONSE_CODE)
             .map(|c| c as u32)
     }
@@ -2818,7 +2818,7 @@ impl<H> Easy2<H> {
     ///
     /// Corresponds to `CURLINFO_HTTP_CONNECTCODE` and returns an error if this
     /// option is not supported.
-    pub fn http_connectcode(&mut self) -> Result<u32, Error> {
+    pub fn http_connectcode(&self) -> Result<u32, Error> {
         self.getopt_long(curl_sys::CURLINFO_HTTP_CONNECTCODE)
             .map(|c| c as u32)
     }
@@ -2837,7 +2837,7 @@ impl<H> Easy2<H> {
     ///
     /// This corresponds to `CURLINFO_FILETIME` and may return an error if the
     /// option is not supported
-    pub fn filetime(&mut self) -> Result<Option<i64>, Error> {
+    pub fn filetime(&self) -> Result<Option<i64>, Error> {
         self.getopt_long(curl_sys::CURLINFO_FILETIME).map(|r| {
             if r == -1 {
                 None
@@ -2981,7 +2981,7 @@ impl<H> Easy2<H> {
     ///
     /// Corresponds to `CURLINFO_REDIRECT_COUNT` and may return an error if the
     /// option isn't supported.
-    pub fn redirect_count(&mut self) -> Result<u32, Error> {
+    pub fn redirect_count(&self) -> Result<u32, Error> {
         self.getopt_long(curl_sys::CURLINFO_REDIRECT_COUNT)
             .map(|c| c as u32)
     }
@@ -2996,7 +2996,7 @@ impl<H> Easy2<H> {
     ///
     /// Corresponds to `CURLINFO_REDIRECT_URL` and may return an error if the
     /// url isn't valid utf-8 or an error happens.
-    pub fn redirect_url(&mut self) -> Result<Option<&str>, Error> {
+    pub fn redirect_url(&self) -> Result<Option<&str>, Error> {
         self.getopt_str(curl_sys::CURLINFO_REDIRECT_URL)
     }
 
@@ -3009,7 +3009,7 @@ impl<H> Easy2<H> {
     /// URL.
     ///
     /// Corresponds to `CURLINFO_REDIRECT_URL` and may return an error.
-    pub fn redirect_url_bytes(&mut self) -> Result<Option<&[u8]>, Error> {
+    pub fn redirect_url_bytes(&self) -> Result<Option<&[u8]>, Error> {
         self.getopt_bytes(curl_sys::CURLINFO_REDIRECT_URL)
     }
 
@@ -3017,7 +3017,7 @@ impl<H> Easy2<H> {
     ///
     /// Corresponds to `CURLINFO_HEADER_SIZE` and may return an error if the
     /// option isn't supported.
-    pub fn header_size(&mut self) -> Result<u64, Error> {
+    pub fn header_size(&self) -> Result<u64, Error> {
         self.getopt_long(curl_sys::CURLINFO_HEADER_SIZE)
             .map(|c| c as u64)
     }
@@ -3026,7 +3026,7 @@ impl<H> Easy2<H> {
     ///
     /// Corresponds to `CURLINFO_REQUEST_SIZE` and may return an error if the
     /// option isn't supported.
-    pub fn request_size(&mut self) -> Result<u64, Error> {
+    pub fn request_size(&self) -> Result<u64, Error> {
         self.getopt_long(curl_sys::CURLINFO_REQUEST_SIZE)
             .map(|c| c as u64)
     }
@@ -3040,7 +3040,7 @@ impl<H> Easy2<H> {
     ///
     /// Corresponds to `CURLINFO_CONTENT_TYPE` and may return an error if the
     /// option isn't supported.
-    pub fn content_type(&mut self) -> Result<Option<&str>, Error> {
+    pub fn content_type(&self) -> Result<Option<&str>, Error> {
         self.getopt_str(curl_sys::CURLINFO_CONTENT_TYPE)
     }
 
@@ -3053,7 +3053,7 @@ impl<H> Easy2<H> {
     ///
     /// Corresponds to `CURLINFO_CONTENT_TYPE` and may return an error if the
     /// option isn't supported.
-    pub fn content_type_bytes(&mut self) -> Result<Option<&[u8]>, Error> {
+    pub fn content_type_bytes(&self) -> Result<Option<&[u8]>, Error> {
         self.getopt_bytes(curl_sys::CURLINFO_CONTENT_TYPE)
     }
 
@@ -3064,7 +3064,7 @@ impl<H> Easy2<H> {
     ///
     /// Corresponds to `CURLINFO_OS_ERRNO` and may return an error if the
     /// option isn't supported.
-    pub fn os_errno(&mut self) -> Result<i32, Error> {
+    pub fn os_errno(&self) -> Result<i32, Error> {
         self.getopt_long(curl_sys::CURLINFO_OS_ERRNO)
             .map(|c| c as i32)
     }
@@ -3077,7 +3077,7 @@ impl<H> Easy2<H> {
     ///
     /// Corresponds to `CURLINFO_PRIMARY_IP` and may return an error if the
     /// option isn't supported.
-    pub fn primary_ip(&mut self) -> Result<Option<&str>, Error> {
+    pub fn primary_ip(&self) -> Result<Option<&str>, Error> {
         self.getopt_str(curl_sys::CURLINFO_PRIMARY_IP)
     }
 
@@ -3085,7 +3085,7 @@ impl<H> Easy2<H> {
     ///
     /// Corresponds to `CURLINFO_PRIMARY_PORT` and may return an error if the
     /// option isn't supported.
-    pub fn primary_port(&mut self) -> Result<u16, Error> {
+    pub fn primary_port(&self) -> Result<u16, Error> {
         self.getopt_long(curl_sys::CURLINFO_PRIMARY_PORT)
             .map(|c| c as u16)
     }
@@ -3098,7 +3098,7 @@ impl<H> Easy2<H> {
     ///
     /// Corresponds to `CURLINFO_LOCAL_IP` and may return an error if the
     /// option isn't supported.
-    pub fn local_ip(&mut self) -> Result<Option<&str>, Error> {
+    pub fn local_ip(&self) -> Result<Option<&str>, Error> {
         self.getopt_str(curl_sys::CURLINFO_LOCAL_IP)
     }
 
@@ -3106,7 +3106,7 @@ impl<H> Easy2<H> {
     ///
     /// Corresponds to `CURLINFO_LOCAL_PORT` and may return an error if the
     /// option isn't supported.
-    pub fn local_port(&mut self) -> Result<u16, Error> {
+    pub fn local_port(&self) -> Result<u16, Error> {
         self.getopt_long(curl_sys::CURLINFO_LOCAL_PORT)
             .map(|c| c as u16)
     }
@@ -3426,7 +3426,7 @@ impl<H> Easy2<H> {
         unsafe { self.cvt(curl_sys::curl_easy_setopt(self.inner.handle, opt, blob_ptr)) }
     }
 
-    fn getopt_bytes(&mut self, opt: curl_sys::CURLINFO) -> Result<Option<&[u8]>, Error> {
+    fn getopt_bytes(&self, opt: curl_sys::CURLINFO) -> Result<Option<&[u8]>, Error> {
         unsafe {
             let p = self.getopt_ptr(opt)?;
             if p.is_null() {
@@ -3437,7 +3437,7 @@ impl<H> Easy2<H> {
         }
     }
 
-    fn getopt_ptr(&mut self, opt: curl_sys::CURLINFO) -> Result<*const c_char, Error> {
+    fn getopt_ptr(&self, opt: curl_sys::CURLINFO) -> Result<*const c_char, Error> {
         unsafe {
             let mut p = ptr::null();
             let rc = curl_sys::curl_easy_getinfo(self.inner.handle, opt, &mut p);
@@ -3446,7 +3446,7 @@ impl<H> Easy2<H> {
         }
     }
 
-    fn getopt_str(&mut self, opt: curl_sys::CURLINFO) -> Result<Option<&str>, Error> {
+    fn getopt_str(&self, opt: curl_sys::CURLINFO) -> Result<Option<&str>, Error> {
         match self.getopt_bytes(opt) {
             Ok(None) => Ok(None),
             Err(e) => Err(e),
@@ -3457,7 +3457,7 @@ impl<H> Easy2<H> {
         }
     }
 
-    fn getopt_long(&mut self, opt: curl_sys::CURLINFO) -> Result<c_long, Error> {
+    fn getopt_long(&self, opt: curl_sys::CURLINFO) -> Result<c_long, Error> {
         unsafe {
             let mut p = 0;
             let rc = curl_sys::curl_easy_getinfo(self.inner.handle, opt, &mut p);
@@ -3466,7 +3466,7 @@ impl<H> Easy2<H> {
         }
     }
 
-    fn getopt_double(&mut self, opt: curl_sys::CURLINFO) -> Result<c_double, Error> {
+    fn getopt_double(&self, opt: curl_sys::CURLINFO) -> Result<c_double, Error> {
         unsafe {
             let mut p = 0 as c_double;
             let rc = curl_sys::curl_easy_getinfo(self.inner.handle, opt, &mut p);

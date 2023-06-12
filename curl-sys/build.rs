@@ -39,7 +39,7 @@ fn main() {
 
     if !Path::new("curl/.git").exists() {
         let _ = Command::new("git")
-            .args(&["submodule", "update", "--init"])
+            .args(&["submodule", "update", "--init", "curl"])
             .status();
     }
 

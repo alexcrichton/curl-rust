@@ -137,6 +137,12 @@ fn main() {
                 _ => {}
             }
         }
+        if version < 67 {
+            match s {
+                "CURLMOPT_MAX_CONCURRENT_STREAMS" => return true,
+                _ => {}
+            }
+        }
         if version < 66 {
             match s {
                 "CURL_HTTP_VERSION_3" => return true,
@@ -220,6 +226,12 @@ fn main() {
         if version < 47 {
             if s.starts_with("CURL_HTTP_VERSION_2") {
                 return true;
+            }
+        }
+        if version < 44 {
+            match s {
+                "CURLMOPT_PUSHDATA" | "CURLMOPT_PUSHFUNCTION" => return true,
+                _ => {}
             }
         }
         if version < 43 {

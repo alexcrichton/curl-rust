@@ -371,6 +371,15 @@ impl Multi {
         self.setopt_long(curl_sys::CURLMOPT_MAX_PIPELINE_LENGTH, val as c_long)
     }
 
+    /// Sets the number of max concurrent streams for http2.
+    ///
+    /// This sets the max number will be used as the maximum number of
+    /// concurrent streams for a connections that libcurl should support on
+    /// connections done using HTTP/2. Defaults to 100.
+    pub fn set_max_concurrent_streams(&mut self, val: usize) -> Result<(), MultiError> {
+        self.setopt_long(curl_sys::CURLMOPT_MAX_CONCURRENT_STREAMS, val as c_long)
+    }
+
     fn setopt_long(&mut self, opt: curl_sys::CURLMoption, val: c_long) -> Result<(), MultiError> {
         unsafe { cvt(curl_sys::curl_multi_setopt(self.raw.handle, opt, val)) }
     }

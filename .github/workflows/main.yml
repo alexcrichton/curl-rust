@@ -10,6 +10,7 @@ jobs:
     name: Test
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         build: [x86_64, i686, x86_64-musl, mingw, system-curl, openssl-110, x86_64-beta, x86_64-nightly, macos, win64, win32]
         include:

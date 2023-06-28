@@ -447,6 +447,12 @@ fn main() {
 }
 
 fn try_vcpkg() -> bool {
+    if vcpkg::find_package("curl").is_ok() {
+        // find_package pulls in all depenedencies as needed, so there's no need
+        // for the other logic here.
+        return true;
+    }
+
     // the import library for the dll is called libcurl_imp
     let mut successful_probe_details = match vcpkg::Config::new()
         .lib_names("libcurl_imp", "libcurl")

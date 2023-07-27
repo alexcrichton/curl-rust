@@ -112,7 +112,7 @@ pub trait Handler {
     /// `transfer` method and then using `read_function` to configure a
     /// callback that can reference stack-local data.
     fn read(&mut self, data: &mut [u8]) -> Result<usize, ReadError> {
-        drop(data);
+        let _ = data; // ignore unused
         Ok(0)
     }
 
@@ -136,7 +136,7 @@ pub trait Handler {
     /// By default data this option is not set, and this corresponds to the
     /// `CURLOPT_SEEKFUNCTION` and `CURLOPT_SEEKDATA` options.
     fn seek(&mut self, whence: SeekFrom) -> SeekResult {
-        drop(whence);
+        let _ = whence; // ignore unused
         SeekResult::CantSeek
     }
 
@@ -186,7 +186,7 @@ pub trait Handler {
     /// By default this option is not set and corresponds to the
     /// `CURLOPT_HEADERFUNCTION` and `CURLOPT_HEADERDATA` options.
     fn header(&mut self, data: &[u8]) -> bool {
-        drop(data);
+        let _ = data; // ignore unused
         true
     }
 
@@ -222,7 +222,7 @@ pub trait Handler {
     /// By default this function calls an internal method and corresponds to
     /// `CURLOPT_PROGRESSFUNCTION` and `CURLOPT_PROGRESSDATA`.
     fn progress(&mut self, dltotal: f64, dlnow: f64, ultotal: f64, ulnow: f64) -> bool {
-        drop((dltotal, dlnow, ultotal, ulnow));
+        let _ = (dltotal, dlnow, ultotal, ulnow); // ignore unused
         true
     }
 

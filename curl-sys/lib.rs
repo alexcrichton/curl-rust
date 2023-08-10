@@ -660,7 +660,7 @@ pub const CURL_HTTP_VERSION_2TLS: c_int = 4;
 /// Please use HTTP 2 without HTTP/1.1 Upgrade
 /// (Added in CURL 7.49.0)
 pub const CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE: c_int = 5;
-/// Makes use of explicit HTTP/3 without fallback.
+/// Use HTTP/3, fallback to HTTP/2 or HTTP/1 if needed.
 /// (Added in CURL 7.66.0)
 pub const CURL_HTTP_VERSION_3: c_int = 30;
 

@@ -28,7 +28,7 @@ openssl-probe = { version = "0.1.2", optional = true }
 
 [target.'cfg(target_env = "msvc")'.dependencies]
 schannel = "0.1.13"
-winapi = { version = '0.3', features = ['libloaderapi', 'wincrypt'] }
+windows-sys = { version = "0.48", features = ["Win32_System_LibraryLoader", "Win32_Security_Cryptography"] }
 
 [dev-dependencies]
 mio = "0.6"

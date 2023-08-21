@@ -6,25 +6,18 @@ use libc::c_void;
 mod win {
     use schannel::cert_context::ValidUses;
     use schannel::cert_store::CertStore;
-    use std::ffi::CString;
+    use std::ffi::*;
     use std::mem;
     use std::ptr;
-    use winapi::ctypes::*;
-    use winapi::um::libloaderapi::*;
-    use winapi::um::wincrypt::*;
+    use windows_sys::Win32::Security::Cryptography::*;
+    use windows_sys::Win32::System::LibraryLoader::*;
 
     fn lookup(module: &str, symbol: &str) -> Option<*const c_void> {
         unsafe {
-            let symbol = CString::new(symbol).unwrap();
             let mut mod_buf: Vec<u16> = module.encode_utf16().collect();
             mod_buf.push(0);
             let handle = GetModuleHandleW(mod_buf.as_mut_ptr());
-            let n = GetProcAddress(handle, symbol.as_ptr());
-            if n == ptr::null_mut() {
-                None
-            } else {
-                Some(n as *const c_void)
-            }
+            GetProcAddress(handle, symbol.as_ptr()).map(|n| n as *const c_void)
         }
     }
 
@@ -104,7 +97,9 @@ mod win {
             match valid_uses {
                 ValidUses::All => {}
                 ValidUses::Oids(ref oids) => {
-                    let oid = szOID_PKIX_KP_SERVER_AUTH.to_owned();
+                    let oid = CStr::from_ptr(szOID_PKIX_KP_SERVER_AUTH as *const _)
+                        .to_string_lossy()
+                        .into_owned();
                     if !oids.contains(&oid) {
                         continue;
                     }

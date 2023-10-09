@@ -59,7 +59,7 @@ fn run(stream: impl Read + Write, rx: &Receiver<Message>) {
                     let mut found = None;
                     for header in expected_headers.iter() {
                         if lines_match(header, &actual) {
-                            found = Some(header.clone());
+                            found = Some(*header);
                             break;
                         }
                     }

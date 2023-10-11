@@ -23,6 +23,7 @@ fn handle() -> Easy {
     e
 }
 
+#[cfg(feature = "static-curl")]
 #[test]
 fn custom() {
     let s = Server::new();
@@ -31,7 +32,7 @@ fn custom() {
          POST / HTTP/1.1\r\n\
          Host: 127.0.0.1:$PORT\r\n\
          Accept: */*\r\n\
-         Content-Length: 142\r\n\
+         Content-Length: 154\r\n\
          Content-Type: multipart/form-data; boundary=--[..]\r\n\
          \r\n\
          --[..]\r\n\
@@ -50,6 +51,7 @@ fn custom() {
     t!(handle.perform());
 }
 
+#[cfg(feature = "static-curl")]
 #[test]
 fn buffer() {
     let s = Server::new();
@@ -58,7 +60,7 @@ fn buffer() {
          POST / HTTP/1.1\r\n\
          Host: 127.0.0.1:$PORT\r\n\
          Accept: */*\r\n\
-         Content-Length: 181\r\n\
+         Content-Length: 193\r\n\
          Content-Type: multipart/form-data; boundary=--[..]\r\n\
          \r\n\
          --[..]\r\n\
@@ -82,6 +84,7 @@ fn buffer() {
     t!(handle.perform());
 }
 
+#[cfg(feature = "static-curl")]
 #[test]
 fn file() {
     let s = Server::new();
@@ -102,7 +105,7 @@ fn file() {
              {}\
              \r\n\
              --[..]\r\n",
-            199 + formdata.len(),
+            211 + formdata.len(),
             formdata
         )
         .as_str(),

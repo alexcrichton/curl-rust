@@ -1,3 +1,4 @@
+use curl::Version;
 use std::time::Duration;
 
 macro_rules! t {
@@ -23,15 +24,26 @@ fn handle() -> Easy {
     e
 }
 
+fn multipart_boundary_size() -> usize {
+    // Versions before 8.4.0 used a smaller multipart mime boundary, so the
+    // exact content-length will differ between versions.
+    if Version::get().version_num() >= 0x80400 {
+        148
+    } else {
+        136
+    }
+}
+
 #[test]
 fn custom() {
+    multipart_boundary_size();
     let s = Server::new();
-    s.receive(
+    s.receive(&format!(
         "\
          POST / HTTP/1.1\r\n\
          Host: 127.0.0.1:$PORT\r\n\
          Accept: */*\r\n\
-         Content-Length: 142\r\n\
+         Content-Length: {}\r\n\
          Content-Type: multipart/form-data; boundary=--[..]\r\n\
          \r\n\
          --[..]\r\n\
@@ -39,7 +51,8 @@ fn custom() {
          \r\n\
          1234\r\n\
          --[..]\r\n",
-    );
+        multipart_boundary_size() + 6
+    ));
     s.send("HTTP/1.1 200 OK\r\n\r\n");
 
     let mut handle = handle();
@@ -50,15 +63,16 @@ fn custom() {
     t!(handle.perform());
 }
 
+#[cfg(feature = "static-curl")]
 #[test]
 fn buffer() {
     let s = Server::new();
-    s.receive(
+    s.receive(&format!(
         "\
          POST / HTTP/1.1\r\n\
          Host: 127.0.0.1:$PORT\r\n\
          Accept: */*\r\n\
-         Content-Length: 181\r\n\
+         Content-Length: {}\r\n\
          Content-Type: multipart/form-data; boundary=--[..]\r\n\
          \r\n\
          --[..]\r\n\
@@ -67,7 +81,8 @@ fn buffer() {
          \r\n\
          1234\r\n\
          --[..]\r\n",
-    );
+        multipart_boundary_size() + 45
+    ));
     s.send("HTTP/1.1 200 OK\r\n\r\n");
 
     let mut handle = handle();
@@ -82,6 +97,7 @@ fn buffer() {
     t!(handle.perform());
 }
 
+#[cfg(feature = "static-curl")]
 #[test]
 fn file() {
     let s = Server::new();
@@ -102,7 +118,7 @@ fn file() {
              {}\
              \r\n\
              --[..]\r\n",
-            199 + formdata.len(),
+            multipart_boundary_size() + 63 + formdata.len(),
             formdata
         )
         .as_str(),

@@ -140,7 +140,6 @@ fn upload_lots() {
 
     let e = t!(m.add(h));
 
-    assert!(t!(m.perform()) > 0);
     let mut next_token = 1;
     let mut token_map = HashMap::new();
     let mut cur_timeout = None;

@@ -15,6 +15,7 @@ use socket2::Socket;
 
 use crate::easy::form;
 use crate::easy::list;
+use crate::easy::mime::Mime;
 use crate::easy::windows;
 use crate::easy::{Form, List};
 use crate::panic;
@@ -378,6 +379,8 @@ pub fn ssl_ctx(cx: *mut c_void) -> Result<(), Error> {
 /// ```
 pub struct Easy2<H> {
     inner: Box<Inner<H>>,
+    /// Mime handles to free upon drop
+    mimes: Vec<*mut curl_sys::curl_mime>,
 }
 
 struct Inner<H> {
@@ -599,6 +602,7 @@ impl<H: Handler> Easy2<H> {
                     error_buf: RefCell::new(vec![0; curl_sys::CURL_ERROR_SIZE]),
                     handler,
                 }),
+                mimes: vec![],
             };
             ret.default_configure();
             ret
@@ -3509,6 +3513,20 @@ impl<H> Easy2<H> {
         }
         Err(err)
     }
+
+    /// Create a mime handle attached to this [Easy2] instance.
+    pub fn add_mime(&mut self) -> Mime<H> {
+        Mime::new(self)
+    }
+
+    pub(crate) fn mimepost(&mut self, mime_handle: *mut curl_sys::curl_mime) -> Result<(), Error> {
+        self.mimes.push(mime_handle);
+
+        let rc = unsafe {
+            curl_sys::curl_easy_setopt(self.raw(), curl_sys::CURLOPT_MIMEPOST, mime_handle)
+        };
+        self.cvt(rc)
+    }
 }
 
 impl<H: fmt::Debug> fmt::Debug for Easy2<H> {
@@ -3524,6 +3542,9 @@ impl<H> Drop for Easy2<H> {
     fn drop(&mut self) {
         unsafe {
             curl_sys::curl_easy_cleanup(self.inner.handle);
+            for &mime_handle in self.mimes.iter() {
+                curl_sys::curl_mime_free(mime_handle);
+            }
         }
     }
 }

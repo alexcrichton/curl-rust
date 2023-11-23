@@ -12,6 +12,7 @@ use libc::c_void;
 use crate::easy::handler::{self, InfoType, ReadError, SeekResult, WriteError};
 use crate::easy::handler::{Auth, NetRc, PostRedirections, ProxyType, SslOpt};
 use crate::easy::handler::{HttpVersion, IpResolve, SslVersion, TimeCondition};
+use crate::easy::mime::Mime;
 use crate::easy::{Easy2, Handler};
 use crate::easy::{Form, List};
 use crate::Error;
@@ -1469,6 +1470,11 @@ impl Easy {
     /// Same as [`Easy2::take_error_buf`](struct.Easy2.html#method.take_error_buf)
     pub fn take_error_buf(&self) -> Option<String> {
         self.inner.take_error_buf()
+    }
+
+    /// Same as [`Easy2::add_mime`](struct.Easy2.html#method.add_mime)
+    pub fn add_mime(&mut self) -> Mime<EasyData> {
+        self.inner.add_mime()
     }
 }
 

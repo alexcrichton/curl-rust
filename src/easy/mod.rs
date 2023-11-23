@@ -11,6 +11,7 @@ mod form;
 mod handle;
 mod handler;
 mod list;
+mod mime;
 mod windows;
 
 pub use self::form::{Form, Part};

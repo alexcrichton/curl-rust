@@ -428,7 +428,7 @@ pub enum IpResolve {
 
 /// Possible values to pass to the `http_version` method.
 #[non_exhaustive]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum HttpVersion {
     /// We don't care what http version to use, and we'd like the library to
     /// choose the best possible for us.
@@ -3128,6 +3128,23 @@ impl<H> Easy2<H> {
             Ok(list::from_raw(list))
         }
     }
+    /// Get the last http version number
+    ///
+    /// Corresponds to `CURLINFO_HTTP_VERSION` and may return an error if the
+    /// option isn't supported.
+    pub fn get_http_version(&self) -> Result<HttpVersionInfo, Error> {
+        self.getopt_long(curl_sys::CURLINFO_HTTP_VERSION).map(|c| {
+            HttpVersionInfo::HttpVersion(match c as i32 {
+                curl_sys::CURL_HTTP_VERSION_1_0 => HttpVersion::V10,
+                curl_sys::CURL_HTTP_VERSION_1_1 => HttpVersion::V11,
+                curl_sys::CURL_HTTP_VERSION_2_0 => HttpVersion::V2,
+                curl_sys::CURL_HTTP_VERSION_2TLS => HttpVersion::V2TLS,
+                curl_sys::CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE => HttpVersion::V2PriorKnowledge,
+                curl_sys::CURL_HTTP_VERSION_3 => HttpVersion::V3,
+                c => return HttpVersionInfo::Unknown(c),
+            })
+        })
+    }
 
     /// Wait for pipelining/multiplexing
     ///
@@ -3988,4 +4005,13 @@ impl fmt::Debug for PostRedirections {
             )
             .finish()
     }
+}
+
+/// Possible values returned by [`Easy2::get_http_version()`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum HttpVersionInfo {
+    /// Known HTTP version described by [`HttpVersion`].
+    HttpVersion(HttpVersion),
+    /// Invalid or unknown version returned for [`curl_sys::CURLINFO_HTTP_VERSION`].
+    Unknown(i32),
 }

@@ -11,6 +11,7 @@ mod form;
 mod handle;
 mod handler;
 mod list;
+#[cfg(feature = "mime")]
 mod mime;
 mod windows;
 

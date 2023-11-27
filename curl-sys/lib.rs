@@ -1166,20 +1166,30 @@ extern "C" {
         sockfd: curl_socket_t,
         sockp: *mut c_void,
     ) -> CURLMcode;
-
-    pub fn curl_mime_init(easy_handle: *mut CURL) -> *mut curl_mime;
-    pub fn curl_mime_free(mime_handle: *mut curl_mime);
-    pub fn curl_mime_addpart(mime_handle: *mut curl_mime) -> *mut curl_mimepart;
-    pub fn curl_mime_data(
-        mimepart: *mut curl_mimepart,
-        data: *const c_char,
-        datasize: size_t,
-    ) -> CURLcode;
-    pub fn curl_mime_name(part: *mut curl_mimepart, name: *const c_char) -> CURLcode;
-    pub fn curl_mime_filename(part: *mut curl_mimepart, filename: *const c_char) -> CURLcode;
-    pub fn curl_mime_type(part: *mut curl_mimepart, mimetype: *const c_char) -> CURLcode;
-    pub fn curl_mime_subparts(part: *mut curl_mimepart, subparts: *mut curl_mime) -> CURLcode;
 }
+
+#[cfg(feature = "mime")]
+mod mime {
+    use super::*;
+
+    extern "C" {
+        pub fn curl_mime_init(easy_handle: *mut CURL) -> *mut curl_mime;
+        pub fn curl_mime_free(mime_handle: *mut curl_mime);
+        pub fn curl_mime_addpart(mime_handle: *mut curl_mime) -> *mut curl_mimepart;
+        pub fn curl_mime_data(
+            mimepart: *mut curl_mimepart,
+            data: *const c_char,
+            datasize: size_t,
+        ) -> CURLcode;
+        pub fn curl_mime_name(part: *mut curl_mimepart, name: *const c_char) -> CURLcode;
+        pub fn curl_mime_filename(part: *mut curl_mimepart, filename: *const c_char) -> CURLcode;
+        pub fn curl_mime_type(part: *mut curl_mimepart, mimetype: *const c_char) -> CURLcode;
+        pub fn curl_mime_subparts(part: *mut curl_mimepart, subparts: *mut curl_mime) -> CURLcode;
+    }
+}
+
+#[cfg(feature = "mime")]
+pub use mime::*;
 
 pub fn rust_crate_version() -> &'static str {
     env!("CARGO_PKG_VERSION")

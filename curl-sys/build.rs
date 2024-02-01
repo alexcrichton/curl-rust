@@ -100,7 +100,7 @@ fn main() {
             .replace("@LIBCURL_LIBS@", "")
             .replace("@SUPPORT_FEATURES@", "")
             .replace("@SUPPORT_PROTOCOLS@", "")
-            .replace("@CURLVERSION@", "8.5.0"),
+            .replace("@CURLVERSION@", "8.6.0"),
     )
     .unwrap();
 
@@ -215,8 +215,10 @@ fn main() {
         .file("curl/lib/vauth/vauth.c")
         .file("curl/lib/vquic/curl_msh3.c")
         .file("curl/lib/vquic/curl_ngtcp2.c")
+        .file("curl/lib/vquic/curl_osslq.c")
         .file("curl/lib/vquic/curl_quiche.c")
         .file("curl/lib/vquic/vquic.c")
+        .file("curl/lib/vquic/vquic-tls.c")
         .file("curl/lib/vtls/hostcheck.c")
         .file("curl/lib/vtls/keylog.c")
         .file("curl/lib/vtls/vtls.c")

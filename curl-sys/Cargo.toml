@@ -33,7 +33,7 @@ features = ["no_log_capture"]
 openssl-sys = { version = "0.9.64", optional = true }
 
 [target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.48", features = ["Win32_Networking_WinSock"] }
+windows-sys = { version = "0.52", features = ["Win32_Networking_WinSock"] }
 
 [target.'cfg(target_env = "msvc")'.build-dependencies]
 vcpkg = "0.2"

@@ -3,7 +3,6 @@ use std::fmt;
 use std::ptr;
 
 use crate::Error;
-use curl_sys;
 
 /// A linked list of a strings
 pub struct List {

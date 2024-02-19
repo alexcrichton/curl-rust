@@ -6,7 +6,6 @@ use std::ptr;
 use std::str;
 use std::time::Duration;
 
-use curl_sys;
 use libc::c_void;
 
 use crate::easy::handler::{self, InfoType, ReadError, SeekResult, WriteError};

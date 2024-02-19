@@ -5,7 +5,6 @@ use std::ptr;
 
 use crate::easy::{list, List};
 use crate::FormError;
-use curl_sys;
 
 /// Multipart/formdata for an HTTP POST request.
 ///

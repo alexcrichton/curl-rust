@@ -6,7 +6,6 @@ use std::ptr;
 use std::sync::Arc;
 use std::time::Duration;
 
-use curl_sys;
 use libc::{c_char, c_int, c_long, c_short, c_void};
 
 #[cfg(unix)]

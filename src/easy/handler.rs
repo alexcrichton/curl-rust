@@ -9,8 +9,7 @@ use std::slice;
 use std::str;
 use std::time::Duration;
 
-use curl_sys;
-use libc::{self, c_char, c_double, c_int, c_long, c_ulong, c_void, size_t};
+use libc::{c_char, c_double, c_int, c_long, c_ulong, c_void, size_t};
 use socket2::Socket;
 
 use crate::easy::form;

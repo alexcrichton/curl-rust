@@ -11,10 +11,6 @@ documentation = "https://docs.rs/curl-sys"
 categories = ["external-ffi-bindings"]
 edition = "2018"
 
-[badges]
-travis-ci = { repository = "alexcrichton/curl-rust" }
-appveyor = { repository = "alexcrichton/curl-rust" }
-
 [lib]
 name = "curl_sys"
 path = "lib.rs"

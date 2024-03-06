@@ -10,6 +10,7 @@ description = "Native bindings to the libcurl library"
 documentation = "https://docs.rs/curl-sys"
 categories = ["external-ffi-bindings"]
 edition = "2018"
+exclude = ["curl/docs/", "curl/tests/"]
 
 [badges]
 travis-ci = { repository = "alexcrichton/curl-rust" }

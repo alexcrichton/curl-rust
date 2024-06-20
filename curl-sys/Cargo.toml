@@ -12,10 +12,6 @@ categories = ["external-ffi-bindings"]
 edition = "2018"
 exclude = ["curl/docs/", "curl/tests/"]
 
-[badges]
-travis-ci = { repository = "alexcrichton/curl-rust" }
-appveyor = { repository = "alexcrichton/curl-rust" }
-
 [lib]
 name = "curl_sys"
 path = "lib.rs"

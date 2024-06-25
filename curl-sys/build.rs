@@ -100,7 +100,7 @@ fn main() {
             .replace("@LIBCURL_LIBS@", "")
             .replace("@SUPPORT_FEATURES@", "")
             .replace("@SUPPORT_PROTOCOLS@", "")
-            .replace("@CURLVERSION@", "8.6.0"),
+            .replace("@CURLVERSION@", "8.8.0"),
     )
     .unwrap();
 
@@ -147,8 +147,10 @@ fn main() {
         .file("curl/lib/curl_get_line.c")
         .file("curl/lib/curl_memrchr.c")
         .file("curl/lib/curl_range.c")
+        .file("curl/lib/curl_sha512_256.c")
         .file("curl/lib/curl_threads.c")
         .file("curl/lib/curl_trc.c")
+        .file("curl/lib/cw-out.c")
         .file("curl/lib/doh.c")
         .file("curl/lib/dynbuf.c")
         .file("curl/lib/dynhds.c")
@@ -191,6 +193,7 @@ fn main() {
         .file("curl/lib/progress.c")
         .file("curl/lib/rand.c")
         .file("curl/lib/rename.c")
+        .file("curl/lib/request.c")
         .file("curl/lib/select.c")
         .file("curl/lib/sendf.c")
         .file("curl/lib/setopt.c")
@@ -234,7 +237,6 @@ fn main() {
             .file("curl/lib/curl_endian.c")
             .file("curl/lib/curl_gethostname.c")
             .file("curl/lib/curl_ntlm_core.c")
-            .file("curl/lib/curl_ntlm_wb.c")
             .file("curl/lib/http_ntlm.c")
             .file("curl/lib/md4.c")
             .file("curl/lib/vauth/ntlm.c")

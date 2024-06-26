@@ -780,19 +780,26 @@ fn panic_in_callback() {
 #[test]
 fn abort_read() {
     let s = Server::new();
-    s.receive(
-        "\
-         PUT / HTTP/1.1\r\n\
-         Host: 127.0.0.1:$PORT\r\n\
-         Accept: */*\r\n\
-         Content-Length: 2\r\n\
-         \r\n",
-    );
-    s.send(
-        "\
-         HTTP/1.1 200 OK\r\n\
-         \r\n",
-    );
+    // 8.7.0 seems to have changed the behavior that curl will call the read
+    // function before sending headers (I'm guessing so that it batches
+    // everything up into a single write).
+    if Version::get().version_num() < 0x080700 {
+        s.receive(
+            "\
+             PUT / HTTP/1.1\r\n\
+             Host: 127.0.0.1:$PORT\r\n\
+             Accept: */*\r\n\
+             Content-Length: 2\r\n\
+             \r\n",
+        );
+        s.send(
+            "\
+             HTTP/1.1 200 OK\r\n\
+             \r\n",
+        );
+    } else {
+        s.receive("");
+    }
 
     let mut h = handle();
     t!(h.url(&s.url("/")));

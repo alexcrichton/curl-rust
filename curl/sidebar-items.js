@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["init"],"mod":["easy","multi"],"struct":["Error","FormError","MultiError","Protocols","ShareError","Version"]};

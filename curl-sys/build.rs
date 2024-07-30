@@ -100,7 +100,7 @@ fn main() {
             .replace("@LIBCURL_LIBS@", "")
             .replace("@SUPPORT_FEATURES@", "")
             .replace("@SUPPORT_PROTOCOLS@", "")
-            .replace("@CURLVERSION@", "8.8.0"),
+            .replace("@CURLVERSION@", "8.9.0"),
     )
     .unwrap();
 
@@ -320,6 +320,7 @@ fn main() {
                 .file("curl/lib/vtls/x509asn1.c");
         } else if target.contains("-apple-") {
             cfg.define("USE_SECTRANSP", None)
+                .file("curl/lib/vtls/cipher_suite.c")
                 .file("curl/lib/vtls/sectransp.c")
                 .file("curl/lib/vtls/x509asn1.c");
             if xcode_major_version().map_or(true, |v| v >= 9) {

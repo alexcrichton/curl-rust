@@ -52,7 +52,7 @@ jobs:
           - build: openssl-110
             os: ubuntu-latest
             rust: stable
-            docker: centos7
+            docker: alma8
             target: x86_64-unknown-linux-gnu
           - build: macos
             os: macos-latest

@@ -31,6 +31,8 @@ fn main() {
         if windows {
             if try_vcpkg() {
                 return;
+            } else if try_pkg_config() {
+                return;
             }
         } else if try_pkg_config() {
             return;

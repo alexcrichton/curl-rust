@@ -122,6 +122,7 @@ fn main() {
         .define("CURL_DISABLE_TFTP", None)
         .define("CURL_STATICLIB", None)
         .define("ENABLE_IPV6", None)
+        .define("HAVE_SOCKADDR_IN6_SIN6_SCOPE_ID", None)
         .define("HAVE_ASSERT_H", None)
         .define("OS", "\"unknown\"") // TODO
         .define("HAVE_ZLIB_H", None)

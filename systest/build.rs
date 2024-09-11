@@ -15,9 +15,14 @@ fn main() {
     let version = version
         .lines()
         .find(|l| !l.is_empty() && !l.starts_with('#'))
-        .and_then(|s| s.parse::<u32>().ok())
-        .unwrap_or(10000);
-    println!("got version: {}", version);
+        .and_then(|s| {
+            let mut parts = s.split_whitespace();
+            let major = parts.next()?.parse::<u32>().ok()?;
+            let minor = parts.next()?.parse::<u32>().ok()?;
+            Some((major, minor))
+        })
+        .unwrap_or((10000, 0));
+    println!("got version: {version:?}");
 
     if env::var("TARGET").unwrap().contains("msvc") {
         cfg.flag("/wd4574"); // did you mean to use '#if INCL_WINSOCK_API_TYPEDEFS'
@@ -46,13 +51,13 @@ fn main() {
     cfg.skip_signededness(|s| s.ends_with("callback") || s.ends_with("function"));
 
     cfg.skip_struct(move |s| {
-        if version < 71 {
+        if version < (7, 71) {
             match s {
                 "curl_blob" => return true,
                 _ => {}
             }
         }
-        if version < 87 {
+        if version < (8, 10) {
             match s {
                 "curl_version_info_data" => return true,
                 _ => {}
@@ -70,7 +75,7 @@ fn main() {
                 _ => {}
             }
         }
-        if version < 77 {
+        if version < (7, 77) {
             match s {
                 "CURLVERSION_TENTH"
                 | "CURLOPT_CAINFO_BLOB"
@@ -84,7 +89,7 @@ fn main() {
                 _ => {}
             }
         }
-        if version < 76 {
+        if version < (7, 76) {
             match s {
                 "CURLOPT_DOH_SSL_VERIFYHOST" => return true,
                 "CURLOPT_DOH_SSL_VERIFYPEER" => return true,
@@ -92,7 +97,7 @@ fn main() {
                 _ => {}
             }
         }
-        if version < 75 {
+        if version < (7, 75) {
             match s {
                 "CURLAUTH_AWS_SIGV4" => return true,
                 "CURLOPT_AWS_SIGV4" => return true,
@@ -100,13 +105,13 @@ fn main() {
                 _ => {}
             }
         }
-        if version < 72 {
+        if version < (7, 72) {
             match s {
                 "CURLVERSION_EIGHTH" => return true,
                 _ => {}
             }
         }
-        if version < 71 {
+        if version < (7, 71) {
             match s {
                 "CURLOPT_SSLCERT_BLOB"
                 | "CURLOPT_SSLKEY_BLOB"
@@ -122,7 +127,7 @@ fn main() {
                 _ => {}
             }
         }
-        if version < 70 {
+        if version < (7, 70) {
             match s {
                 "CURL_VERSION_HTTP3"
                 | "CURL_VERSION_BROTLI"
@@ -131,32 +136,32 @@ fn main() {
                 _ => {}
             }
         }
-        if version < 68 {
+        if version < (7, 68) {
             match s {
                 "CURLSSLOPT_NO_PARTIALCHAIN" => return true,
                 _ => {}
             }
         }
-        if version < 67 {
+        if version < (7, 67) {
             match s {
                 "CURLMOPT_MAX_CONCURRENT_STREAMS" => return true,
                 _ => {}
             }
         }
-        if version < 66 {
+        if version < (7, 66) {
             match s {
                 "CURL_HTTP_VERSION_3" => return true,
                 "CURLOPT_MAXAGE_CONN" => return true,
                 _ => {}
             }
         }
-        if version < 65 {
+        if version < (7, 65) {
             match s {
                 "CURLVERSION_SIXTH" => return true,
                 _ => {}
             }
         }
-        if version < 64 {
+        if version < (7, 64) {
             match s {
                 "CURLE_HTTP2" => return true,
                 "CURLE_PEER_FAILED_VERIFICATION" => return true,
@@ -169,27 +174,27 @@ fn main() {
                 _ => {}
             }
         }
-        if version < 62 {
+        if version < (7, 62) {
             match s {
                 "CURLOPT_DOH_URL" => return true,
                 "CURLOPT_UPLOAD_BUFFERSIZE" => return true,
                 _ => {}
             }
         }
-        if version < 61 {
+        if version < (7, 61) {
             match s {
                 "CURLOPT_PIPEWAIT" => return true,
                 "CURLE_PEER_FAILED_VERIFICATION" => return true,
                 _ => {}
             }
         }
-        if version < 60 {
+        if version < (7, 60) {
             match s {
                 "CURLVERSION_FIFTH" => return true,
                 _ => {}
             }
         }
-        if version < 54 {
+        if version < (7, 54) {
             match s {
                 "CURL_SSLVERSION_TLSv1_3" | "CURLOPT_PROXY_SSLCERT" | "CURLOPT_PROXY_SSLKEY" => {
                     return true
@@ -197,7 +202,7 @@ fn main() {
                 _ => {}
             }
         }
-        if version < 52 {
+        if version < (7, 52) {
             match s {
                 "CURLOPT_PROXY_CAINFO"
                 | "CURLOPT_PROXY_CAPATH"
@@ -217,29 +222,29 @@ fn main() {
             }
         }
 
-        if version < 49 {
+        if version < (7, 49) {
             match s {
                 "CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE" | "CURLOPT_CONNECT_TO" => return true,
                 _ => {}
             }
         }
-        if version < 47 {
+        if version < (7, 47) {
             if s.starts_with("CURL_HTTP_VERSION_2") {
                 return true;
             }
         }
-        if version < 44 {
+        if version < (7, 44) {
             match s {
                 "CURLMOPT_PUSHDATA" | "CURLMOPT_PUSHFUNCTION" => return true,
                 _ => {}
             }
         }
-        if version < 43 {
+        if version < (7, 43) {
             if s.starts_with("CURLPIPE_") {
                 return true;
             }
         }
-        if version < 25 {
+        if version < (7, 25) {
             match s {
                 "CURLSSLOPT_ALLOW_BEAST" => return true,
                 _ => {}

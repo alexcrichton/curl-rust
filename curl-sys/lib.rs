@@ -667,14 +667,14 @@ pub const CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE: c_int = 5;
 pub const CURL_HTTP_VERSION_3: c_int = 30;
 
 // Note that the type here is wrong, it's just intended to just be an enum.
-pub const CURL_SSLVERSION_DEFAULT: CURLoption = 0;
-pub const CURL_SSLVERSION_TLSv1: CURLoption = 1;
-pub const CURL_SSLVERSION_SSLv2: CURLoption = 2;
-pub const CURL_SSLVERSION_SSLv3: CURLoption = 3;
-pub const CURL_SSLVERSION_TLSv1_0: CURLoption = 4;
-pub const CURL_SSLVERSION_TLSv1_1: CURLoption = 5;
-pub const CURL_SSLVERSION_TLSv1_2: CURLoption = 6;
-pub const CURL_SSLVERSION_TLSv1_3: CURLoption = 7;
+pub const CURL_SSLVERSION_DEFAULT: __enum_ty = 0;
+pub const CURL_SSLVERSION_TLSv1: __enum_ty = 1;
+pub const CURL_SSLVERSION_SSLv2: __enum_ty = 2;
+pub const CURL_SSLVERSION_SSLv3: __enum_ty = 3;
+pub const CURL_SSLVERSION_TLSv1_0: __enum_ty = 4;
+pub const CURL_SSLVERSION_TLSv1_1: __enum_ty = 5;
+pub const CURL_SSLVERSION_TLSv1_2: __enum_ty = 6;
+pub const CURL_SSLVERSION_TLSv1_3: __enum_ty = 7;
 
 pub const CURLOPT_READDATA: CURLoption = CURLOPT_INFILE;
 pub const CURLOPT_WRITEDATA: CURLoption = CURLOPT_FILE;

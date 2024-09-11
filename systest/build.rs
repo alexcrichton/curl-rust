@@ -44,6 +44,7 @@ fn main() {
         "curl_khtype" | "curl_khstat" | "curl_khmatch" => format!("enum {}", s),
         s if is_struct => format!("struct {}", s),
         "sockaddr" => "struct sockaddr".to_string(),
+        "__enum_ty" => "unsigned".to_string(),
         s => s.to_string(),
     });
     // cfg.fn_cname(|s, l| l.unwrap_or(s).to_string());

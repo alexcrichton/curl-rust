@@ -100,7 +100,7 @@ fn main() {
             .replace("@LIBCURL_LIBS@", "")
             .replace("@SUPPORT_FEATURES@", "")
             .replace("@SUPPORT_PROTOCOLS@", "")
-            .replace("@CURLVERSION@", "8.9.0"),
+            .replace("@CURLVERSION@", "8.10.0"),
     )
     .unwrap();
 
@@ -283,6 +283,7 @@ fn main() {
     // features, make sure we only compile one vtls.
     if cfg!(feature = "rustls") {
         cfg.define("USE_RUSTLS", None)
+            .file("curl/lib/vtls/cipher_suite.c")
             .file("curl/lib/vtls/rustls.c")
             .include(env::var_os("DEP_RUSTLS_FFI_INCLUDE").unwrap());
     } else if cfg!(feature = "windows-static-ssl") {

@@ -414,7 +414,8 @@ pub const CURLOPT_TIMEVALUE: CURLoption = CURLOPTTYPE_LONG + 34;
 pub const CURLOPT_CUSTOMREQUEST: CURLoption = CURLOPTTYPE_OBJECTPOINT + 36;
 pub const CURLOPT_STDERR: CURLoption = CURLOPTTYPE_OBJECTPOINT + 37;
 pub const CURLOPT_POSTQUOTE: CURLoption = CURLOPTTYPE_OBJECTPOINT + 39;
-pub const CURLOPT_WRITEINFO: CURLoption = CURLOPTTYPE_OBJECTPOINT + 40;
+#[deprecated = "has no effect"]
+pub const CURLOPT_WRITEINFO: CURLoption = 9999;
 pub const CURLOPT_VERBOSE: CURLoption = CURLOPTTYPE_LONG + 41;
 pub const CURLOPT_HEADER: CURLoption = CURLOPTTYPE_LONG + 42;
 pub const CURLOPT_NOPROGRESS: CURLoption = CURLOPTTYPE_LONG + 43;
@@ -442,7 +443,8 @@ pub const CURLOPT_MAXREDIRS: CURLoption = CURLOPTTYPE_LONG + 68;
 pub const CURLOPT_FILETIME: CURLoption = CURLOPTTYPE_LONG + 69;
 pub const CURLOPT_TELNETOPTIONS: CURLoption = CURLOPTTYPE_OBJECTPOINT + 70;
 pub const CURLOPT_MAXCONNECTS: CURLoption = CURLOPTTYPE_LONG + 71;
-pub const CURLOPT_CLOSEPOLICY: CURLoption = CURLOPTTYPE_LONG + 72;
+#[deprecated = "has no effect"]
+pub const CURLOPT_CLOSEPOLICY: CURLoption = 9999;
 pub const CURLOPT_FRESH_CONNECT: CURLoption = CURLOPTTYPE_LONG + 74;
 pub const CURLOPT_FORBID_REUSE: CURLoption = CURLOPTTYPE_LONG + 75;
 pub const CURLOPT_RANDOM_FILE: CURLoption = CURLOPTTYPE_OBJECTPOINT + 76;
@@ -665,14 +667,14 @@ pub const CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE: c_int = 5;
 pub const CURL_HTTP_VERSION_3: c_int = 30;
 
 // Note that the type here is wrong, it's just intended to just be an enum.
-pub const CURL_SSLVERSION_DEFAULT: CURLoption = 0;
-pub const CURL_SSLVERSION_TLSv1: CURLoption = 1;
-pub const CURL_SSLVERSION_SSLv2: CURLoption = 2;
-pub const CURL_SSLVERSION_SSLv3: CURLoption = 3;
-pub const CURL_SSLVERSION_TLSv1_0: CURLoption = 4;
-pub const CURL_SSLVERSION_TLSv1_1: CURLoption = 5;
-pub const CURL_SSLVERSION_TLSv1_2: CURLoption = 6;
-pub const CURL_SSLVERSION_TLSv1_3: CURLoption = 7;
+pub const CURL_SSLVERSION_DEFAULT: __enum_ty = 0;
+pub const CURL_SSLVERSION_TLSv1: __enum_ty = 1;
+pub const CURL_SSLVERSION_SSLv2: __enum_ty = 2;
+pub const CURL_SSLVERSION_SSLv3: __enum_ty = 3;
+pub const CURL_SSLVERSION_TLSv1_0: __enum_ty = 4;
+pub const CURL_SSLVERSION_TLSv1_1: __enum_ty = 5;
+pub const CURL_SSLVERSION_TLSv1_2: __enum_ty = 6;
+pub const CURL_SSLVERSION_TLSv1_3: __enum_ty = 7;
 
 pub const CURLOPT_READDATA: CURLoption = CURLOPT_INFILE;
 pub const CURLOPT_WRITEDATA: CURLoption = CURLOPT_FILE;
@@ -871,7 +873,8 @@ pub const CURLVERSION_EIGHTH: CURLversion = 7;
 pub const CURLVERSION_NINTH: CURLversion = 8;
 pub const CURLVERSION_TENTH: CURLversion = 9;
 pub const CURLVERSION_ELEVENTH: CURLversion = 10;
-pub const CURLVERSION_NOW: CURLversion = CURLVERSION_ELEVENTH;
+pub const CURLVERSION_TWELFTH: CURLversion = 11;
+pub const CURLVERSION_NOW: CURLversion = CURLVERSION_TWELFTH;
 
 #[repr(C)]
 pub struct curl_version_info_data {
@@ -901,6 +904,7 @@ pub struct curl_version_info_data {
     pub hyper_version: *const c_char,
     pub gsasl_version: *const c_char,
     pub feature_names: *const *const c_char,
+    pub rtmp_version: *const c_char,
 }
 
 pub const CURL_VERSION_IPV6: c_int = 1 << 0;

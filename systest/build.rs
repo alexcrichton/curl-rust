@@ -70,9 +70,18 @@ fn main() {
 
     // Version symbols are extracted from https://curl.se/libcurl/c/symbols-in-versions.html
     cfg.skip_const(move |s| {
-        if version < 87 {
+        if version < (8, 10) {
             match s {
-                "CURLVERSION_ELEVENTH" | "CURLVERSION_NOW" => return true,
+                "CURLVERSION_TWELFTH"
+                | "CURLVERSION_NOW"
+                | "CURLOPT_WRITEINFO"
+                | "CURLOPT_CLOSEPOLICY" => return true,
+                _ => {}
+            }
+        }
+        if version < (7, 87) {
+            match s {
+                "CURLVERSION_ELEVENTH" => return true,
                 _ => {}
             }
         }

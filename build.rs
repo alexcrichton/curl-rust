@@ -1,6 +1,12 @@
 use std::env;
 
 fn main() {
+    println!(
+        "cargo::rustc-check-cfg=cfg(\
+            need_openssl_init,\
+            need_openssl_probe,\
+        )"
+    );
     // OpenSSL >= 1.1.0 can be initialized concurrently and is initialized correctly by libcurl.
     // <= 1.0.2 need locking callbacks, which are provided by openssl_sys::init().
     let use_openssl = match env::var("DEP_OPENSSL_VERSION_NUMBER") {

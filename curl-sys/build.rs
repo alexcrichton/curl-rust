@@ -5,6 +5,14 @@ use std::process::Command;
 
 fn main() {
     println!("cargo:rerun-if-changed=curl");
+    println!(
+        "cargo::rustc-check-cfg=cfg(\
+            libcurl_vendored,\
+            link_libnghttp2,\
+            link_libz,\
+            link_openssl,\
+        )"
+    );
     let target = env::var("TARGET").unwrap();
     let windows = target.contains("windows");
 

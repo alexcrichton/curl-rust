@@ -83,3 +83,7 @@ required-features = ["static-curl", "ssl"]
 name = "multi-dl"
 path = "examples/multi-dl.rs"
 required-features = ["ssl"]
+
+[lints.rust.unexpected_cfgs]
+level = "warn"
+check-cfg = ["cfg(need_openssl_init, need_openssl_probe)"]

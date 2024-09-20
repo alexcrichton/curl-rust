@@ -55,3 +55,7 @@ zlib-ng-compat = ["libz-sys/zlib-ng", "static-curl"]
 upkeep_7_62_0 = []
 poll_7_68_0 = []
 ntlm = []
+
+[lints.rust.unexpected_cfgs]
+level = "warn"
+check-cfg = ["cfg(libcurl_vendored,link_libnghttp2,link_libz,link_openssl)"]

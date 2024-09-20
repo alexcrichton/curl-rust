@@ -7,14 +7,10 @@ cargo test --target $TARGET --no-run
 cargo test --target $TARGET --no-run --features static-curl
 # Then with rustls TLS backend.
 #
-# Note: Cross-compiling rustls on windows doesn't work due to requiring some
-# NASM build stuff in aws_lc_rs, which may soon be fixed by
-# https://github.com/aws/aws-lc-rs/pull/528.
-#
 # Compiling on i686-windows requires nasm to be installed (other platforms
 # have pre-compiled object files), which is just slightly too much
 # inconvenience for me.
-if [ "$TARGET" != "x86_64-pc-windows-gnu" ] && [ "$TARGET" != "i686-pc-windows-msvc" ]
+if [ "$TARGET" != "i686-pc-windows-msvc" ]
 then
     cargo test --target $TARGET --no-run --features rustls,static-curl
 fi

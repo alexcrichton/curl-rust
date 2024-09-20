@@ -6,7 +6,13 @@ cargo test --target $TARGET --no-run
 # First test with no extra protocols enabled.
 cargo test --target $TARGET --no-run --features static-curl
 # Then with rustls TLS backend.
-cargo test --target $TARGET --no-run --features rustls,static-curl
+# Note: Cross-compiling rustls on windows doesn't work due to requiring some
+# NASM build stuff in aws_lc_rs, which may soon be fixed by
+# https://github.com/aws/aws-lc-rs/pull/528.
+if [ "$TARGET" != "x86_64-pc-windows-gnu" ]
+then
+    cargo test --target $TARGET --no-run --features rustls,static-curl
+fi
 # Then with all extra protocols enabled.
 cargo test --target $TARGET --no-run --features static-curl,protocol-ftp,ntlm
 if [ -z "$NO_RUN" ]; then

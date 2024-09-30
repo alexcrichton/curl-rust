@@ -6,7 +6,7 @@ RUN apt-get install -y --no-install-recommends \
   musl-tools
 
 RUN \
-  curl https://www.openssl.org/source/old/1.0.2/openssl-1.0.2g.tar.gz | tar xzf - && \
+  curl -L https://www.openssl.org/source/old/1.0.2/openssl-1.0.2g.tar.gz | tar xzf - && \
   cd openssl-1.0.2g && \
   CC=musl-gcc ./Configure --prefix=/openssl no-dso linux-x86_64 -fPIC && \
   make -j10 && \

@@ -2,7 +2,7 @@ use std::env;
 
 fn main() {
     println!(
-        "cargo::rustc-check-cfg=cfg(\
+        "cargo:rustc-check-cfg=cfg(\
             need_openssl_init,\
             need_openssl_probe,\
         )"

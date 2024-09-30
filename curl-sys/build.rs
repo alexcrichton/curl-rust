@@ -6,7 +6,7 @@ use std::process::Command;
 fn main() {
     println!("cargo:rerun-if-changed=curl");
     println!(
-        "cargo::rustc-check-cfg=cfg(\
+        "cargo:rustc-check-cfg=cfg(\
             libcurl_vendored,\
             link_libnghttp2,\
             link_libz,\

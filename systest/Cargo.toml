@@ -13,3 +13,6 @@ libc = "0.2"
 [build-dependencies]
 ctest2 = "0.4"
 cc = "1.0"
+
+[features]
+static-ssl = ['curl-sys/static-ssl']

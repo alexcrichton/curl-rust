@@ -15,6 +15,7 @@ fn main() {
     );
     let target = env::var("TARGET").unwrap();
     let windows = target.contains("windows");
+    let msvc = target.contains("msvc");
 
     if cfg!(feature = "mesalink") {
         println!("cargo:warning=MesaLink support has been removed as of curl 7.82.0, will use default TLS backend instead.");
@@ -36,7 +37,7 @@ fn main() {
         }
 
         // Next, fall back and try to use pkg-config if its available.
-        if windows {
+        if msvc {
             if try_vcpkg() {
                 return;
             }

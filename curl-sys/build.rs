@@ -108,7 +108,7 @@ fn main() {
             .replace("@LIBCURL_LIBS@", "")
             .replace("@SUPPORT_FEATURES@", "")
             .replace("@SUPPORT_PROTOCOLS@", "")
-            .replace("@CURLVERSION@", "8.10.1"),
+            .replace("@CURLVERSION@", "8.11.0"),
     )
     .unwrap();
 
@@ -132,7 +132,7 @@ fn main() {
         .define("ENABLE_IPV6", None)
         .define("HAVE_SOCKADDR_IN6_SIN6_SCOPE_ID", None)
         .define("HAVE_ASSERT_H", None)
-        .define("OS", "\"unknown\"") // TODO
+        .define("CURL_OS", "\"unknown\"") // TODO
         .define("HAVE_ZLIB_H", None)
         .define("HAVE_LONGLONG", None)
         .define("HAVE_LIBZ", None)
@@ -236,6 +236,7 @@ fn main() {
         .file("curl/lib/vtls/vtls.c")
         .file("curl/lib/warnless.c")
         .file("curl/lib/timediff.c")
+        .file("curl/lib/ws.c")
         .define("HAVE_GETADDRINFO", None)
         .define("HAVE_GETPEERNAME", None)
         .define("HAVE_GETSOCKNAME", None)

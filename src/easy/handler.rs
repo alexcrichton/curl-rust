@@ -379,8 +379,12 @@ pub struct Easy2<H> {
     inner: Box<Inner<H>>,
 }
 
+/// A thin wrapper around a low-level Easy handle that performs
+/// cleanup when dropped.
+struct CURLPtr(*mut curl_sys::CURL);
+
 struct Inner<H> {
-    handle: *mut curl_sys::CURL,
+    handle: CURLPtr,
     header_list: Option<List>,
     resolve_list: Option<List>,
     connect_to_list: Option<List>,
@@ -590,7 +594,7 @@ impl<H: Handler> Easy2<H> {
             assert!(!handle.is_null());
             let mut ret = Easy2 {
                 inner: Box::new(Inner {
-                    handle,
+                    handle: CURLPtr(handle),
                     header_list: None,
                     resolve_list: None,
                     connect_to_list: None,
@@ -611,7 +615,7 @@ impl<H: Handler> Easy2<H> {
     /// cache, the dns cache, and cookies.
     pub fn reset(&mut self) {
         unsafe {
-            curl_sys::curl_easy_reset(self.inner.handle);
+            curl_sys::curl_easy_reset(self.inner.handle.as_ptr());
         }
         self.default_configure();
     }
@@ -836,6 +840,11 @@ impl<H> Easy2<H> {
     /// Acquires a reference to the underlying handler for events.
     pub fn get_mut(&mut self) -> &mut H {
         &mut self.inner.handler
+    }
+
+    /// Consumes the Easy handle, returning the underlying handler.
+    pub fn into_inner(self) -> H {
+        self.inner.handler
     }
 
     // =========================================================================
@@ -3119,7 +3128,7 @@ impl<H> Easy2<H> {
         unsafe {
             let mut list = ptr::null_mut();
             let rc = curl_sys::curl_easy_getinfo(
-                self.inner.handle,
+                self.inner.handle.as_ptr(),
                 curl_sys::CURLINFO_COOKIELIST,
                 &mut list,
             );
@@ -3189,7 +3198,7 @@ impl<H> Easy2<H> {
     /// call methods like `unpause_write` and `unpause_read` while a transfer is
     /// in progress.
     pub fn perform(&self) -> Result<(), Error> {
-        let ret = unsafe { self.cvt(curl_sys::curl_easy_perform(self.inner.handle)) };
+        let ret = unsafe { self.cvt(curl_sys::curl_easy_perform(self.inner.handle.as_ptr())) };
         panic::propagate();
         ret
     }
@@ -3204,7 +3213,7 @@ impl<H> Easy2<H> {
     /// called, an HTTP/2 PING frame is sent on the connection.
     #[cfg(feature = "upkeep_7_62_0")]
     pub fn upkeep(&self) -> Result<(), Error> {
-        let ret = unsafe { self.cvt(curl_sys::curl_easy_upkeep(self.inner.handle)) };
+        let ret = unsafe { self.cvt(curl_sys::curl_easy_upkeep(self.inner.handle.as_ptr())) };
         panic::propagate();
         return ret;
     }
@@ -3225,7 +3234,10 @@ impl<H> Easy2<H> {
     /// this function returns.
     pub fn unpause_read(&self) -> Result<(), Error> {
         unsafe {
-            let rc = curl_sys::curl_easy_pause(self.inner.handle, curl_sys::CURLPAUSE_RECV_CONT);
+            let rc = curl_sys::curl_easy_pause(
+                self.inner.handle.as_ptr(),
+                curl_sys::CURLPAUSE_RECV_CONT,
+            );
             self.cvt(rc)
         }
     }
@@ -3246,7 +3258,10 @@ impl<H> Easy2<H> {
     /// paused.
     pub fn unpause_write(&self) -> Result<(), Error> {
         unsafe {
-            let rc = curl_sys::curl_easy_pause(self.inner.handle, curl_sys::CURLPAUSE_SEND_CONT);
+            let rc = curl_sys::curl_easy_pause(
+                self.inner.handle.as_ptr(),
+                curl_sys::CURLPAUSE_SEND_CONT,
+            );
             self.cvt(rc)
         }
     }
@@ -3258,7 +3273,7 @@ impl<H> Easy2<H> {
         }
         unsafe {
             let p = curl_sys::curl_easy_escape(
-                self.inner.handle,
+                self.inner.handle.as_ptr(),
                 s.as_ptr() as *const _,
                 s.len() as c_int,
             );
@@ -3291,7 +3306,7 @@ impl<H> Easy2<H> {
         unsafe {
             let mut len = 0;
             let p = curl_sys::curl_easy_unescape(
-                self.inner.handle,
+                self.inner.handle.as_ptr(),
                 s.as_ptr() as *const _,
                 orig_len as c_int,
                 &mut len,
@@ -3340,7 +3355,7 @@ impl<H> Easy2<H> {
         unsafe {
             let mut n = 0;
             let r = curl_sys::curl_easy_recv(
-                self.inner.handle,
+                self.inner.handle.as_ptr(),
                 data.as_mut_ptr() as *mut _,
                 data.len(),
                 &mut n,
@@ -3361,7 +3376,7 @@ impl<H> Easy2<H> {
         unsafe {
             let mut n = 0;
             let rc = curl_sys::curl_easy_send(
-                self.inner.handle,
+                self.inner.handle.as_ptr(),
                 data.as_ptr() as *const _,
                 data.len(),
                 &mut n,
@@ -3373,7 +3388,7 @@ impl<H> Easy2<H> {
 
     /// Get a pointer to the raw underlying CURL handle.
     pub fn raw(&self) -> *mut curl_sys::CURL {
-        self.inner.handle
+        self.inner.handle.as_ptr()
     }
 
     #[cfg(unix)]
@@ -3392,7 +3407,13 @@ impl<H> Easy2<H> {
     }
 
     fn setopt_long(&mut self, opt: curl_sys::CURLoption, val: c_long) -> Result<(), Error> {
-        unsafe { self.cvt(curl_sys::curl_easy_setopt(self.inner.handle, opt, val)) }
+        unsafe {
+            self.cvt(curl_sys::curl_easy_setopt(
+                self.inner.handle.as_ptr(),
+                opt,
+                val,
+            ))
+        }
     }
 
     fn setopt_str(&mut self, opt: curl_sys::CURLoption, val: &CStr) -> Result<(), Error> {
@@ -3400,7 +3421,13 @@ impl<H> Easy2<H> {
     }
 
     fn setopt_ptr(&self, opt: curl_sys::CURLoption, val: *const c_char) -> Result<(), Error> {
-        unsafe { self.cvt(curl_sys::curl_easy_setopt(self.inner.handle, opt, val)) }
+        unsafe {
+            self.cvt(curl_sys::curl_easy_setopt(
+                self.inner.handle.as_ptr(),
+                opt,
+                val,
+            ))
+        }
     }
 
     fn setopt_off_t(
@@ -3409,7 +3436,7 @@ impl<H> Easy2<H> {
         val: curl_sys::curl_off_t,
     ) -> Result<(), Error> {
         unsafe {
-            let rc = curl_sys::curl_easy_setopt(self.inner.handle, opt, val);
+            let rc = curl_sys::curl_easy_setopt(self.inner.handle.as_ptr(), opt, val);
             self.cvt(rc)
         }
     }
@@ -3421,7 +3448,13 @@ impl<H> Easy2<H> {
             flags: curl_sys::CURL_BLOB_COPY,
         };
         let blob_ptr = &blob as *const curl_sys::curl_blob;
-        unsafe { self.cvt(curl_sys::curl_easy_setopt(self.inner.handle, opt, blob_ptr)) }
+        unsafe {
+            self.cvt(curl_sys::curl_easy_setopt(
+                self.inner.handle.as_ptr(),
+                opt,
+                blob_ptr,
+            ))
+        }
     }
 
     fn getopt_bytes(&self, opt: curl_sys::CURLINFO) -> Result<Option<&[u8]>, Error> {
@@ -3438,7 +3471,7 @@ impl<H> Easy2<H> {
     fn getopt_ptr(&self, opt: curl_sys::CURLINFO) -> Result<*const c_char, Error> {
         unsafe {
             let mut p = ptr::null();
-            let rc = curl_sys::curl_easy_getinfo(self.inner.handle, opt, &mut p);
+            let rc = curl_sys::curl_easy_getinfo(self.inner.handle.as_ptr(), opt, &mut p);
             self.cvt(rc)?;
             Ok(p)
         }
@@ -3458,7 +3491,7 @@ impl<H> Easy2<H> {
     fn getopt_long(&self, opt: curl_sys::CURLINFO) -> Result<c_long, Error> {
         unsafe {
             let mut p = 0;
-            let rc = curl_sys::curl_easy_getinfo(self.inner.handle, opt, &mut p);
+            let rc = curl_sys::curl_easy_getinfo(self.inner.handle.as_ptr(), opt, &mut p);
             self.cvt(rc)?;
             Ok(p)
         }
@@ -3467,7 +3500,7 @@ impl<H> Easy2<H> {
     fn getopt_double(&self, opt: curl_sys::CURLINFO) -> Result<c_double, Error> {
         unsafe {
             let mut p = 0 as c_double;
-            let rc = curl_sys::curl_easy_getinfo(self.inner.handle, opt, &mut p);
+            let rc = curl_sys::curl_easy_getinfo(self.inner.handle.as_ptr(), opt, &mut p);
             self.cvt(rc)?;
             Ok(p)
         }
@@ -3513,17 +3546,9 @@ impl<H> Easy2<H> {
 impl<H: fmt::Debug> fmt::Debug for Easy2<H> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("Easy")
-            .field("handle", &self.inner.handle)
+            .field("handle", &self.inner.handle.as_ptr())
             .field("handler", &self.inner.handler)
             .finish()
-    }
-}
-
-impl<H> Drop for Easy2<H> {
-    fn drop(&mut self) {
-        unsafe {
-            curl_sys::curl_easy_cleanup(self.inner.handle);
-        }
     }
 }
 
@@ -3696,6 +3721,20 @@ fn double_seconds_to_duration_sub_second2() {
     let dur = double_seconds_to_duration(0.5);
     assert_eq!(dur.as_secs(), 0);
     assert_eq!(dur.subsec_nanos(), 500_000_000);
+}
+
+impl CURLPtr {
+    fn as_ptr(&self) -> *mut curl_sys::CURL {
+        self.0
+    }
+}
+
+impl Drop for CURLPtr {
+    fn drop(&mut self) {
+        unsafe {
+            curl_sys::curl_easy_cleanup(self.0);
+        }
+    }
 }
 
 impl Auth {

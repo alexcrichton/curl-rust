@@ -982,11 +982,6 @@ impl<H> Easy2Handle<H> {
         self.easy.get_mut()
     }
 
-    /// Consumes the Easy2 handle, returning the underlying handler.
-    pub fn into_inner(self) -> H {
-        self.easy.into_inner()
-    }
-
     /// Same as `EasyHandle::set_token`
     pub fn set_token(&mut self, token: usize) -> Result<(), Error> {
         unsafe {

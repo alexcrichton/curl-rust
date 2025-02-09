@@ -108,7 +108,7 @@ fn main() {
             .replace("@LIBCURL_LIBS@", "")
             .replace("@SUPPORT_FEATURES@", "")
             .replace("@SUPPORT_PROTOCOLS@", "")
-            .replace("@CURLVERSION@", "8.11.0"),
+            .replace("@CURLVERSION@", "8.12.0"),
     )
     .unwrap();
 
@@ -216,6 +216,7 @@ fn main() {
         .file("curl/lib/strcase.c")
         .file("curl/lib/strdup.c")
         .file("curl/lib/strerror.c")
+        .file("curl/lib/strparse.c")
         .file("curl/lib/strtok.c")
         .file("curl/lib/strtoofft.c")
         .file("curl/lib/timeval.c")
@@ -234,6 +235,7 @@ fn main() {
         .file("curl/lib/vtls/hostcheck.c")
         .file("curl/lib/vtls/keylog.c")
         .file("curl/lib/vtls/vtls.c")
+        .file("curl/lib/vtls/vtls_scache.c")
         .file("curl/lib/warnless.c")
         .file("curl/lib/timediff.c")
         .file("curl/lib/ws.c")

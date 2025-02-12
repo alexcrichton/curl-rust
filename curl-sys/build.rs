@@ -36,7 +36,7 @@ fn main() {
         }
 
         // Next, fall back and try to use pkg-config if its available.
-        if windows {
+        if target.contains("msvc") {
             if try_vcpkg() {
                 return;
             }

@@ -108,7 +108,7 @@ fn main() {
             .replace("@LIBCURL_LIBS@", "")
             .replace("@SUPPORT_FEATURES@", "")
             .replace("@SUPPORT_PROTOCOLS@", "")
-            .replace("@CURLVERSION@", "8.12.0"),
+            .replace("@CURLVERSION@", "8.12.1"),
     )
     .unwrap();
 

@@ -32,12 +32,10 @@ openssl-sys = { version = "0.9.64", optional = true }
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.59", features = ["Win32_Networking_WinSock"] }
 
-[target.'cfg(target_env = "msvc")'.build-dependencies]
-vcpkg = "0.2"
-
 [build-dependencies]
 pkg-config = "0.3.3"
 cc = "1.0"
+vcpkg = "0.2"
 
 [features]
 default = ["ssl"]

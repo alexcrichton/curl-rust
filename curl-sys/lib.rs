@@ -609,6 +609,8 @@ pub const CURLOPT_PROXY_SSL_OPTIONS: CURLoption = CURLOPTTYPE_LONG + 261;
 
 pub const CURLOPT_ABSTRACT_UNIX_SOCKET: CURLoption = CURLOPTTYPE_OBJECTPOINT + 264;
 
+pub const CURLOPT_MIMEPOST: CURLoption = CURLOPTTYPE_OBJECTPOINT + 269;
+
 pub const CURLOPT_DOH_URL: CURLoption = CURLOPTTYPE_OBJECTPOINT + 279;
 pub const CURLOPT_UPLOAD_BUFFERSIZE: CURLoption = CURLOPTTYPE_LONG + 280;
 
@@ -1166,6 +1168,44 @@ extern "C" {
         sockp: *mut c_void,
     ) -> CURLMcode;
 }
+
+#[cfg(feature = "mime")]
+mod mime {
+    use super::*;
+
+    pub enum curl_mime {}
+    pub enum curl_mimepart {}
+
+    extern "C" {
+        pub fn curl_mime_init(easy_handle: *mut CURL) -> *mut curl_mime;
+        pub fn curl_mime_free(mime_handle: *mut curl_mime);
+        pub fn curl_mime_addpart(mime_handle: *mut curl_mime) -> *mut curl_mimepart;
+        pub fn curl_mime_data(
+            part: *mut curl_mimepart,
+            data: *const c_char,
+            datasize: size_t,
+        ) -> CURLcode;
+        pub fn curl_mime_name(part: *mut curl_mimepart, name: *const c_char) -> CURLcode;
+        pub fn curl_mime_filename(part: *mut curl_mimepart, filename: *const c_char) -> CURLcode;
+        pub fn curl_mime_type(part: *mut curl_mimepart, mimetype: *const c_char) -> CURLcode;
+        pub fn curl_mime_data_cb(
+            part: *mut curl_mimepart,
+            datasize: curl_off_t,
+            readfunc: Option<curl_read_callback>,
+            seekfunc: Option<curl_seek_callback>,
+            freefunc: Option<curl_free_callback>,
+            arg: *mut c_void,
+        ) -> CURLcode;
+        pub fn curl_mime_subparts(part: *mut curl_mimepart, subparts: *mut curl_mime) -> CURLcode;
+        pub fn curl_mime_headers(
+            part: *mut curl_mimepart,
+            headers: *mut curl_slist,
+            take_ownership: c_int,
+        ) -> CURLcode;
+    }
+}
+#[cfg(feature = "mime")]
+pub use mime::*;
 
 pub fn rust_crate_version() -> &'static str {
     env!("CARGO_PKG_VERSION")

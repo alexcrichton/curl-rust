@@ -3384,14 +3384,22 @@ impl<H> Easy2<H> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use curl::easy::{Easy, List};
     ///
     /// let mut handle = Easy::new();
-    /// let mut mime = handle.new_mime();
-    /// mime.add_part().name("key1").unwrap().data(b"value1").unwrap();
-    /// mime.add_part().name("key2").unwrap().data(b"value2").unwrap();
+    /// let mime = handle.new_mime();
+    ///
+    /// let mut part = mime.add_part();
+    /// part.name("key1").unwrap();
+    /// part.data(b"value1").unwrap();
+    /// let mut part = mime.add_part();
+    /// part.name("key2").unwrap();
+    /// part.data(b"value2").unwrap();
+    ///
     /// mime.post().unwrap();
+    ///
+    /// handle.url("https://httpbin.dev/post").unwrap();
     /// handle.perform().unwrap();
     /// ```
     #[cfg(feature = "mime")]

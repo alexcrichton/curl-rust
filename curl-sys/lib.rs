@@ -609,8 +609,6 @@ pub const CURLOPT_PROXY_SSL_OPTIONS: CURLoption = CURLOPTTYPE_LONG + 261;
 
 pub const CURLOPT_ABSTRACT_UNIX_SOCKET: CURLoption = CURLOPTTYPE_OBJECTPOINT + 264;
 
-pub const CURLOPT_MIMEPOST: CURLoption = CURLOPTTYPE_OBJECTPOINT + 269;
-
 pub const CURLOPT_DOH_URL: CURLoption = CURLOPTTYPE_OBJECTPOINT + 279;
 pub const CURLOPT_UPLOAD_BUFFERSIZE: CURLoption = CURLOPTTYPE_LONG + 280;
 
@@ -1172,6 +1170,8 @@ extern "C" {
 #[cfg(feature = "mime")]
 mod mime {
     use super::*;
+
+    pub const CURLOPT_MIMEPOST: CURLoption = CURLOPTTYPE_OBJECTPOINT + 269;
 
     pub enum curl_mime {}
     pub enum curl_mimepart {}

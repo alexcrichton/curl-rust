@@ -3381,6 +3381,19 @@ impl<H> Easy2<H> {
     ///
     /// With the returned [`Mime`] handle, you can add some parts and attach it to the
     /// easy handle using [`Mime::post`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use curl::easy::{Easy, List};
+    ///
+    /// let mut handle = Easy::new();
+    /// let mut mime = handle.new_mime();
+    /// mime.add_part().name("key1").unwrap().data(b"value1").unwrap();
+    /// mime.add_part().name("key2").unwrap().data(b"value2").unwrap();
+    /// mime.post().unwrap();
+    /// handle.perform().unwrap();
+    /// ```
     #[cfg(feature = "mime")]
     pub fn new_mime(&mut self) -> Mime<H> {
         Mime::new(self)

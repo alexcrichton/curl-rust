@@ -111,6 +111,7 @@ impl<'m, 'h, H> MimePart<'m, 'h, H> {
 
     /// Sets the list of headers of this MIME part.
     pub fn headers(&mut self, header_list: List) -> Result<(), Error> {
+        let header_list = std::mem::ManuallyDrop::new(header_list);
         let code = unsafe { curl_sys::curl_mime_headers(self.raw, list_raw(&header_list), 1) };
         self.mime.easy.cvt(code)?;
         Ok(())
@@ -153,7 +154,7 @@ extern "C" fn read_cb<P: PartDataHandler + Send + 'static>(
 ) -> size_t {
     panic::catch(|| unsafe {
         let input = slice::from_raw_parts_mut(ptr as *mut u8, size * nmemb);
-        match (*(data as *mut Box<P>)).read(input) {
+        match (*(data as *mut P)).read(input) {
             Ok(s) => s,
             Err(ReadError::Pause) => curl_sys::CURL_READFUNC_PAUSE,
             Err(ReadError::Abort) => curl_sys::CURL_READFUNC_ABORT,
@@ -173,14 +174,14 @@ extern "C" fn seek_cb<P: PartDataHandler + Send + 'static>(
         } else {
             panic!("unknown origin from libcurl: {}", origin);
         };
-        (*(data as *mut Box<P>)).seek(from) as c_int
+        (*(data as *mut P)).seek(from) as c_int
     })
     .unwrap_or(!0)
 }
 
 extern "C" fn free_handler<P: PartDataHandler + Send + 'static>(data: *mut c_void) {
     panic::catch(|| unsafe {
-        let _ = Box::from_raw(data as *mut Box<P>);
+        let _ = Box::from_raw(data as *mut P);
     })
     .unwrap_or(());
 }

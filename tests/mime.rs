@@ -1,3 +1,5 @@
+#![cfg(feature = "mime")]
+
 use curl::{
     easy::{ReadError, SeekResult},
     mime::PartDataHandler,

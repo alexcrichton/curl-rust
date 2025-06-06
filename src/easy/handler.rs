@@ -676,22 +676,17 @@ impl<H: Handler> Easy2<H> {
 
     #[cfg(need_openssl_probe)]
     fn ssl_configure(&mut self) {
-        use std::sync::Once;
-
-        static mut PROBE: Option<::openssl_probe::ProbeResult> = None;
-        static INIT: Once = Once::new();
+        use std::sync::LazyLock;
 
         // Probe for certificate stores the first time an easy handle is created,
         // and re-use the results for subsequent handles.
-        INIT.call_once(|| unsafe {
-            PROBE = Some(::openssl_probe::probe());
-        });
-        let probe = unsafe { PROBE.as_ref().unwrap() };
+        static PROBE: LazyLock<openssl_probe::ProbeResult> =
+            LazyLock::new(|| openssl_probe::probe());
 
-        if let Some(ref path) = probe.cert_file {
+        if let Some(ref path) = PROBE.cert_file {
             let _ = self.cainfo(path);
         }
-        if let Some(ref path) = probe.cert_dir {
+        if let Some(ref path) = PROBE.cert_dir {
             let _ = self.capath(path);
         }
     }

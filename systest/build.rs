@@ -72,10 +72,7 @@ fn main() {
     cfg.skip_const(move |s| {
         if version < (8, 10) {
             match s {
-                "CURLVERSION_TWELFTH"
-                | "CURLVERSION_NOW"
-                | "CURLOPT_WRITEINFO"
-                | "CURLOPT_CLOSEPOLICY" => return true,
+                "CURLVERSION_TWELFTH" | "CURLVERSION_NOW" => return true,
                 _ => {}
             }
         }
@@ -261,12 +258,20 @@ fn main() {
             }
         }
 
-        // OSX doesn't have this yet
-        s == "CURLSSLOPT_NO_REVOKE" ||
-
-        // A lot of curl versions doesn't support unix sockets
-        s == "CURLOPT_UNIX_SOCKET_PATH" || s == "CURL_VERSION_UNIX_SOCKETS" || s ==
-            "CURLOPT_ABSTRACT_UNIX_SOCKET"
+        match s {
+            // OSX doesn't have this yet
+            "CURLSSLOPT_NO_REVOKE"
+            // A lot of curl versions doesn't support unix sockets
+            | "CURLOPT_UNIX_SOCKET_PATH"
+            | "CURL_VERSION_UNIX_SOCKETS"
+            | "CURLOPT_ABSTRACT_UNIX_SOCKET"
+            // These two are deprecated, and their value changed in 8.10.
+            // Systest generates deprecated warnings which isn't helpful.
+            // These should be removed in the next semver major bump.
+            | "CURLOPT_WRITEINFO"
+            | "CURLOPT_CLOSEPOLICY" => true,
+            _ => false,
+        }
     });
 
     if cfg!(target_env = "msvc") {

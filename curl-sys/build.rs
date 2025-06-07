@@ -15,9 +15,29 @@ fn main() {
     );
     let target = env::var("TARGET").unwrap();
     let windows = target.contains("windows");
+    let curlname = if cfg!(feature = "impersonate-chrome") {
+        "curl-impersonate-chrome"
+    } else if cfg!(feature = "impersonate-ff") {
+        "curl-impersonate-ff"
+    } else {
+        "curl"
+    };
+    let libname = format!("lib{curlname}");
+    let configname = format!("{curlname}-config");
 
     if cfg!(feature = "mesalink") {
         println!("cargo:warning=MesaLink support has been removed as of curl 7.82.0, will use default TLS backend instead.");
+    }
+
+    if cfg!(feature = "impersonate-chrome") && cfg!(feature = "impersonate-ff") {
+        panic!("impersonate-chrome and impersonate-ff features cannot be both enabled");
+    }
+    if (cfg!(feature = "impersonate-chrome") || cfg!(feature = "impersonate-ff"))
+        && cfg!(feature = "static-curl")
+    {
+        panic!(
+            "impersonate-chrome and impersonate-ff features don't work together with static-curl"
+        );
     }
 
     // This feature trumps all others, and is largely set by rustbuild to force
@@ -31,7 +51,9 @@ fn main() {
     if !cfg!(feature = "static-curl") {
         // OSX ships libcurl by default, so we just use that version
         // so long as it has the right features enabled.
-        if target.contains("apple") && (!cfg!(feature = "http2") || curl_config_reports_http2()) {
+        if target.contains("apple")
+            && (!cfg!(feature = "http2") || curl_config_reports_http2(&configname, &libname))
+        {
             return println!("cargo:rustc-flags=-l curl");
         }
 
@@ -40,9 +62,15 @@ fn main() {
             if try_vcpkg() {
                 return;
             }
-        } else if try_pkg_config() {
+        } else if try_pkg_config(&configname, &libname) {
             return;
         }
+    }
+
+    if cfg!(feature = "impersonate-chrome") || cfg!(feature = "impersonate-ff") {
+        panic!(
+            "impersonate feature is enabled, but {} was not found in system. fallback to static not available", libname
+        );
     }
 
     if !Path::new("curl/.git").exists() {
@@ -532,14 +560,14 @@ fn try_vcpkg() -> bool {
     false
 }
 
-fn try_pkg_config() -> bool {
+fn try_pkg_config(configname: &str, libname: &str) -> bool {
     let mut cfg = pkg_config::Config::new();
     cfg.cargo_metadata(false);
-    let lib = match cfg.probe("libcurl") {
+    let lib = match cfg.probe(libname) {
         Ok(lib) => lib,
         Err(e) => {
             println!(
-                "Couldn't find libcurl from pkgconfig ({:?}), \
+                "Couldn't find {libname} from pkgconfig ({:?}), \
                  compiling it from source...",
                 e
             );
@@ -549,13 +577,13 @@ fn try_pkg_config() -> bool {
 
     // Not all system builds of libcurl have http2 features enabled, so if we've
     // got a http2-requested build then we may fall back to a build from source.
-    if cfg!(feature = "http2") && !curl_config_reports_http2() {
+    if cfg!(feature = "http2") && !curl_config_reports_http2(configname, libname) {
         return false;
     }
 
     // Re-find the library to print cargo's metadata, then print some extra
     // metadata as well.
-    cfg.cargo_metadata(true).probe("libcurl").unwrap();
+    cfg.cargo_metadata(true).probe(libname).unwrap();
     for path in lib.include_paths.iter() {
         println!("cargo:include={}", path.display());
     }
@@ -580,24 +608,24 @@ fn xcode_major_version() -> Option<u8> {
     None
 }
 
-fn curl_config_reports_http2() -> bool {
-    let output = Command::new("curl-config").arg("--features").output();
+fn curl_config_reports_http2(configname: &str, libname: &str) -> bool {
+    let output = Command::new(configname).arg("--features").output();
     let output = match output {
         Ok(out) => out,
         Err(e) => {
-            println!("failed to run curl-config ({}), building from source", e);
+            println!("failed to run {configname} ({}), building from source", e);
             return false;
         }
     };
     if !output.status.success() {
-        println!("curl-config failed: {}", output.status);
+        println!("{configname} failed: {}", output.status);
         return false;
     }
     let stdout = String::from_utf8_lossy(&output.stdout);
     if !stdout.contains("HTTP2") {
         println!(
             "failed to find http-2 feature enabled in pkg-config-found \
-             libcurl, building from source"
+             {libname}, building from source"
         );
         return false;
     }

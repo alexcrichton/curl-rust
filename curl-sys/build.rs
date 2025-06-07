@@ -226,6 +226,7 @@ fn main() {
         .file("curl/lib/strerror.c")
         .file("curl/lib/transfer.c")
         .file("curl/lib/uint-bset.c")
+        .file("curl/lib/uint-hash.c")
         .file("curl/lib/uint-spbset.c")
         .file("curl/lib/uint-table.c")
         .file("curl/lib/url.c")

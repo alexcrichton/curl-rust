@@ -6,6 +6,7 @@ use std::ptr;
 use std::str;
 use std::time::Duration;
 
+use libc::c_int;
 use libc::c_void;
 
 use crate::easy::handler::{self, InfoType, ReadError, SeekResult, WriteError};
@@ -111,6 +112,7 @@ struct Callbacks<'a> {
     header: Option<Box<dyn FnMut(&[u8]) -> bool + 'a>>,
     progress: Option<Box<dyn FnMut(f64, f64, f64, f64) -> bool + 'a>>,
     ssl_ctx: Option<Box<dyn FnMut(*mut c_void) -> Result<(), Error> + 'a>>,
+    open_socket: Option<Box<dyn FnMut(c_int, c_int, c_int) -> Option<curl_sys::curl_socket_t>>>,
 }
 
 impl Easy {
@@ -539,6 +541,27 @@ impl Easy {
         F: FnMut(&[u8]) -> bool + Send + 'static,
     {
         self.inner.get_mut().owned.header = Some(Box::new(f));
+        Ok(())
+    }
+
+    /// Callback to open sockets for libcurl.
+    ///
+    /// This callback function gets called by libcurl instead of the socket(2)
+    /// call. The callback function should return the newly created socket
+    /// or `None` in case no connection could be established or another
+    /// error was detected. Any additional `setsockopt(2)` calls can of course
+    /// be done on the socket at the user's discretion. A `None` return
+    /// value from the callback function will signal an unrecoverable error to
+    /// libcurl and it will return `is_couldnt_connect` from the function that
+    /// triggered this callback.
+    ///
+    /// By default this function opens a standard socket and
+    /// corresponds to `CURLOPT_OPENSOCKETFUNCTION `.
+    pub fn open_socket_function<F>(&mut self, f: F) -> Result<(), Error>
+    where
+        F: FnMut(c_int, c_int, c_int) -> Option<curl_sys::curl_socket_t> + Send + 'static,
+    {
+        self.inner.get_mut().owned.open_socket = Some(Box::new(f));
         Ok(())
     }
 
@@ -1565,6 +1588,20 @@ impl Handler for EasyData {
             match self.callback(|s| &mut s.ssl_ctx) {
                 Some(ssl_ctx) => ssl_ctx(cx),
                 None => handler::ssl_ctx(cx),
+            }
+        }
+    }
+
+    fn open_socket(
+        &mut self,
+        family: c_int,
+        socktype: c_int,
+        protocol: c_int,
+    ) -> Option<curl_sys::curl_socket_t> {
+        unsafe {
+            match self.callback(|s| &mut s.open_socket) {
+                Some(open_socket) => open_socket(family, socktype, protocol),
+                None => handler::open_socket(family, socktype, protocol),
             }
         }
     }

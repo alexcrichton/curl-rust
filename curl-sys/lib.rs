@@ -1167,6 +1167,101 @@ extern "C" {
     ) -> CURLMcode;
 }
 
+#[cfg(feature = "url")]
+mod url {
+    use super::*;
+
+    pub type CURLUcode = __enum_ty;
+    pub type CURLUPart = __enum_ty;
+
+    pub const CURLUE_OK: CURLUcode = 0;
+    pub const CURLUE_BAD_HANDLE: CURLUcode = 1;
+    pub const CURLUE_BAD_PARTPOINTER: CURLUcode = 2;
+    pub const CURLUE_MALFORMED_INPUT: CURLUcode = 3;
+    pub const CURLUE_BAD_PORT_NUMBER: CURLUcode = 4;
+    pub const CURLUE_UNSUPPORTED_SCHEME: CURLUcode = 5;
+    pub const CURLUE_URLDECODE: CURLUcode = 6;
+    pub const CURLUE_OUT_OF_MEMORY: CURLUcode = 7;
+    pub const CURLUE_USER_NOT_ALLOWED: CURLUcode = 8;
+    pub const CURLUE_UNKNOWN_PART: CURLUcode = 9;
+    pub const CURLUE_NO_SCHEME: CURLUcode = 10;
+    pub const CURLUE_NO_USER: CURLUcode = 11;
+    pub const CURLUE_NO_PASSWORD: CURLUcode = 12;
+    pub const CURLUE_NO_OPTIONS: CURLUcode = 13;
+    pub const CURLUE_NO_HOST: CURLUcode = 14;
+    pub const CURLUE_NO_PORT: CURLUcode = 15;
+    pub const CURLUE_NO_QUERY: CURLUcode = 16;
+    pub const CURLUE_NO_FRAGMENT: CURLUcode = 17;
+    pub const CURLUE_NO_ZONEID: CURLUcode = 18;
+    pub const CURLUE_BAD_FILE_URL: CURLUcode = 19;
+    pub const CURLUE_BAD_FRAGMENT: CURLUcode = 20;
+    pub const CURLUE_BAD_HOSTNAME: CURLUcode = 21;
+    pub const CURLUE_BAD_IPV6: CURLUcode = 22;
+    pub const CURLUE_BAD_LOGIN: CURLUcode = 23;
+    pub const CURLUE_BAD_PASSWORD: CURLUcode = 24;
+    pub const CURLUE_BAD_PATH: CURLUcode = 25;
+    pub const CURLUE_BAD_QUERY: CURLUcode = 26;
+    pub const CURLUE_BAD_SCHEME: CURLUcode = 27;
+    pub const CURLUE_BAD_SLASHES: CURLUcode = 28;
+    pub const CURLUE_BAD_USER: CURLUcode = 29;
+    pub const CURLUE_LACKS_IDN: CURLUcode = 30;
+    pub const CURLUE_TOO_LARGE: CURLUcode = 31;
+    pub const CURLUE_LAST: CURLUcode = 32;
+
+    pub const CURLUPART_URL: CURLUPart = 0;
+    pub const CURLUPART_SCHEME: CURLUPart = 1;
+    pub const CURLUPART_USER: CURLUPart = 2;
+    pub const CURLUPART_PASSWORD: CURLUPart = 3;
+    pub const CURLUPART_OPTIONS: CURLUPart = 4;
+    pub const CURLUPART_HOST: CURLUPart = 5;
+    pub const CURLUPART_PORT: CURLUPart = 6;
+    pub const CURLUPART_PATH: CURLUPart = 7;
+    pub const CURLUPART_QUERY: CURLUPart = 8;
+    pub const CURLUPART_FRAGMENT: CURLUPart = 9;
+    pub const CURLUPART_ZONEID: CURLUPart = 10; // Added in 7.65.0
+
+    pub const CURLU_DEFAULT_PORT: c_uint = 1 << 0;
+    pub const CURLU_NO_DEFAULT_PORT: c_uint = 1 << 1;
+    pub const CURLU_DEFAULT_SCHEME: c_uint = 1 << 2;
+    pub const CURLU_NON_SUPPORT_SCHEME: c_uint = 1 << 3;
+    pub const CURLU_PATH_AS_IS: c_uint = 1 << 4;
+    pub const CURLU_DISALLOW_USER: c_uint = 1 << 5;
+    pub const CURLU_URLDECODE: c_uint = 1 << 6;
+    pub const CURLU_URLENCODE: c_uint = 1 << 7;
+    pub const CURLU_APPENDQUERY: c_uint = 1 << 8;
+    pub const CURLU_GUESS_SCHEME: c_uint = 1 << 9;
+    pub const CURLU_NO_AUTHORITY: c_uint = 1 << 10;
+    pub const CURLU_ALLOW_SPACE: c_uint = 1 << 11;
+    pub const CURLU_PUNYCODE: c_uint = 1 << 12;
+    pub const CURLU_PUNY2IDN: c_uint = 1 << 13;
+    pub const CURLU_GET_EMPTY: c_uint = 1 << 14;
+    pub const CURLU_NO_GUESS_SCHEME: c_uint = 1 << 15;
+
+    pub enum CURLU {}
+
+    extern "C" {
+        pub fn curl_url() -> *mut CURLU;
+        pub fn curl_url_cleanup(handle: *mut CURLU);
+        pub fn curl_url_dup(in_: *const CURLU) -> *mut CURLU;
+        pub fn curl_url_get(
+            handle: *const CURLU,
+            what: CURLUPart,
+            part: *mut *mut c_char,
+            flags: c_uint,
+        ) -> CURLUcode;
+        pub fn curl_url_set(
+            handle: *mut CURLU,
+            what: CURLUPart,
+            part: *const c_char,
+            flags: c_uint,
+        ) -> CURLUcode;
+        // Added in 7.80.0
+        // pub fn curl_url_strerror(code: CURLUCode) -> *const c_char;
+    }
+}
+#[cfg(feature = "url")]
+pub use url::*;
+
 pub fn rust_crate_version() -> &'static str {
     env!("CARGO_PKG_VERSION")
 }

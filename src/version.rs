@@ -203,7 +203,7 @@ impl Version {
 
     /// Returns an iterator over the list of protocols that this build of
     /// libcurl supports.
-    pub fn protocols(&self) -> Protocols {
+    pub fn protocols(&self) -> Protocols<'_> {
         unsafe {
             Protocols {
                 _inner: self,

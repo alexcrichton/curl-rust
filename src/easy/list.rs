@@ -46,7 +46,7 @@ impl List {
     }
 
     /// Returns an iterator over the nodes in this list.
-    pub fn iter(&self) -> Iter {
+    pub fn iter(&self) -> Iter<'_> {
         Iter {
             _me: self,
             cur: self.raw,

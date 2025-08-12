@@ -108,7 +108,7 @@ fn main() {
             .replace("@LIBCURL_LIBS@", "")
             .replace("@SUPPORT_FEATURES@", "")
             .replace("@SUPPORT_PROTOCOLS@", "")
-            .replace("@CURLVERSION@", "8.14.1"),
+            .replace("@CURLVERSION@", "8.15.0"),
     )
     .unwrap();
 
@@ -162,11 +162,13 @@ fn main() {
         .file("curl/lib/curl_trc.c")
         .file("curl/lib/curlx/base64.c")
         .file("curl/lib/curlx/dynbuf.c")
+        .file("curl/lib/curlx/inet_ntop.c")
         .file("curl/lib/curlx/inet_pton.c")
         .file("curl/lib/curlx/nonblock.c")
         .file("curl/lib/curlx/strparse.c")
         .file("curl/lib/curlx/timediff.c")
         .file("curl/lib/curlx/timeval.c")
+        .file("curl/lib/curlx/wait.c")
         .file("curl/lib/curlx/warnless.c")
         .file("curl/lib/cw-out.c")
         .file("curl/lib/cw-pause.c")
@@ -194,7 +196,6 @@ fn main() {
         .file("curl/lib/http_proxy.c")
         .file("curl/lib/idn.c")
         .file("curl/lib/if2ip.c")
-        .file("curl/lib/inet_ntop.c")
         .file("curl/lib/llist.c")
         .file("curl/lib/macos.c")
         .file("curl/lib/md5.c")
@@ -333,23 +334,12 @@ fn main() {
                 .file("curl/lib/http_negotiate.c")
                 .file("curl/lib/curl_sspi.c")
                 .file("curl/lib/socks_sspi.c")
+                .file("curl/lib/vauth/krb5_sspi.c")
                 .file("curl/lib/vauth/spnego_sspi.c")
                 .file("curl/lib/vauth/vauth.c")
                 .file("curl/lib/vtls/schannel.c")
                 .file("curl/lib/vtls/schannel_verify.c")
                 .file("curl/lib/vtls/x509asn1.c");
-        } else if target.contains("-apple-") {
-            cfg.define("USE_SECTRANSP", None)
-                .file("curl/lib/vtls/cipher_suite.c")
-                .file("curl/lib/vtls/sectransp.c")
-                .file("curl/lib/vtls/x509asn1.c");
-            if xcode_major_version().map_or(true, |v| v >= 9) {
-                // On earlier Xcode versions (<9), defining HAVE_BUILTIN_AVAILABLE
-                // would cause __bultin_available() to fail to compile due to
-                // unrecognized platform names, so we try to check for Xcode
-                // version first (if unknown, assume it's recent, as in >= 9).
-                cfg.define("HAVE_BUILTIN_AVAILABLE", "1");
-            }
         } else {
             cfg.define("USE_OPENSSL", None)
                 .file("curl/lib/vtls/openssl.c");
@@ -560,24 +550,6 @@ fn try_pkg_config() -> bool {
         println!("cargo:include={}", path.display());
     }
     true
-}
-
-fn xcode_major_version() -> Option<u8> {
-    let status = Command::new("xcode-select").arg("-p").status().ok()?;
-    if status.success() {
-        let output = Command::new("xcodebuild").arg("-version").output().ok()?;
-        if output.status.success() {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            println!("xcode version: {}", stdout);
-            let mut words = stdout.split_whitespace();
-            if words.next()? == "Xcode" {
-                let version = words.next()?;
-                return version[..version.find('.')?].parse().ok();
-            }
-        }
-    }
-    println!("unable to determine Xcode version, assuming >= 9");
-    None
 }
 
 fn curl_config_reports_http2() -> bool {

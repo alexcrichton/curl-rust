@@ -1,6 +1,6 @@
 [package]
 name = "curl"
-version = "0.4.48"
+version = "0.4.49"
 authors = ["Alex Crichton <alex@alexcrichton.com>"]
 license = "MIT"
 repository = "https://github.com/alexcrichton/curl-rust"
@@ -14,11 +14,11 @@ edition = "2018"
 
 [dependencies]
 libc = "0.2.42"
-curl-sys = { path = "curl-sys", version = "0.4.77", default-features = false }
+curl-sys = { path = "curl-sys", version = "0.4.83", default-features = false }
 socket2 = "0.6.0"
 
 # Unix platforms use OpenSSL for now to provide SSL functionality
-[target.'cfg(all(unix, not(target_os = "macos")))'.dependencies]
+[target.'cfg(all(unix))'.dependencies]
 openssl-sys = { version = "0.9.64", optional = true }
 openssl-probe = { version = "0.1.2", optional = true }
 

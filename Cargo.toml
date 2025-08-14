@@ -27,9 +27,8 @@ schannel = "0.1.13"
 windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_System_LibraryLoader", "Win32_Security_Cryptography"] }
 
 [dev-dependencies]
-mio = "0.6"
-mio-extras = "2.0.3"
 anyhow = "1.0.31"
+tokio = { version = "1", features = ["rt", "sync", "time"] }
 
 [workspace]
 members = ["systest"]

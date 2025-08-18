@@ -10,7 +10,7 @@
 mod form;
 mod handle;
 mod handler;
-mod list;
+pub(crate) mod list;
 mod windows;
 
 pub use self::form::{Form, Part};

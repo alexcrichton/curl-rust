@@ -13,6 +13,8 @@ use crate::easy::handler::{Auth, NetRc, PostRedirections, ProxyType, SslOpt};
 use crate::easy::handler::{HttpVersion, IpResolve, SslVersion, TimeCondition};
 use crate::easy::{Easy2, Handler};
 use crate::easy::{Form, List};
+#[cfg(feature = "mime")]
+use crate::mime::Mime;
 use crate::Error;
 
 /// Raw bindings to a libcurl "easy session".
@@ -1458,6 +1460,12 @@ impl Easy {
     /// Same as [`Easy2::send`](struct.Easy2.html#method.send)
     pub fn send(&mut self, data: &[u8]) -> Result<usize, Error> {
         self.inner.send(data)
+    }
+
+    /// Same as [`Easy2::new_mime`](struct.Easy2.html#method.mime)
+    #[cfg(feature = "mime")]
+    pub fn new_mime(&mut self) -> Mime<EasyData> {
+        self.inner.new_mime()
     }
 
     /// Same as [`Easy2::raw`](struct.Easy2.html#method.raw)

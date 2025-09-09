@@ -51,17 +51,6 @@ fn main() {
             .status();
     }
 
-    if target.contains("apple") {
-        // On (older) OSX we need to link against the clang runtime,
-        // which is hidden in some non-default path.
-        //
-        // More details at https://github.com/alexcrichton/curl-rust/issues/279.
-        if let Some(path) = macos_link_search_path() {
-            println!("cargo:rustc-link-lib=clang_rt.osx");
-            println!("cargo:rustc-link-search={}", path);
-        }
-    }
-
     let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
     let include = dst.join("include");
     let build = dst.join("build");
@@ -408,7 +397,10 @@ fn main() {
 
         if target.contains("-apple-") {
             cfg.define("__APPLE__", None)
-                .define("HAVE_MACH_ABSOLUTE_TIME", None);
+                .define("HAVE_MACH_ABSOLUTE_TIME", None)
+                // Rust's `std` provides the necessary symbols since:
+                // https://github.com/rust-lang/rust/pull/138944
+                .define("HAVE_BUILTIN_AVAILABLE", None);
         } else {
             cfg.define("HAVE_CLOCK_GETTIME_MONOTONIC", None)
                 .define("HAVE_GETTIMEOFDAY", None)
@@ -575,32 +567,4 @@ fn curl_config_reports_http2() -> bool {
     }
 
     true
-}
-
-fn macos_link_search_path() -> Option<String> {
-    let output = cc::Build::new()
-        .get_compiler()
-        .to_command()
-        .arg("--print-search-dirs")
-        .output()
-        .ok()?;
-    if !output.status.success() {
-        println!(
-            "failed to run 'clang --print-search-dirs', continuing without a link search path"
-        );
-        return None;
-    }
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    for line in stdout.lines() {
-        if line.contains("libraries: =") {
-            let path = line.split('=').nth(1)?;
-            if !path.is_empty() {
-                return Some(format!("{}/lib/darwin", path));
-            }
-        }
-    }
-
-    println!("failed to determine link search path, continuing without it");
-    None
 }

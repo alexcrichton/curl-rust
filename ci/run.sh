@@ -2,6 +2,15 @@
 
 set -ex
 
+# On macOS, test with the deployment target set to Rust's minimum:
+# https://doc.rust-lang.org/rustc/platform-support/apple-darwin.html#os-version
+if [ "$TARGET" = "x86_64-apple-darwin" ]; then
+  export MACOSX_DEPLOYMENT_TARGET=10.12
+fi
+if [ "$TARGET" = "aarch64-apple-darwin" ]; then
+  export MACOSX_DEPLOYMENT_TARGET=11.0
+fi
+
 # For musl on CI always use openssl-src dependency and build from there.
 if [ "$TARGET" = "x86_64-unknown-linux-musl" ]; then
   features="--features static-ssl"

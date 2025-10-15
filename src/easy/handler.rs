@@ -43,7 +43,7 @@ use crate::Error;
 ///
 /// let mut easy = Easy2::new(Collector(Vec::new()));
 /// easy.get(true).unwrap();
-/// easy.url("https://www.rust-lang.org/").unwrap();
+/// easy.url("https://rust-lang.org/").unwrap();
 /// easy.perform().unwrap();
 ///
 /// assert_eq!(easy.response_code().unwrap(), 200);
@@ -368,7 +368,7 @@ pub fn ssl_ctx(cx: *mut c_void) -> Result<(), Error> {
 ///
 /// let mut easy = Easy2::new(Collector(Vec::new()));
 /// easy.get(true).unwrap();
-/// easy.url("https://www.rust-lang.org/").unwrap();
+/// easy.url("https://rust-lang.org/").unwrap();
 /// easy.perform().unwrap();
 ///
 /// assert_eq!(easy.response_code().unwrap(), 200);

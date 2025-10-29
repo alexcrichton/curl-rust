@@ -1514,6 +1514,16 @@ impl<H> Easy2<H> {
         self.setopt_ptr(curl_sys::CURLOPT_COPYPOSTFIELDS, data.as_ptr() as *const _)
     }
 
+    /// Configures the data that will be uploaded as part of a POST.
+    ///
+    /// By default this option is not set and corresponds to
+    /// `CURLOPT_POSTFIELDS`.
+    pub fn post_fields(&mut self, data: &'static [u8]) -> Result<(), Error> {
+        // Set the length before the pointer so libcurl knows how much to read
+        self.post_field_size(data.len() as u64)?;
+        self.setopt_ptr(curl_sys::CURLOPT_POSTFIELDS, data.as_ptr() as *const _)
+    }
+
     /// Configures the size of data that's going to be uploaded as part of a
     /// POST operation.
     ///
@@ -3394,7 +3404,11 @@ impl<H> Easy2<H> {
         self.setopt_ptr(opt, val.as_ptr())
     }
 
-    fn setopt_ptr(&self, opt: curl_sys::CURLoption, val: *const c_char) -> Result<(), Error> {
+    pub(crate) fn setopt_ptr(
+        &self,
+        opt: curl_sys::CURLoption,
+        val: *const c_char,
+    ) -> Result<(), Error> {
         unsafe { self.cvt(curl_sys::curl_easy_setopt(self.inner.handle, opt, val)) }
     }
 

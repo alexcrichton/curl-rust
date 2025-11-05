@@ -244,8 +244,7 @@ fn main() {
         .warnings(false);
 
     if cfg!(feature = "ntlm") {
-        cfg.file("curl/lib/curl_des.c")
-            .file("curl/lib/curl_endian.c")
+        cfg.file("curl/lib/curl_endian.c")
             .file("curl/lib/curl_gethostname.c")
             .file("curl/lib/curl_ntlm_core.c")
             .file("curl/lib/http_ntlm.c")

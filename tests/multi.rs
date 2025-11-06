@@ -161,6 +161,9 @@ fn upload_lots() {
                         let evented = mio::unix::EventedFd(&socket);
                         if events.remove() {
                             token_map.remove(&token).unwrap();
+                            if token_map.contains_key(&token) {
+                                t!(poll.deregister(&evented));
+                            }
                         } else {
                             let mut e = mio::Ready::empty();
                             if events.input() {

@@ -160,7 +160,13 @@ fn upload_lots() {
                     Ok(Message::Wait(socket, events, token)) => {
                         let evented = mio::unix::EventedFd(&socket);
                         if events.remove() {
+                            println!("REMOVE: {socket} / {token} / {events:?}");
                             token_map.remove(&token).unwrap();
+                            // Looks like older curl might close the fd before
+                            // sending this event, while newer curl sends this
+                            // event before closing the fd. Ignore the error for
+                            // now.
+                            let _ = poll.deregister(&evented);
                         } else {
                             let mut e = mio::Ready::empty();
                             if events.input() {
@@ -171,6 +177,7 @@ fn upload_lots() {
                             }
                             if token == 0 {
                                 let token = next_token;
+                                println!("ADD: {socket} / {token} / {e:?}");
                                 next_token += 1;
                                 t!(m.assign(socket, token));
                                 token_map.insert(token, socket);
@@ -181,6 +188,7 @@ fn upload_lots() {
                                     mio::PollOpt::level()
                                 ));
                             } else {
+                                println!("ADJUST: {socket} / {token} / {e:?}");
                                 t!(poll.reregister(
                                     &evented,
                                     mio::Token(token),

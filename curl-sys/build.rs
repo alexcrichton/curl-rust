@@ -97,7 +97,7 @@ fn main() {
             .replace("@LIBCURL_LIBS@", "")
             .replace("@SUPPORT_FEATURES@", "")
             .replace("@SUPPORT_PROTOCOLS@", "")
-            .replace("@CURLVERSION@", "8.15.0"),
+            .replace("@CURLVERSION@", "8.17.0"),
     )
     .unwrap();
 
@@ -135,6 +135,7 @@ fn main() {
         .file("curl/lib/cf-h1-proxy.c")
         .file("curl/lib/cf-haproxy.c")
         .file("curl/lib/cf-https-connect.c")
+        .file("curl/lib/cf-ip-happy.c")
         .file("curl/lib/cf-socket.c")
         .file("curl/lib/cfilters.c")
         .file("curl/lib/conncache.c")
@@ -143,6 +144,7 @@ fn main() {
         .file("curl/lib/cookie.c")
         .file("curl/lib/cshutdn.c")
         .file("curl/lib/curl_addrinfo.c")
+        .file("curl/lib/curl_fopen.c")
         .file("curl/lib/curl_get_line.c")
         .file("curl/lib/curl_memrchr.c")
         .file("curl/lib/curl_range.c")
@@ -151,9 +153,11 @@ fn main() {
         .file("curl/lib/curl_trc.c")
         .file("curl/lib/curlx/base64.c")
         .file("curl/lib/curlx/dynbuf.c")
+        .file("curl/lib/curlx/fopen.c")
         .file("curl/lib/curlx/inet_ntop.c")
         .file("curl/lib/curlx/inet_pton.c")
         .file("curl/lib/curlx/nonblock.c")
+        .file("curl/lib/curlx/strerr.c")
         .file("curl/lib/curlx/strparse.c")
         .file("curl/lib/curlx/timediff.c")
         .file("curl/lib/curlx/timeval.c")
@@ -167,7 +171,6 @@ fn main() {
         .file("curl/lib/escape.c")
         .file("curl/lib/file.c")
         .file("curl/lib/fileinfo.c")
-        .file("curl/lib/fopen.c")
         .file("curl/lib/formdata.c")
         .file("curl/lib/getenv.c")
         .file("curl/lib/getinfo.c")
@@ -193,6 +196,7 @@ fn main() {
         .file("curl/lib/mqtt.c")
         .file("curl/lib/multi.c")
         .file("curl/lib/multi_ev.c")
+        .file("curl/lib/multi_ntfy.c")
         .file("curl/lib/netrc.c")
         .file("curl/lib/noproxy.c")
         .file("curl/lib/parsedate.c")
@@ -224,7 +228,6 @@ fn main() {
         .file("curl/lib/vauth/digest.c")
         .file("curl/lib/vauth/vauth.c")
         .file("curl/lib/version.c")
-        .file("curl/lib/vquic/curl_msh3.c")
         .file("curl/lib/vquic/curl_ngtcp2.c")
         .file("curl/lib/vquic/curl_osslq.c")
         .file("curl/lib/vquic/curl_quiche.c")
@@ -241,8 +244,7 @@ fn main() {
         .warnings(false);
 
     if cfg!(feature = "ntlm") {
-        cfg.file("curl/lib/curl_des.c")
-            .file("curl/lib/curl_endian.c")
+        cfg.file("curl/lib/curl_endian.c")
             .file("curl/lib/curl_gethostname.c")
             .file("curl/lib/curl_ntlm_core.c")
             .file("curl/lib/http_ntlm.c")

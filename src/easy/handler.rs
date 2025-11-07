@@ -14,6 +14,8 @@ use socket2::Socket;
 
 use crate::easy::form;
 use crate::easy::list;
+#[cfg(feature = "mime")]
+use crate::easy::mime::{Mime, MimeHandle};
 use crate::easy::windows;
 use crate::easy::{Form, List};
 use crate::panic;
@@ -387,6 +389,9 @@ struct Inner<H> {
     form: Option<Form>,
     error_buf: RefCell<Vec<u8>>,
     handler: H,
+    #[cfg(feature = "mime")]
+    /// [MimeHandle] object to drop when it's safe
+    mime: Option<MimeHandle>,
 }
 
 unsafe impl<H: Send> Send for Inner<H> {}
@@ -597,6 +602,8 @@ impl<H: Handler> Easy2<H> {
                     form: None,
                     error_buf: RefCell::new(vec![0; curl_sys::CURL_ERROR_SIZE]),
                     handler,
+                    #[cfg(feature = "mime")]
+                    mime: Default::default(),
                 }),
             };
             ret.default_configure();
@@ -3502,6 +3509,27 @@ impl<H> Easy2<H> {
             err.set_extra(msg);
         }
         Err(err)
+    }
+}
+
+#[cfg(feature = "mime")]
+impl<H> Easy2<H> {
+    /// Create a mime handle attached to this [Easy2] instance.
+    pub fn add_mime(&mut self) -> Mime<H> {
+        Mime::new(self)
+    }
+
+    pub(super) fn mimepost(&mut self, mime: MimeHandle) -> Result<(), Error> {
+        assert!(self.inner.mime.is_none());
+
+        let rc =
+            unsafe { curl_sys::curl_easy_setopt(self.raw(), curl_sys::CURLOPT_MIMEPOST, mime.0) };
+
+        if rc == curl_sys::CURLE_OK {
+            self.inner.mime = Some(mime);
+        }
+
+        self.cvt(rc)
     }
 }
 

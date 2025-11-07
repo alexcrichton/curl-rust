@@ -11,6 +11,8 @@ mod form;
 mod handle;
 mod handler;
 mod list;
+#[cfg(feature = "mime")]
+mod mime;
 mod windows;
 
 pub use self::form::{Form, Part};

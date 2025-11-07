@@ -13,6 +13,7 @@ use crate::easy::handler::{Auth, NetRc, PostRedirections, ProxyType, SslOpt};
 use crate::easy::handler::{HttpVersion, IpResolve, SslVersion, TimeCondition};
 use crate::easy::{Easy2, Handler};
 use crate::easy::{Form, List};
+use crate::easy::{WriteContext, WriteContext2};
 use crate::Error;
 
 /// Raw bindings to a libcurl "easy session".
@@ -105,6 +106,8 @@ unsafe impl Send for EasyData {}
 #[derive(Default)]
 struct Callbacks<'a> {
     write: Option<Box<dyn FnMut(&[u8]) -> Result<usize, WriteError> + 'a>>,
+    write_context:
+        Option<Box<dyn FnMut(&[u8], &mut WriteContext) -> Result<usize, WriteError> + 'a>>,
     read: Option<Box<dyn FnMut(&mut [u8]) -> Result<usize, ReadError> + 'a>>,
     seek: Option<Box<dyn FnMut(SeekFrom) -> SeekResult + 'a>>,
     debug: Option<Box<dyn FnMut(InfoType, &[u8]) + 'a>>,
@@ -248,6 +251,15 @@ impl Easy {
         F: FnMut(&[u8]) -> Result<usize, WriteError> + Send + 'static,
     {
         self.inner.get_mut().owned.write = Some(Box::new(f));
+        Ok(())
+    }
+
+    /// Same as [`Easy::write_function`] but with access to the [`WriteContext`].
+    pub fn write_function_with_context<F>(&mut self, f: F) -> Result<(), Error>
+    where
+        F: FnMut(&[u8], &mut WriteContext) -> Result<usize, WriteError> + Send + 'static,
+    {
+        self.inner.get_mut().owned.write_context = Some(Box::new(f));
         Ok(())
     }
 
@@ -1515,6 +1527,22 @@ impl Handler for EasyData {
         }
     }
 
+    fn write_context(
+        &mut self,
+        data: &[u8],
+        ctx: &mut WriteContext2<Self>,
+    ) -> Result<usize, WriteError> {
+        unsafe {
+            match self.callback(|s| &mut s.write_context) {
+                Some(write) => write(data, WriteContext::from_mut(ctx)),
+                None => match self.callback(|s| &mut s.write) {
+                    Some(write) => write(data),
+                    None => Ok(data.len()),
+                },
+            }
+        }
+    }
+
     fn read(&mut self, data: &mut [u8]) -> Result<usize, ReadError> {
         unsafe {
             match self.callback(|s| &mut s.read) {
@@ -1584,6 +1612,16 @@ impl<'easy, 'data> Transfer<'easy, 'data> {
         F: FnMut(&[u8]) -> Result<usize, WriteError> + 'data,
     {
         self.data.write = Some(Box::new(f));
+        Ok(())
+    }
+
+    /// Same as `Easy::write_context_function`, just takes a non `'static`
+    /// lifetime corresponding to the lifetime of this transfer.
+    pub fn write_context_function<F>(&mut self, f: F) -> Result<(), Error>
+    where
+        F: FnMut(&[u8], &mut WriteContext) -> Result<usize, WriteError> + 'data,
+    {
+        self.data.write_context = Some(Box::new(f));
         Ok(())
     }
 

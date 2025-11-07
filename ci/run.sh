@@ -38,6 +38,7 @@ if [ -z "$NO_RUN" ]; then
     cargo test --target $TARGET $features
     cargo test --target $TARGET --features static-curl $features
     cargo test --target $TARGET --features static-curl,protocol-ftp $features
+    cargo test --target $TARGET --features static-curl,mime $features
     cargo test --target $TARGET --features static-curl,http2 $features
 
     # Note that `-Clink-dead-code` is passed here to suppress `--gc-sections` to

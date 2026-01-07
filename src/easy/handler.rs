@@ -1056,6 +1056,23 @@ impl<H> Easy2<H> {
         self.setopt_long(curl_sys::CURLOPT_HTTPPROXYTUNNEL, tunnel as c_long)
     }
 
+    /// Suppress proxy CONNECT response headers from user callbacks.
+    ///
+    /// When `http_proxy_tunnel` is used and a CONNECT request is made,
+    /// this option can suppress the proxy CONNECT response headers from
+    /// the `header_function` and `write_function` callbacks.
+    ///
+    /// Proxy CONNECT response headers can complicate header processing
+    /// since it is essentially a separate set of headers. Enabling this
+    /// option suppresses those headers so that only the headers from the
+    /// actual response are passed to the callbacks.
+    ///
+    /// By default this option is `false` and corresponds to
+    /// `CURLOPT_SUPPRESS_CONNECT_HEADERS`.
+    pub fn suppress_connect_headers(&mut self, enable: bool) -> Result<(), Error> {
+        self.setopt_long(curl_sys::CURLOPT_SUPPRESS_CONNECT_HEADERS, enable as c_long)
+    }
+
     /// Tell curl which interface to bind to for an outgoing network interface.
     ///
     /// The interface name, IP address, or host name can be specified here.

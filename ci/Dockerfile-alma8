@@ -1,7 +1,0 @@
-FROM almalinux:8
-
-RUN dnf update -y
-RUN dnf install -y \
-  gcc ca-certificates make \
-  openssl-devel \
-  pkgconfig

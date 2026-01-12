@@ -1,0 +1,40 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Rust bindings to the libcurl C library"><title>curl - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-ca0dd0c4.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="curl" data-themes="" data-resource-suffix="" data-rustdoc-version="1.92.0 (ded5c06cf 2025-12-08)" data-channel="1.92.0" data-search-js="search-d69d8955.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../static.files/storage-e2aeef58.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-ce535bd0.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">Crate curl</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../curl/index.html">curl</a><span class="version">0.4.49</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#the-easy-api" title="The “Easy” API">The “Easy” API</a></li><li><a href="#what-about-multiple-concurrent-http-requests" title="What about multiple concurrent HTTP requests?">What about multiple concurrent HTTP requests?</a></li><li><a href="#where-does-libcurl-come-from" title="Where does libcurl come from?">Where does libcurl come from?</a></li><li><a href="#initialization" title="Initialization">Initialization</a></li></ul><h3><a href="#modules">Crate Items</a></h3><ul class="block"><li><a href="#modules" title="Modules">Modules</a></li><li><a href="#structs" title="Structs">Structs</a></li><li><a href="#functions" title="Functions">Functions</a></li></ul></section><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content"><div class="main-heading"><h1>Crate <span>curl</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/curl/lib.rs.html#1-184">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Rust bindings to the libcurl C library</p>
+<p>This crate contains bindings for an HTTP/HTTPS client which is powered by
+<a href="https://curl.haxx.se/libcurl/">libcurl</a>, the same library behind the <code>curl</code> command line tool. The API
+currently closely matches that of libcurl itself, except that a Rustic layer
+of safety is applied on top.</p>
+<h2 id="the-easy-api"><a class="doc-anchor" href="#the-easy-api">§</a>The “Easy” API</h2>
+<p>The easiest way to send a request is to use the <code>Easy</code> api which corresponds
+to <code>CURL</code> in libcurl. This handle supports a wide variety of options and can
+be used to make a single blocking request in a thread. Callbacks can be
+specified to deal with data as it arrives and a handle can be reused to
+cache connections and such.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::io::{stdout, Write};
+
+<span class="kw">use </span>curl::easy::Easy;
+
+<span class="comment">// Write the contents of rust-lang.org to stdout
+</span><span class="kw">let </span><span class="kw-2">mut </span>easy = Easy::new();
+easy.url(<span class="string">"https://www.rust-lang.org/"</span>).unwrap();
+easy.write_function(|data| {
+    stdout().write_all(data).unwrap();
+    <span class="prelude-val">Ok</span>(data.len())
+}).unwrap();
+easy.perform().unwrap();</code></pre></div><h2 id="what-about-multiple-concurrent-http-requests"><a class="doc-anchor" href="#what-about-multiple-concurrent-http-requests">§</a>What about multiple concurrent HTTP requests?</h2>
+<p>One option you have currently is to send multiple requests in multiple
+threads, but otherwise libcurl has a “multi” interface for doing this
+operation. Initial bindings of this interface can be found in the <code>multi</code>
+module, but feedback is welcome!</p>
+<h2 id="where-does-libcurl-come-from"><a class="doc-anchor" href="#where-does-libcurl-come-from">§</a>Where does libcurl come from?</h2>
+<p>This crate links to the <code>curl-sys</code> crate which is in turn responsible for
+acquiring and linking to the libcurl library. Currently this crate will
+build libcurl from source if one is not already detected on the system.</p>
+<p>There is a large number of releases for libcurl, all with different sets of
+capabilities. Robust programs may wish to inspect <code>Version::get()</code> to test
+what features are implemented in the linked build of libcurl at runtime.</p>
+<h2 id="initialization"><a class="doc-anchor" href="#initialization">§</a>Initialization</h2>
+<p>The underlying libcurl library must be initialized before use and has
+certain requirements on how this is done. Check the documentation for
+<a href="fn.init.html" title="fn curl::init"><code>init</code></a> for more details.</p>
+</div></details><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><dl class="item-table"><dt><a class="mod" href="easy/index.html" title="mod curl::easy">easy</a></dt><dd>Bindings to the “easy” libcurl API.</dd><dt><a class="mod" href="multi/index.html" title="mod curl::multi">multi</a></dt><dd>Multi - initiating multiple requests simultaneously</dd></dl><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><dl class="item-table"><dt><a class="struct" href="struct.Error.html" title="struct curl::Error">Error</a></dt><dd>An error returned from various “easy” operations.</dd><dt><a class="struct" href="struct.FormError.html" title="struct curl::FormError">Form<wbr>Error</a></dt><dd>An error from “form add” operations.</dd><dt><a class="struct" href="struct.MultiError.html" title="struct curl::MultiError">Multi<wbr>Error</a></dt><dd>An error from “multi” operations.</dd><dt><a class="struct" href="struct.Protocols.html" title="struct curl::Protocols">Protocols</a></dt><dd>An iterator over the list of protocols a version supports.</dd><dt><a class="struct" href="struct.ShareError.html" title="struct curl::ShareError">Share<wbr>Error</a></dt><dd>An error returned from “share” operations.</dd><dt><a class="struct" href="struct.Version.html" title="struct curl::Version">Version</a></dt><dd>Version information about libcurl and the capabilities that it supports.</dd></dl><h2 id="functions" class="section-header">Functions<a href="#functions" class="anchor">§</a></h2><dl class="item-table"><dt><a class="fn" href="fn.init.html" title="fn curl::init">init</a></dt><dd>Initializes the underlying libcurl library.</dd></dl></section></div></main></body></html>

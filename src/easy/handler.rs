@@ -16,6 +16,8 @@ use crate::easy::form;
 use crate::easy::list;
 use crate::easy::windows;
 use crate::easy::{Form, List};
+#[cfg(feature = "mime")]
+use crate::mime::{Mime, MimeHandle};
 use crate::panic;
 use crate::Error;
 
@@ -385,6 +387,8 @@ struct Inner<H> {
     resolve_list: Option<List>,
     connect_to_list: Option<List>,
     form: Option<Form>,
+    #[cfg(feature = "mime")]
+    mime: Option<MimeHandle>,
     error_buf: RefCell<Vec<u8>>,
     handler: H,
 }
@@ -595,6 +599,8 @@ impl<H: Handler> Easy2<H> {
                     resolve_list: None,
                     connect_to_list: None,
                     form: None,
+                    #[cfg(feature = "mime")]
+                    mime: None,
                     error_buf: RefCell::new(vec![0; curl_sys::CURL_ERROR_SIZE]),
                     handler,
                 }),
@@ -3366,6 +3372,45 @@ impl<H> Easy2<H> {
         }
     }
 
+    /// Create a new MIME handle from this easy handle.
+    ///
+    /// With the returned [`Mime`] handle, you can add some parts and attach it to the
+    /// easy handle using [`Mime::post`].
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use curl::easy::{Easy, List};
+    ///
+    /// let mut handle = Easy::new();
+    /// let mime = handle.new_mime();
+    ///
+    /// let mut part = mime.add_part();
+    /// part.name("key1").unwrap();
+    /// part.data(b"value1").unwrap();
+    /// let mut part = mime.add_part();
+    /// part.name("key2").unwrap();
+    /// part.data(b"value2").unwrap();
+    ///
+    /// mime.post().unwrap();
+    ///
+    /// handle.url("https://httpbin.dev/post").unwrap();
+    /// handle.perform().unwrap();
+    /// ```
+    #[cfg(feature = "mime")]
+    pub fn new_mime(&mut self) -> Mime<H> {
+        Mime::new(self)
+    }
+
+    #[cfg(feature = "mime")]
+    pub(crate) fn set_mime(&mut self, mime: MimeHandle) -> Result<(), Error> {
+        let code =
+            unsafe { curl_sys::curl_easy_setopt(self.raw(), curl_sys::CURLOPT_MIMEPOST, mime.0) };
+        self.cvt(code)?;
+        self.inner.mime = Some(mime);
+        Ok(())
+    }
+
     /// Get a pointer to the raw underlying CURL handle.
     pub fn raw(&self) -> *mut curl_sys::CURL {
         self.inner.handle
@@ -3493,7 +3538,7 @@ impl<H> Easy2<H> {
         Some(msg)
     }
 
-    fn cvt(&self, rc: curl_sys::CURLcode) -> Result<(), Error> {
+    pub(crate) fn cvt(&self, rc: curl_sys::CURLcode) -> Result<(), Error> {
         if rc == curl_sys::CURLE_OK {
             return Ok(());
         }

@@ -519,6 +519,7 @@ fn try_vcpkg() -> bool {
 
 fn try_pkg_config() -> bool {
     let mut cfg = pkg_config::Config::new();
+    cfg.print_system_libs(false);
     cfg.cargo_metadata(false);
     let lib = match cfg.probe("libcurl") {
         Ok(lib) => lib,
@@ -540,7 +541,10 @@ fn try_pkg_config() -> bool {
 
     // Re-find the library to print cargo's metadata, then print some extra
     // metadata as well.
-    cfg.cargo_metadata(true).probe("libcurl").unwrap();
+    cfg.print_system_libs(false)
+        .cargo_metadata(true)
+        .probe("libcurl")
+        .unwrap();
     for path in lib.include_paths.iter() {
         println!("cargo:include={}", path.display());
     }

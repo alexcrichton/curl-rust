@@ -459,13 +459,13 @@ fn main() {
     }
 }
 
-#[cfg(not(target_env = "msvc"))]
 fn try_vcpkg() -> bool {
-    false
-}
+    if vcpkg::find_package("curl").is_ok() {
+        // find_package pulls in all depenedencies as needed, so there's no need
+        // for the other logic here.
+        return true;
+    }
 
-#[cfg(target_env = "msvc")]
-fn try_vcpkg() -> bool {
     // the import library for the dll is called libcurl_imp
     let mut successful_probe_details = match vcpkg::Config::new()
         .lib_names("libcurl_imp", "libcurl")

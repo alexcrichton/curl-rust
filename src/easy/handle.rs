@@ -1213,142 +1213,142 @@ impl Easy {
     // getters
 
     /// Same as [`Easy2::time_condition_unmet`](struct.Easy2.html#method.time_condition_unmet)
-    pub fn time_condition_unmet(&mut self) -> Result<bool, Error> {
+    pub fn time_condition_unmet(&self) -> Result<bool, Error> {
         self.inner.time_condition_unmet()
     }
 
     /// Same as [`Easy2::effective_url`](struct.Easy2.html#method.effective_url)
-    pub fn effective_url(&mut self) -> Result<Option<&str>, Error> {
+    pub fn effective_url(&self) -> Result<Option<&str>, Error> {
         self.inner.effective_url()
     }
 
     /// Same as [`Easy2::effective_url_bytes`](struct.Easy2.html#method.effective_url_bytes)
-    pub fn effective_url_bytes(&mut self) -> Result<Option<&[u8]>, Error> {
+    pub fn effective_url_bytes(&self) -> Result<Option<&[u8]>, Error> {
         self.inner.effective_url_bytes()
     }
 
     /// Same as [`Easy2::response_code`](struct.Easy2.html#method.response_code)
-    pub fn response_code(&mut self) -> Result<u32, Error> {
+    pub fn response_code(&self) -> Result<u32, Error> {
         self.inner.response_code()
     }
 
     /// Same as [`Easy2::http_connectcode`](struct.Easy2.html#method.http_connectcode)
-    pub fn http_connectcode(&mut self) -> Result<u32, Error> {
+    pub fn http_connectcode(&self) -> Result<u32, Error> {
         self.inner.http_connectcode()
     }
 
     /// Same as [`Easy2::filetime`](struct.Easy2.html#method.filetime)
-    pub fn filetime(&mut self) -> Result<Option<i64>, Error> {
+    pub fn filetime(&self) -> Result<Option<i64>, Error> {
         self.inner.filetime()
     }
 
     /// Same as [`Easy2::download_size`](struct.Easy2.html#method.download_size)
-    pub fn download_size(&mut self) -> Result<f64, Error> {
+    pub fn download_size(&self) -> Result<f64, Error> {
         self.inner.download_size()
     }
 
     /// Same as [`Easy2::upload_size`](struct.Easy2.html#method.upload_size)
-    pub fn upload_size(&mut self) -> Result<f64, Error> {
+    pub fn upload_size(&self) -> Result<f64, Error> {
         self.inner.upload_size()
     }
 
     /// Same as [`Easy2::content_length_download`](struct.Easy2.html#method.content_length_download)
-    pub fn content_length_download(&mut self) -> Result<f64, Error> {
+    pub fn content_length_download(&self) -> Result<f64, Error> {
         self.inner.content_length_download()
     }
 
     /// Same as [`Easy2::total_time`](struct.Easy2.html#method.total_time)
-    pub fn total_time(&mut self) -> Result<Duration, Error> {
+    pub fn total_time(&self) -> Result<Duration, Error> {
         self.inner.total_time()
     }
 
     /// Same as [`Easy2::namelookup_time`](struct.Easy2.html#method.namelookup_time)
-    pub fn namelookup_time(&mut self) -> Result<Duration, Error> {
+    pub fn namelookup_time(&self) -> Result<Duration, Error> {
         self.inner.namelookup_time()
     }
 
     /// Same as [`Easy2::connect_time`](struct.Easy2.html#method.connect_time)
-    pub fn connect_time(&mut self) -> Result<Duration, Error> {
+    pub fn connect_time(&self) -> Result<Duration, Error> {
         self.inner.connect_time()
     }
 
     /// Same as [`Easy2::appconnect_time`](struct.Easy2.html#method.appconnect_time)
-    pub fn appconnect_time(&mut self) -> Result<Duration, Error> {
+    pub fn appconnect_time(&self) -> Result<Duration, Error> {
         self.inner.appconnect_time()
     }
 
     /// Same as [`Easy2::pretransfer_time`](struct.Easy2.html#method.pretransfer_time)
-    pub fn pretransfer_time(&mut self) -> Result<Duration, Error> {
+    pub fn pretransfer_time(&self) -> Result<Duration, Error> {
         self.inner.pretransfer_time()
     }
 
     /// Same as [`Easy2::starttransfer_time`](struct.Easy2.html#method.starttransfer_time)
-    pub fn starttransfer_time(&mut self) -> Result<Duration, Error> {
+    pub fn starttransfer_time(&self) -> Result<Duration, Error> {
         self.inner.starttransfer_time()
     }
 
     /// Same as [`Easy2::redirect_time`](struct.Easy2.html#method.redirect_time)
-    pub fn redirect_time(&mut self) -> Result<Duration, Error> {
+    pub fn redirect_time(&self) -> Result<Duration, Error> {
         self.inner.redirect_time()
     }
 
     /// Same as [`Easy2::redirect_count`](struct.Easy2.html#method.redirect_count)
-    pub fn redirect_count(&mut self) -> Result<u32, Error> {
+    pub fn redirect_count(&self) -> Result<u32, Error> {
         self.inner.redirect_count()
     }
 
     /// Same as [`Easy2::redirect_url`](struct.Easy2.html#method.redirect_url)
-    pub fn redirect_url(&mut self) -> Result<Option<&str>, Error> {
+    pub fn redirect_url(&self) -> Result<Option<&str>, Error> {
         self.inner.redirect_url()
     }
 
     /// Same as [`Easy2::redirect_url_bytes`](struct.Easy2.html#method.redirect_url_bytes)
-    pub fn redirect_url_bytes(&mut self) -> Result<Option<&[u8]>, Error> {
+    pub fn redirect_url_bytes(&self) -> Result<Option<&[u8]>, Error> {
         self.inner.redirect_url_bytes()
     }
 
     /// Same as [`Easy2::header_size`](struct.Easy2.html#method.header_size)
-    pub fn header_size(&mut self) -> Result<u64, Error> {
+    pub fn header_size(&self) -> Result<u64, Error> {
         self.inner.header_size()
     }
 
     /// Same as [`Easy2::request_size`](struct.Easy2.html#method.request_size)
-    pub fn request_size(&mut self) -> Result<u64, Error> {
+    pub fn request_size(&self) -> Result<u64, Error> {
         self.inner.request_size()
     }
 
     /// Same as [`Easy2::content_type`](struct.Easy2.html#method.content_type)
-    pub fn content_type(&mut self) -> Result<Option<&str>, Error> {
+    pub fn content_type(&self) -> Result<Option<&str>, Error> {
         self.inner.content_type()
     }
 
     /// Same as [`Easy2::content_type_bytes`](struct.Easy2.html#method.content_type_bytes)
-    pub fn content_type_bytes(&mut self) -> Result<Option<&[u8]>, Error> {
+    pub fn content_type_bytes(&self) -> Result<Option<&[u8]>, Error> {
         self.inner.content_type_bytes()
     }
 
     /// Same as [`Easy2::os_errno`](struct.Easy2.html#method.os_errno)
-    pub fn os_errno(&mut self) -> Result<i32, Error> {
+    pub fn os_errno(&self) -> Result<i32, Error> {
         self.inner.os_errno()
     }
 
     /// Same as [`Easy2::primary_ip`](struct.Easy2.html#method.primary_ip)
-    pub fn primary_ip(&mut self) -> Result<Option<&str>, Error> {
+    pub fn primary_ip(&self) -> Result<Option<&str>, Error> {
         self.inner.primary_ip()
     }
 
     /// Same as [`Easy2::primary_port`](struct.Easy2.html#method.primary_port)
-    pub fn primary_port(&mut self) -> Result<u16, Error> {
+    pub fn primary_port(&self) -> Result<u16, Error> {
         self.inner.primary_port()
     }
 
     /// Same as [`Easy2::local_ip`](struct.Easy2.html#method.local_ip)
-    pub fn local_ip(&mut self) -> Result<Option<&str>, Error> {
+    pub fn local_ip(&self) -> Result<Option<&str>, Error> {
         self.inner.local_ip()
     }
 
     /// Same as [`Easy2::local_port`](struct.Easy2.html#method.local_port)
-    pub fn local_port(&mut self) -> Result<u16, Error> {
+    pub fn local_port(&self) -> Result<u16, Error> {
         self.inner.local_port()
     }
 

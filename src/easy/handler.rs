@@ -3104,6 +3104,15 @@ impl<H> Easy2<H> {
             .map(|c| c as u16)
     }
 
+    // Get number of created connections
+    ///
+    /// Corresponds to `CURLINFO_NUM_CONNECTS` and may return an error if the
+    /// option isn't supported.
+    pub fn num_connects(&self) -> Result<u64, Error> {
+        self.getopt_long(curl_sys::CURLINFO_NUM_CONNECTS)
+            .map(|c| c as u64)
+    }
+
     /// Get all known cookies
     ///
     /// Returns a linked-list of all cookies cURL knows (expired ones, too).

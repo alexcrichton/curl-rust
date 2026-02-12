@@ -1352,6 +1352,11 @@ impl Easy {
         self.inner.local_port()
     }
 
+    /// Same as [`Easy2::num_connects`](struct.Easy2.html#method.num_connects)
+    pub fn num_connects(&self) -> Result<u64, Error> {
+        self.inner.num_connects()
+    }
+
     /// Same as [`Easy2::cookies`](struct.Easy2.html#method.cookies)
     pub fn cookies(&mut self) -> Result<List, Error> {
         self.inner.cookies()

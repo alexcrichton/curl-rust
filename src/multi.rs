@@ -892,6 +892,7 @@ macro_rules! impl_easy_getters {
                 primary_port -> u16,
                 local_ip -> Option<&str>,
                 local_port -> u16,
+                num_connects -> u64,
             }
 
             get_mut {

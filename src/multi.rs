@@ -863,40 +863,47 @@ impl fmt::Debug for Multi {
 macro_rules! impl_easy_getters {
     () => {
         impl_easy_getters! {
-            time_condition_unmet -> bool,
-            effective_url -> Option<&str>,
-            effective_url_bytes -> Option<&[u8]>,
-            response_code -> u32,
-            http_connectcode -> u32,
-            filetime -> Option<i64>,
-            download_size -> f64,
-            content_length_download -> f64,
-            total_time -> Duration,
-            namelookup_time -> Duration,
-            connect_time -> Duration,
-            appconnect_time -> Duration,
-            pretransfer_time -> Duration,
-            starttransfer_time -> Duration,
-            redirect_time -> Duration,
-            redirect_count -> u32,
-            redirect_url -> Option<&str>,
-            redirect_url_bytes -> Option<&[u8]>,
-            header_size -> u64,
-            request_size -> u64,
-            content_type -> Option<&str>,
-            content_type_bytes -> Option<&[u8]>,
-            os_errno -> i32,
-            primary_ip -> Option<&str>,
-            primary_port -> u16,
-            local_ip -> Option<&str>,
-            local_port -> u16,
-            cookies -> List,
+            get {
+                time_condition_unmet -> bool,
+                effective_url -> Option<&str>,
+                effective_url_bytes -> Option<&[u8]>,
+                response_code -> u32,
+                http_connectcode -> u32,
+                filetime -> Option<i64>,
+                download_size -> f64,
+                upload_size -> f64,
+                content_length_download -> f64,
+                total_time -> Duration,
+                namelookup_time -> Duration,
+                connect_time -> Duration,
+                appconnect_time -> Duration,
+                pretransfer_time -> Duration,
+                starttransfer_time -> Duration,
+                redirect_time -> Duration,
+                redirect_count -> u32,
+                redirect_url -> Option<&str>,
+                redirect_url_bytes -> Option<&[u8]>,
+                header_size -> u64,
+                request_size -> u64,
+                content_type -> Option<&str>,
+                content_type_bytes -> Option<&[u8]>,
+                os_errno -> i32,
+                primary_ip -> Option<&str>,
+                primary_port -> u16,
+                local_ip -> Option<&str>,
+                local_port -> u16,
+                num_connects -> u64,
+            }
+
+            get_mut {
+                cookies -> List,
+            }
         }
     };
 
-    ($($name:ident -> $ret:ty,)*) => {
+    (get { $($name:ident -> $ret:ty,)* } get_mut { $($mname:ident -> $mret:ty,)* }) => {
         $(
-            impl_easy_getters!($name, $ret, concat!(
+            impl_easy_getters!(@ro $name, $ret, concat!(
                 "Same as [`Easy2::",
                 stringify!($name),
                 "`](../easy/struct.Easy2.html#method.",
@@ -904,9 +911,25 @@ macro_rules! impl_easy_getters {
                 ")."
             ));
         )*
+        $(
+            impl_easy_getters!(@mut $mname, $mret, concat!(
+                "Same as [`Easy2::",
+                stringify!($mname),
+                "`](../easy/struct.Easy2.html#method.",
+                stringify!($mname),
+                ")."
+            ));
+        )*
     };
 
-    ($name:ident, $ret:ty, $doc:expr) => {
+    (@ro $name:ident, $ret:ty, $doc:expr) => {
+        #[doc = $doc]
+        pub fn $name(&self) -> Result<$ret, Error> {
+            self.easy.$name()
+        }
+    };
+
+    (@mut $name:ident, $ret:ty, $doc:expr) => {
         #[doc = $doc]
         pub fn $name(&mut self) -> Result<$ret, Error> {
             self.easy.$name()

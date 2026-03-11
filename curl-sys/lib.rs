@@ -312,8 +312,8 @@ pub const CURLAUTH_DIGEST_IE: c_ulong = 1 << 4;
 pub const CURLAUTH_NTLM_WB: c_ulong = 1 << 5;
 pub const CURLAUTH_AWS_SIGV4: c_ulong = 1 << 7;
 // pub const CURLAUTH_ONLY: c_ulong = 1 << 31;
-pub const CURLAUTH_ANY: c_ulong = !CURLAUTH_DIGEST_IE;
-pub const CURLAUTH_ANYSAFE: c_ulong = !(CURLAUTH_BASIC | CURLAUTH_DIGEST_IE);
+pub const CURLAUTH_ANY: c_ulong = (!CURLAUTH_DIGEST_IE) & 0xffffffff;
+pub const CURLAUTH_ANYSAFE: c_ulong = (!(CURLAUTH_BASIC | CURLAUTH_DIGEST_IE)) & 0xffffffff;
 
 // pub const CURLSSH_AUTH_ANY: c_ulong = !0;
 // pub const CURLSSH_AUTH_NONE: c_ulong = 0;

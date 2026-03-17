@@ -232,7 +232,7 @@ fn upload_lots() {
     });
     assert_eq!(done, 1);
 
-    let mut e = t!(m.remove(e));
+    let e = t!(m.remove(e));
     assert_eq!(t!(e.response_code()), 200);
 }
 

@@ -70,6 +70,13 @@ fn main() {
 
     // Version symbols are extracted from https://curl.se/libcurl/c/symbols-in-versions.html
     cfg.skip_const(move |s| {
+        if version < (8, 19) {
+            match s {
+                // This constant changed value.
+                "CURLAUTH_ANY" | "CURLAUTH_ANYSAFE" => return true,
+                _ => {}
+            }
+        }
         if version < (8, 10) {
             match s {
                 "CURLVERSION_TWELFTH" | "CURLVERSION_NOW" => return true,

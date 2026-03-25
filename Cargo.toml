@@ -20,7 +20,7 @@ socket2 = "0.6.0"
 # Unix platforms use OpenSSL for now to provide SSL functionality
 [target.'cfg(all(unix))'.dependencies]
 openssl-sys = { version = "0.9.64", optional = true }
-openssl-probe = { version = "0.1.2", optional = true }
+openssl-probe = { version = "0.2.1", optional = true }
 
 [target.'cfg(target_env = "msvc")'.dependencies]
 schannel = "0.1.13"

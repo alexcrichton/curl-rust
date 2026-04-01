@@ -21,7 +21,7 @@ jobs:
             target: x86_64-unknown-linux-gnu
           - build: ubuntu-lts
             os: ubuntu-24.04
-            rust: '1.82'
+            rust: '1.80'
             docker: linux64
             target: x86_64-unknown-linux-gnu
           - build: x86_64-beta
@@ -121,7 +121,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install libkrb5-dev
+          sudo apt install libkrb5-dev libc-ares-dev
       - name: Build documentation
         run: cargo doc --no-deps --all-features
       - name: Publish documentation

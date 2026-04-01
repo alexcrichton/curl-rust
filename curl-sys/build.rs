@@ -572,10 +572,7 @@ fn try_pkg_config(needs_http2: bool, needs_cares: bool) -> bool {
     // c-ares support is required for CURLOPT_DNS_SERVERS and related APIs.
     // If we cannot confirm the system libcurl was configured with c-ares,
     // fall back to compiling libcurl from source.
-    if needs_cares
-        && !pkg_config_reports_cares(&lib)
-        && !curl_config_reports_cares()
-    {
+    if needs_cares && !pkg_config_reports_cares(&lib) && !curl_config_reports_cares() {
         return false;
     }
 

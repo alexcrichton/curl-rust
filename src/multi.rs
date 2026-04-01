@@ -815,6 +815,21 @@ impl Multi {
     }
 }
 
+impl Drop for Multi {
+    fn drop(&mut self) {
+        // The actual raw multi handle can outlive our wrapper (any attached
+        // easy handles will keep it alive until they are also dropped), so we
+        // need to make sure to remove any references to local data that we may
+        // have set on the multi handle before we are dropped.
+
+        // Unset callback functions that are stored in our own struct.
+        let _ = self.setopt_ptr(curl_sys::CURLMOPT_SOCKETFUNCTION, ptr::null());
+        let _ = self.setopt_ptr(curl_sys::CURLMOPT_SOCKETDATA, ptr::null());
+        let _ = self.setopt_ptr(curl_sys::CURLMOPT_TIMERFUNCTION, ptr::null());
+        let _ = self.setopt_ptr(curl_sys::CURLMOPT_TIMERDATA, ptr::null());
+    }
+}
+
 impl Drop for RawMulti {
     fn drop(&mut self) {
         unsafe {

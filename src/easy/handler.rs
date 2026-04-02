@@ -278,24 +278,7 @@ pub trait Handler {
         socktype: c_int,
         protocol: c_int,
     ) -> Option<curl_sys::curl_socket_t> {
-        // Note that we override this to calling a function in `socket2` to
-        // ensure that we open all sockets with CLOEXEC. Otherwise if we rely on
-        // libcurl to open sockets it won't use CLOEXEC.
-        return Socket::new(family.into(), socktype.into(), Some(protocol.into()))
-            .ok()
-            .map(cvt);
-
-        #[cfg(unix)]
-        fn cvt(socket: Socket) -> curl_sys::curl_socket_t {
-            use std::os::unix::prelude::*;
-            socket.into_raw_fd()
-        }
-
-        #[cfg(windows)]
-        fn cvt(socket: Socket) -> curl_sys::curl_socket_t {
-            use std::os::windows::prelude::*;
-            socket.into_raw_socket()
-        }
+        open_socket(family, socktype, protocol)
     }
 }
 
@@ -319,6 +302,31 @@ pub fn debug(kind: InfoType, data: &[u8]) {
 pub fn ssl_ctx(cx: *mut c_void) -> Result<(), Error> {
     windows::add_certs_to_context(cx);
     Ok(())
+}
+
+pub fn open_socket(
+    family: c_int,
+    socktype: c_int,
+    protocol: c_int,
+) -> Option<curl_sys::curl_socket_t> {
+    // Note that we override this to calling a function in `socket2` to
+    // ensure that we open all sockets with CLOEXEC. Otherwise if we rely on
+    // libcurl to open sockets it won't use CLOEXEC.
+    return Socket::new(family.into(), socktype.into(), Some(protocol.into()))
+        .ok()
+        .map(cvt);
+
+    #[cfg(unix)]
+    fn cvt(socket: Socket) -> curl_sys::curl_socket_t {
+        use std::os::unix::prelude::*;
+        socket.into_raw_fd()
+    }
+
+    #[cfg(windows)]
+    fn cvt(socket: Socket) -> curl_sys::curl_socket_t {
+        use std::os::windows::prelude::*;
+        socket.into_raw_socket()
+    }
 }
 
 /// Raw bindings to a libcurl "easy session".

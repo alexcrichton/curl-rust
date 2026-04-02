@@ -1,6 +1,7 @@
 #![cfg(unix)]
 
 use std::collections::HashMap;
+use std::error::Error;
 use std::io::{Cursor, Read};
 use std::time::Duration;
 
@@ -301,4 +302,33 @@ fn pollfds() {
     for waitfd in waitfds {
         assert!(waitfd.received_read());
     }
+}
+
+#[test]
+fn drop_easy_handle_before_multi() -> Result<(), Box<dyn Error>> {
+    // Set up basically any request.
+    let mut easy = Easy::new();
+    easy.url("http://example.org")?;
+
+    // Set up a multi with any socket callback.
+    let mut multi = Multi::new();
+    multi.socket_function(|_, _, _| {})?;
+
+    // Attach the easy handle to the multi handle.
+    let handle = multi.add(easy)?;
+
+    // Execute the initial steps of establishing a socket, but without waiting
+    // for the request to fully finish.
+    multi.perform()?;
+    multi.wait(&mut [], Duration::from_secs(1))?;
+    multi.perform()?;
+
+    // Drop the multi handle. This will free the callback functions, leaving
+    // curl with dangling pointers.
+    drop(multi);
+
+    // This should not segfault!
+    drop(handle);
+
+    Ok(())
 }

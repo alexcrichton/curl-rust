@@ -42,11 +42,18 @@ fn main() {
 
         // Next, fall back and try to use pkg-config if its available.
         if windows {
-            if try_vcpkg() {
+            if try_vcpkg(needs_http2, needs_cares) {
                 return;
             }
         } else if try_pkg_config(needs_http2, needs_cares) {
             return;
+        }
+
+        if needs_cares {
+            panic!(
+                "feature `c-ares` without `static-curl` requires a system \
+                 libcurl with c-ares support (or enable `static-curl`)"
+            );
         }
     }
 
@@ -491,12 +498,12 @@ fn main() {
 }
 
 #[cfg(not(target_env = "msvc"))]
-fn try_vcpkg() -> bool {
+fn try_vcpkg(_needs_http2: bool, _needs_cares: bool) -> bool {
     false
 }
 
 #[cfg(target_env = "msvc")]
-fn try_vcpkg() -> bool {
+fn try_vcpkg(_needs_http2: bool, needs_cares: bool) -> bool {
     // the import library for the dll is called libcurl_imp
     let mut successful_probe_details = match vcpkg::Config::new()
         .lib_names("libcurl_imp", "libcurl")
@@ -543,6 +550,14 @@ fn try_vcpkg() -> bool {
         println!("cargo:rustc-link-lib=gdi32");
         println!("cargo:rustc-link-lib=user32");
         println!("cargo:rustc-link-lib=wldap32");
+
+        if needs_cares {
+            if let Err(e) = vcpkg::probe_package("c-ares") {
+                println!("vcpkg could not find c-ares for system libcurl: {}", e);
+                return false;
+            }
+        }
+
         return true;
     }
     false

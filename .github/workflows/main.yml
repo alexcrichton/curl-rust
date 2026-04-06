@@ -121,7 +121,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install libkrb5-dev
+          sudo apt install libkrb5-dev libc-ares-dev
       - name: Build documentation
         run: cargo doc --no-deps --all-features
       - name: Publish documentation

@@ -129,6 +129,7 @@ with various Cargo features:
 - `http2`: Enable HTTP/2 support via libnghttp2. Disabled by default.
 - `static-curl`: Use a bundled libcurl version and statically link to it. Disabled by default.
 - `static-ssl`: Use a bundled OpenSSL version and statically link to it. Only applies on platforms that use OpenSSL. Disabled by default.
+- `c-ares`: Enable c-ares DNS support. This enables c-ares checks for both system and vendored builds. With `static-curl`, vendored libcurl is built with c-ares (requires c-ares development files discoverable by `pkg-config` or `vcpkg` on MSVC Windows). Without `static-curl`, a system libcurl with c-ares support is required. Disabled by default.
 - `spnego`: Enable SPNEGO support. Disabled by default.
 - `upkeep_7_62_0`: Enable curl_easy_upkeep() support, introduced in curl 7.62.0. Disabled by default.
 - `poll_7_68_0`: Enable curl_multi_poll()/curl_multi_wakeup() support, requires curl 7.68.0 or later. Disabled by default.

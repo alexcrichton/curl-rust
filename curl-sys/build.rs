@@ -459,6 +459,8 @@ fn main() {
         println!("cargo:rustc-link-lib=ws2_32");
         println!("cargo:rustc-link-lib=crypt32");
         println!("cargo:rustc-link-lib=iphlpapi");
+        println!("cargo:rustc-link-lib=advapi32");
+        println!("cargo:rustc-link-lib=secur32");
     }
 
     // Illumos/Solaris requires explicit linking with libnsl

@@ -466,6 +466,7 @@ fn main() {
         println!("cargo:rustc-link-lib=iphlpapi");
         println!("cargo:rustc-link-lib=advapi32");
         println!("cargo:rustc-link-lib=secur32");
+        println!("cargo:rustc-link-lib=bcrypt");
     }
 
     // Illumos/Solaris requires explicit linking with libnsl

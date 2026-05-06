@@ -141,4 +141,4 @@ jobs:
         submodules: true
     - name: Install Rust (rustup)
       run: rustup update stable --no-self-update && rustup default stable
-    - run: cargo run --example https
+    - run: cargo run --example https --features static-curl

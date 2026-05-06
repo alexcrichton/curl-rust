@@ -132,3 +132,13 @@ jobs:
           git -c user.name='ci' -c user.email='ci' commit -m init
           git push -f -q https://git:${{ secrets.github_token }}@github.com/${{ github.repository }} HEAD:gh-pages
         if: github.event_name == 'push' && github.event.ref == 'refs/heads/main'
+
+  windows_dns:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        submodules: true
+    - name: Install Rust (rustup)
+      run: rustup update stable --no-self-update && rustup default stable
+    - run: cargo run --example https

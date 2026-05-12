@@ -743,23 +743,23 @@ pub struct curl_certinfo {
     pub certinfo: *mut *mut curl_slist,
 }
 
-// pub type curl_sslbackend = __enum_ty;
-// pub const CURLSSLBACKEND_NONE: curl_sslbackend = 0;
-// pub const CURLSSLBACKEND_OPENSSL: curl_sslbackend = 1;
-// pub const CURLSSLBACKEND_GNUTLS: curl_sslbackend = 2;
-// pub const CURLSSLBACKEND_NSS: curl_sslbackend = 3;
-// pub const CURLSSLBACKEND_QSOSSL: curl_sslbackend = 4;
-// pub const CURLSSLBACKEND_GSKIT: curl_sslbackend = 5;
-// pub const CURLSSLBACKEND_POLARSSL: curl_sslbackend = 6;
-// pub const CURLSSLBACKEND_CYASSL: curl_sslbackend = 7;
-// pub const CURLSSLBACKEND_SCHANNEL: curl_sslbackend = 8;
-// pub const CURLSSLBACKEND_DARWINSSL: curl_sslbackend = 9;
+pub type curl_sslbackend = __enum_ty;
+pub const CURLSSLBACKEND_NONE: curl_sslbackend = 0;
+pub const CURLSSLBACKEND_OPENSSL: curl_sslbackend = 1;
+pub const CURLSSLBACKEND_GNUTLS: curl_sslbackend = 2;
+pub const CURLSSLBACKEND_NSS: curl_sslbackend = 3;
+pub const CURLSSLBACKEND_QSOSSL: curl_sslbackend = 4;
+pub const CURLSSLBACKEND_GSKIT: curl_sslbackend = 5;
+pub const CURLSSLBACKEND_POLARSSL: curl_sslbackend = 6;
+pub const CURLSSLBACKEND_CYASSL: curl_sslbackend = 7;
+pub const CURLSSLBACKEND_SCHANNEL: curl_sslbackend = 8;
+pub const CURLSSLBACKEND_DARWINSSL: curl_sslbackend = 9;
 
-// #[repr(C)]
-// pub struct curl_tlssessioninfo {
-//     pub backend: curl_sslbackend,
-//     pub internals: *mut c_void,
-// }
+#[repr(C)]
+pub struct curl_tlssessioninfo {
+    pub backend: curl_sslbackend,
+    pub internals: *mut c_void,
+}
 
 pub const CURLINFO_STRING: CURLINFO = 0x100000;
 pub const CURLINFO_LONG: CURLINFO = 0x200000;
@@ -810,7 +810,8 @@ pub const CURLINFO_RTSP_CSEQ_RECV: CURLINFO = CURLINFO_LONG + 39;
 pub const CURLINFO_PRIMARY_PORT: CURLINFO = CURLINFO_LONG + 40;
 pub const CURLINFO_LOCAL_IP: CURLINFO = CURLINFO_STRING + 41;
 pub const CURLINFO_LOCAL_PORT: CURLINFO = CURLINFO_LONG + 42;
-// pub const CURLINFO_TLS_SESSION: CURLINFO = CURLINFO_SLIST + 43;
+pub const CURLINFO_TLS_SESSION: CURLINFO = CURLINFO_SLIST + 43;
+pub const CURLINFO_TLS_SSL_PTR: CURLINFO = CURLINFO_SLIST + 45;
 
 pub type curl_closepolicy = __enum_ty;
 pub const CURLCLOSEPOLICY_NONE: curl_closepolicy = 0;

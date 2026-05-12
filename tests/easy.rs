@@ -1008,6 +1008,32 @@ fn test_connect_timeout() {
     );
 }
 
+// Test for issue #632: HTTPS certificate verification on FreeBSD
+// https://github.com/alexcrichton/curl-rust/issues/632
+//
+// This test verifies HTTPS requests work with certificate verification.
+// On FreeBSD 13.5/14.3 with curl-sys 0.4.84 (no fix), this would fail with:
+// [60] SSL peer certificate or SSH remote key was not OK
+#[test]
+fn issue_632_https_cert_verification() {
+    let mut h = handle();
+    
+    // The exact URL that fails on affected FreeBSD versions
+    t!(h.url("https://index.crates.io/config.json"));
+    
+    let mut data = Vec::new();
+    t!(h.write_function(move |buf| {
+        data.extend_from_slice(buf);
+        Ok(buf.len())
+    }));
+    
+    // This perform() call would fail on FreeBSD 13.5/14.3 without the fix
+    t!(h.perform());
+    
+    // Verify successful response
+    assert_eq!(t!(h.response_code()), 200);
+}
+
 #[test]
 fn test_timeout() {
     use curl::easy::Handler;

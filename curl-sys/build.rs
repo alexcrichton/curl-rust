@@ -40,7 +40,8 @@ fn main() {
             if try_vcpkg() {
                 return;
             }
-        } else if try_pkg_config() {
+        }
+        if try_pkg_config() {
             return;
         }
     }

@@ -384,6 +384,7 @@ struct Inner<H> {
     header_list: Option<List>,
     resolve_list: Option<List>,
     connect_to_list: Option<List>,
+    proxy_header_list: Option<List>,
     form: Option<Form>,
     error_buf: RefCell<Vec<u8>>,
     handler: H,
@@ -594,6 +595,7 @@ impl<H: Handler> Easy2<H> {
                     header_list: None,
                     resolve_list: None,
                     connect_to_list: None,
+                    proxy_header_list: None,
                     form: None,
                     error_buf: RefCell::new(vec![0; curl_sys::CURL_ERROR_SIZE]),
                     handler,
@@ -1593,15 +1595,17 @@ impl<H> Easy2<H> {
         self.setopt_ptr(curl_sys::CURLOPT_HTTPHEADER, ptr as *const _)
     }
 
-    // /// Add some headers to send to the HTTP proxy.
-    // ///
-    // /// This function is essentially the same as `http_headers`.
-    // ///
-    // /// By default this option is not set and corresponds to
-    // /// `CURLOPT_PROXYHEADER`
-    // pub fn proxy_headers(&mut self, list: &'a List) -> Result<(), Error> {
-    //     self.setopt_ptr(curl_sys::CURLOPT_PROXYHEADER, list.raw as *const _)
-    // }
+    /// Add some headers to send to the HTTP proxy.
+    ///
+    /// This function is essentially the same as `http_headers`.
+    ///
+    /// By default this option is not set and corresponds to
+    /// `CURLOPT_PROXYHEADER`
+    pub fn proxy_headers(&mut self, list: List) -> Result<(), Error> {
+        let ptr = list::raw(&list);
+        self.inner.proxy_header_list = Some(list);
+        self.setopt_ptr(curl_sys::CURLOPT_PROXYHEADER, ptr as *const _)
+    }
 
     /// Set the contents of the HTTP Cookie header.
     ///

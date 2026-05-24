@@ -11,8 +11,8 @@ curl-sys = { path = "../curl-sys" }
 libc = "0.2"
 
 [build-dependencies]
+cc.workspace = true
 ctest2 = "0.4"
-cc = "1.0"
 
 [features]
 static-ssl = ['curl-sys/static-ssl']

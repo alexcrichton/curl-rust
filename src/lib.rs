@@ -69,6 +69,8 @@ mod version;
 pub mod easy;
 pub mod multi;
 mod panic;
+#[cfg(feature = "url")]
+pub mod url;
 
 #[cfg(test)]
 static INITIALIZED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);

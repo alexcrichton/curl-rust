@@ -15,6 +15,7 @@ use socket2::Socket;
 use crate::easy::form;
 use crate::easy::list;
 use crate::easy::windows;
+use crate::easy::WriteContext2;
 use crate::easy::{Form, List};
 use crate::panic;
 use crate::Error;
@@ -79,6 +80,16 @@ pub trait Handler {
     /// `CURLOPT_WRITEFUNCTION` and `CURLOPT_WRITEDATA` options.
     fn write(&mut self, data: &[u8]) -> Result<usize, WriteError> {
         Ok(data.len())
+    }
+
+    /// Same as [`write`], but with a context allowing access to some functionalities within
+    /// the callback and the raw handle.
+    fn write_context(
+        &mut self,
+        data: &[u8],
+        _ctx: &mut WriteContext2<Self>,
+    ) -> Result<usize, WriteError> {
+        self.write(data)
     }
 
     /// Read callback for data uploads.
@@ -379,8 +390,8 @@ pub struct Easy2<H> {
     inner: Box<Inner<H>>,
 }
 
-struct Inner<H> {
-    handle: *mut curl_sys::CURL,
+pub(super) struct Inner<H: ?Sized> {
+    pub(super) handle: *mut curl_sys::CURL,
     header_list: Option<List>,
     resolve_list: Option<List>,
     connect_to_list: Option<List>,

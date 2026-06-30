@@ -7,12 +7,14 @@
 //! Most simple usage of libcurl will likely use the `Easy` structure here, and
 //! you can find more docs about its usage on that struct.
 
+mod context;
 mod form;
 mod handle;
 mod handler;
 mod list;
 mod windows;
 
+pub use self::context::{WriteContext, WriteContext2};
 pub use self::form::{Form, Part};
 pub use self::handle::{Easy, Transfer};
 pub use self::handler::{Auth, NetRc, PostRedirections, ProxyType, SslOpt};

@@ -67,6 +67,8 @@ pub use crate::version::{Protocols, Version};
 mod version;
 
 pub mod easy;
+#[cfg(feature = "mime")]
+pub mod mime;
 pub mod multi;
 mod panic;
 

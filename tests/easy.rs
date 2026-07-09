@@ -611,6 +611,32 @@ fn post3() {
 }
 
 #[test]
+fn post4() {
+    let s = Server::new();
+    s.receive(
+        "\
+         POST / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         Content-Length: 5\r\n\
+         Content-Type: application/x-www-form-urlencoded\r\n\
+         \r\n\
+         data\n",
+    );
+    s.send(
+        "\
+         HTTP/1.1 200 OK\r\n\
+         \r\n",
+    );
+
+    let mut h = handle();
+    t!(h.url(&s.url("/")));
+    t!(h.post(true));
+    t!(h.post_fields(b"data\n"));
+    t!(h.perform());
+}
+
+#[test]
 fn referer() {
     let s = Server::new();
     s.receive(
@@ -869,6 +895,39 @@ b",
             true
         }));
     t!(h.transfer.borrow().perform());
+}
+
+#[test]
+fn transfer_post_fields() {
+    let s = Server::new();
+    s.receive(
+        "\
+         POST / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         Content-Length: 5\r\n\
+         Content-Type: application/x-www-form-urlencoded\r\n\
+         \r\n\
+         data\n",
+    );
+    s.send(
+        "\
+         HTTP/1.1 200 OK\r\n\
+         \r\n",
+    );
+
+    fn do_transfer_post(e: &mut Easy, data: &[u8]) {
+        let mut transfer = e.transfer();
+        t!(transfer.post_fields(data));
+        t!(transfer.perform());
+    }
+
+    let mut h = handle();
+    t!(h.url(&s.url("/")));
+    t!(h.post(true));
+    let mut data = Vec::new();
+    data.extend_from_slice(b"data\n");
+    do_transfer_post(&mut h, &data);
 }
 
 #[test]

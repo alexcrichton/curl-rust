@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::cell::UnsafeCell;
 use std::convert::TryFrom;
 use std::ffi::{CStr, CString};
 use std::fmt;
@@ -386,7 +386,8 @@ struct Inner<H> {
     connect_to_list: Option<List>,
     proxy_header_list: Option<List>,
     form: Option<Form>,
-    error_buf: RefCell<Vec<u8>>,
+    // see Easy2::take_error_buf for an explanation of when this is accessed
+    error_buf: Box<UnsafeCell<[u8]>>,
     handler: H,
 }
 
@@ -597,7 +598,7 @@ impl<H: Handler> Easy2<H> {
                     connect_to_list: None,
                     proxy_header_list: None,
                     form: None,
-                    error_buf: RefCell::new(vec![0; curl_sys::CURL_ERROR_SIZE]),
+                    error_buf: Box::new(UnsafeCell::new([0; curl_sys::CURL_ERROR_SIZE])),
                     handler,
                 }),
             };
@@ -621,7 +622,7 @@ impl<H: Handler> Easy2<H> {
     fn default_configure(&mut self) {
         self.setopt_ptr(
             curl_sys::CURLOPT_ERRORBUFFER,
-            self.inner.error_buf.borrow().as_ptr() as *const _,
+            self.inner.error_buf.get() as *const u8 as *const _,
         )
         .expect("failed to set error buffer");
         let _ = self.signal(false);
@@ -3496,13 +3497,25 @@ impl<H> Easy2<H> {
     /// This function will clear the internal buffer, so this is an operation
     /// that mutates the handle internally.
     pub fn take_error_buf(&self) -> Option<String> {
-        let mut buf = self.inner.error_buf.borrow_mut();
-        if buf[0] == 0 {
-            return None;
+        let buf_ptr = self.inner.error_buf.get();
+        let msg = {
+            // SAFETY: The only places where this buffer is accessed are this function and libcurl
+            // code. Only *mut pointers and a shared reference are created, but never mutable
+            // references.
+            // The curl documentation isn't very detailed about this, but we can probably assume
+            // that the buffer can be safely read and cleared as long as no libcurl code is
+            // currently running on this thread.
+            let buf = unsafe { &*buf_ptr };
+            if buf[0] == 0 {
+                return None;
+            }
+            let pos = buf.iter().position(|i| *i == 0).unwrap_or(buf.len());
+            String::from_utf8_lossy(&buf[..pos]).into_owned()
+        };
+        // SAFETY: No shared reference exists anymore.
+        unsafe {
+            (buf_ptr as *mut u8).write(0);
         }
-        let pos = buf.iter().position(|i| *i == 0).unwrap_or(buf.len());
-        let msg = String::from_utf8_lossy(&buf[..pos]).into_owned();
-        buf[0] = 0;
         Some(msg)
     }
 

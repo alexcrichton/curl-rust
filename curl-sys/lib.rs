@@ -2,10 +2,16 @@
 #![doc(html_root_url = "https://docs.rs/curl-sys/0.4")]
 
 // These `extern crate` are required for conditional linkages of curl.
+#[cfg(link_aws_lc)]
+extern crate aws_lc_sys;
 #[cfg(link_libnghttp2)]
 extern crate libnghttp2_sys;
 #[cfg(link_libz)]
 extern crate libz_sys;
+#[cfg(link_libnghttp3)]
+extern crate nghttp3_sys;
+#[cfg(link_libngtcp2)]
+extern crate ngtcp2_sys;
 #[cfg(link_openssl)]
 extern crate openssl_sys;
 #[cfg(feature = "rustls")]

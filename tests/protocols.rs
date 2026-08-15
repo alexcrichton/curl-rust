@@ -17,3 +17,11 @@ fn static_with_ftp_enabled() {
         .next()
         .is_some());
 }
+
+#[cfg(feature = "http3")]
+#[test]
+fn with_http3_enabled() {
+    let version = curl::Version::get();
+    assert!(version.feature_http3());
+    assert!(version.quic_version().is_some());
+}

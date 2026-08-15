@@ -8,7 +8,10 @@ fn main() {
     println!(
         "cargo:rustc-check-cfg=cfg(\
             libcurl_vendored,\
+            link_aws_lc,\
             link_libnghttp2,\
+            link_libnghttp3,\
+            link_libngtcp2,\
             link_libz,\
             link_openssl,\
         )"
@@ -31,7 +34,10 @@ fn main() {
     if !cfg!(feature = "static-curl") {
         // OSX ships libcurl by default, so we just use that version
         // so long as it has the right features enabled.
-        if target.contains("apple") && (!cfg!(feature = "http2") || curl_config_reports_http2()) {
+        if target.contains("apple")
+            && (!cfg!(feature = "http2") || curl_config_reports("HTTP2", "http-2"))
+            && (!cfg!(feature = "http3") || curl_config_reports("HTTP3", "http-3"))
+        {
             return println!("cargo:rustc-flags=-l curl");
         }
 
@@ -300,6 +306,22 @@ fn main() {
         }
     }
 
+    if cfg!(feature = "http3") {
+        cfg.define("USE_NGTCP2", None)
+            .define("USE_NGHTTP3", None)
+            .define("NGTCP2_STATICLIB", None)
+            .define("NGHTTP3_STATICLIB", None)
+            .file("curl/lib/vquic/cf-ngtcp2.c")
+            .file("curl/lib/vquic/cf-ngtcp2-cmn.c");
+
+        println!("cargo:rustc-cfg=link_aws_lc");
+        println!("cargo:rustc-cfg=link_libnghttp3");
+        println!("cargo:rustc-cfg=link_libngtcp2");
+        cfg.include(env::var_os("DEP_NGTCP2_INCLUDE").unwrap())
+            .include(env::var_os("DEP_NGHTTP3_INCLUDE").unwrap())
+            .include(aws_lc_include().unwrap());
+    }
+
     println!("cargo:rustc-cfg=link_libz");
     if let Some(path) = env::var_os("DEP_Z_INCLUDE") {
         cfg.include(path);
@@ -313,7 +335,11 @@ fn main() {
 
     // Configure TLS backend. Since Cargo does not support mutually exclusive
     // features, make sure we only compile one vtls.
-    if cfg!(feature = "rustls") {
+    if cfg!(feature = "http3") {
+        cfg.define("USE_OPENSSL", None)
+            .define("OPENSSL_IS_AWSLC", None)
+            .file("curl/lib/vtls/openssl.c");
+    } else if cfg!(feature = "rustls") {
         cfg.define("USE_RUSTLS", None)
             .file("curl/lib/vtls/cipher_suite.c")
             .file("curl/lib/vtls/rustls.c")
@@ -558,9 +584,11 @@ fn try_pkg_config() -> bool {
         }
     };
 
-    // Not all system builds of libcurl have http2 features enabled, so if we've
-    // got a http2-requested build then we may fall back to a build from source.
-    if cfg!(feature = "http2") && !curl_config_reports_http2() {
+    // Not all system builds of libcurl have optional HTTP features enabled, so
+    // fall back to a source build when a requested feature is missing.
+    if (cfg!(feature = "http2") && !curl_config_reports("HTTP2", "http-2"))
+        || (cfg!(feature = "http3") && !curl_config_reports("HTTP3", "http-3"))
+    {
         return false;
     }
 
@@ -573,7 +601,7 @@ fn try_pkg_config() -> bool {
     true
 }
 
-fn curl_config_reports_http2() -> bool {
+fn curl_config_reports(feature: &str, description: &str) -> bool {
     let output = Command::new("curl-config").arg("--features").output();
     let output = match output {
         Ok(out) => out,
@@ -587,13 +615,21 @@ fn curl_config_reports_http2() -> bool {
         return false;
     }
     let stdout = String::from_utf8_lossy(&output.stdout);
-    if !stdout.contains("HTTP2") {
+    if !stdout.split_whitespace().any(|item| item == feature) {
         println!(
-            "failed to find http-2 feature enabled in pkg-config-found \
-             libcurl, building from source"
+            "failed to find {} feature enabled in pkg-config-found \
+             libcurl, building from source",
+            description
         );
         return false;
     }
 
     true
+}
+
+fn aws_lc_include() -> Option<std::ffi::OsString> {
+    env::vars_os().find_map(|(key, value)| {
+        let key = key.to_string_lossy();
+        (key.starts_with("DEP_AWS_LC_") && key.ends_with("_INCLUDE")).then_some(value)
+    })
 }

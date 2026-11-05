@@ -332,3 +332,47 @@ fn drop_easy_handle_before_multi() -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
+
+#[test]
+fn panic_in_callback_is_propagated() {
+    let s = Server::new();
+    s.receive(
+        "\
+         GET / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         \r\n",
+    );
+    s.send("HTTP/1.1 200 OK\r\n\r\n");
+
+    let m = Multi::new();
+    let mut e = Easy::new();
+    t!(e.url(&s.url("/")));
+    t!(e.header_function(|_| panic!("header callback panicked")));
+    let _e = t!(m.add(e));
+
+    let res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        while t!(m.perform()) > 0 {
+            t!(m.wait(&mut [], Duration::from_secs(1)));
+        }
+    }));
+    let err = res.expect_err("panic in callback should reach the caller of perform");
+    assert_eq!(
+        err.downcast_ref::<&str>(),
+        Some(&"header callback panicked")
+    );
+
+    // The panic must not be left behind for an unrelated transfer.
+    let s2 = Server::new();
+    s2.receive(
+        "\
+         GET / HTTP/1.1\r\n\
+         Host: 127.0.0.1:$PORT\r\n\
+         Accept: */*\r\n\
+         \r\n",
+    );
+    s2.send("HTTP/1.1 200 OK\r\n\r\n");
+    let mut e2 = Easy::new();
+    t!(e2.url(&s2.url("/")));
+    t!(e2.perform());
+}

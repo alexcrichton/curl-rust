@@ -537,12 +537,14 @@ impl Multi {
     pub fn action(&self, socket: Socket, events: &Events) -> Result<u32, MultiError> {
         let mut remaining = 0;
         unsafe {
-            cvt(curl_sys::curl_multi_socket_action(
+            let ret = cvt(curl_sys::curl_multi_socket_action(
                 self.inner.raw.handle,
                 socket,
                 events.bits,
                 &mut remaining,
-            ))?;
+            ));
+            panic::propagate();
+            ret?;
             Ok(remaining as u32)
         }
     }
@@ -565,12 +567,14 @@ impl Multi {
     pub fn timeout(&self) -> Result<u32, MultiError> {
         let mut remaining = 0;
         unsafe {
-            cvt(curl_sys::curl_multi_socket_action(
+            let ret = cvt(curl_sys::curl_multi_socket_action(
                 self.inner.raw.handle,
                 curl_sys::CURL_SOCKET_BAD,
                 0,
                 &mut remaining,
-            ))?;
+            ));
+            panic::propagate();
+            ret?;
             Ok(remaining as u32)
         }
     }
@@ -750,10 +754,12 @@ impl Multi {
     pub fn perform(&self) -> Result<u32, MultiError> {
         unsafe {
             let mut ret = 0;
-            cvt(curl_sys::curl_multi_perform(
+            let res = cvt(curl_sys::curl_multi_perform(
                 self.inner.raw.handle,
                 &mut ret,
-            ))?;
+            ));
+            panic::propagate();
+            res?;
             Ok(ret as u32)
         }
     }
